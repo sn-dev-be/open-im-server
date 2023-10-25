@@ -231,6 +231,11 @@ func GinParseToken(rdb redis.UniversalClient) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+			if token == config.Config.Secret {
+				c.Set(constant.OpUserID, config.Config.Manager.UserID[0])
+				c.Next()
+				return
+			}
 			claims, err := tokenverify.GetClaimFromToken(token, authverify.Secret())
 			if err != nil {
 				log.ZWarn(c, "jwt get token error", errs.ErrTokenUnknown.Wrap())

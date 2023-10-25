@@ -76,6 +76,21 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.MsgRevokeNotification:  {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.HasReadReceipt:         {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.DeleteMsgsNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+		// signaling
+		constant.SignalingInvitedNotification:               config.Config.Notification.SignalingInvited,
+		constant.SignalingGroupInvitedNotification:          {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
+		constant.SignalingAcceptedNotification:              config.Config.Notification.SignalingAccepted,
+		constant.SignalingRejectedNotification:              config.Config.Notification.SignalingRejected,
+		constant.SignalingSingleChatRejectedNotification:    {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
+		constant.SignalingJoinedNotification:                config.Config.Notification.SignalingJoined,
+		constant.SignalingGroupJoinedNotification:           {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
+		constant.SignalingCanceledNotification:              config.Config.Notification.SignalingCanceled,
+		constant.SignalingSingleChatCanceledNotification:    {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
+		constant.SignalingHungUpNotification:                config.Config.Notification.SignalingHungUp,
+		constant.SignalingClosedNotification:                config.Config.Notification.SignalingClosed,
+		constant.SignalingSingleChatClosedNotification:      {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
+		constant.SignalingMicphoneStatusChangedNotification: {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
+		constant.SignalingSpeakStatusChangedNotification:    {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
 	}
 }
 
@@ -147,6 +162,11 @@ func NewMessageRpcClient(discov discoveryregistry.SvcDiscoveryRegistry) MessageR
 
 func (m *MessageRpcClient) SendMsg(ctx context.Context, req *msg.SendMsgReq) (*msg.SendMsgResp, error) {
 	resp, err := m.Client.SendMsg(ctx, req)
+	return resp, err
+}
+
+func (m *MessageRpcClient) SendSignalMsg(ctx context.Context, req *msg.SendSignalMsgReq) (*msg.SendSignalMsgResp, error) {
+	resp, err := m.Client.SendSignalMsg(ctx, req)
 	return resp, err
 }
 
@@ -239,7 +259,6 @@ func (s *NotificationSender) NotificationWithSesstionType(ctx context.Context, s
 		}
 	}
 	var offlineInfo sdkws.OfflinePushInfo
-	var title, desc, ex string
 	msg.SendID = sendID
 	msg.RecvID = recvID
 	msg.Content = content
@@ -257,10 +276,12 @@ func (s *NotificationSender) NotificationWithSesstionType(ctx context.Context, s
 	}
 	options := config.GetOptionsByNotification(optionsConfig)
 	msg.Options = options
-	offlineInfo.Title = title
-	offlineInfo.Desc = desc
-	offlineInfo.Ex = ex
-	msg.OfflinePushInfo = &offlineInfo
+	if options.IsOfflinePush() {
+		offlineInfo.Title = optionsConfig.OfflinePush.Title
+		offlineInfo.Desc = optionsConfig.OfflinePush.Desc
+		offlineInfo.Ex = optionsConfig.OfflinePush.Ext
+		msg.OfflinePushInfo = &offlineInfo
+	}
 	req.MsgData = &msg
 	_, err = s.sendMsg(ctx, &req)
 	if err == nil {

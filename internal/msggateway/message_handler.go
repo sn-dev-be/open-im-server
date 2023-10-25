@@ -134,7 +134,15 @@ func (g GrpcHandler) SendMessage(context context.Context, data Req) ([]byte, err
 }
 
 func (g GrpcHandler) SendSignalMessage(context context.Context, data Req) ([]byte, error) {
-	resp, err := g.msgRpcClient.SendMsg(context, nil)
+	signalData := sdkws.SignalData{}
+	if err := proto.Unmarshal(data.Data, &signalData); err != nil {
+		return nil, err
+	}
+	if err := g.validate.Struct(&signalData); err != nil {
+		return nil, err
+	}
+	req := msg.SendSignalMsgReq{SignalData: &signalData}
+	resp, err := g.msgRpcClient.SendSignalMsg(context, &req)
 	if err != nil {
 		return nil, err
 	}

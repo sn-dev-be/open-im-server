@@ -232,6 +232,9 @@ type configStruct struct {
 	TokenPolicy                       struct {
 		Expire int64 `yaml:"expire"`
 	} `yaml:"tokenPolicy"`
+	VoiceCallPolicy struct {
+		Expire int64 `yaml:"expire"`
+	} `yaml:"voiceCallPolicy"`
 	MessageVerify struct {
 		FriendVerify *bool `yaml:"friendVerify"`
 	} `yaml:"messageVerify"`
@@ -315,6 +318,13 @@ type notification struct {
 	//////////////////////conversation///////////////////////
 	ConversationChanged    NotificationConf `yaml:"conversationChanged"`
 	ConversationSetPrivate NotificationConf `yaml:"conversationSetPrivate"`
+	SignalingInvited       NotificationConf `yaml:"signalingInvited"`
+	SignalingAccepted      NotificationConf `yaml:"signalingAccepted"`
+	SignalingRejected      NotificationConf `yaml:"signalingRejected"`
+	SignalingJoined        NotificationConf `yaml:"signalingJoined"`
+	SignalingCanceled      NotificationConf `yaml:"signalingCanceled"`
+	SignalingHungUp        NotificationConf `yaml:"signalingHungUp"`
+	SignalingClosed        NotificationConf `yaml:"signalingClosed"`
 }
 
 func (c *configStruct) GetServiceNames() []string {

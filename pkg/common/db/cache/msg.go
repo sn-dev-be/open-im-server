@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/dtm-labs/rockscache"
-
 	unrelationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/unrelation"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
@@ -60,6 +59,8 @@ const (
 	userBadgeUnreadCountSum = "USER_BADGE_UNREAD_COUNT_SUM:"
 	exTypeKeyLocker         = "EX_LOCK:"
 	uidPidToken             = "UID_PID_TOKEN_STATUS:"
+
+	voiceCall = "VOICE_CALL:"
 )
 
 type SeqCache interface {
@@ -100,9 +101,20 @@ type thirdCache interface {
 	GetGetuiTaskID(ctx context.Context) (string, error)
 }
 
+type VoiceCall interface {
+	SetUsersToChannel(ctx context.Context, channelID string, userIDs []string) error
+	GetChannelUsers(ctx context.Context, channelID string) ([]string, error)
+	AddUserToChannel(ctx context.Context, channelID, userID string) error
+	DelUserFromChannel(ctx context.Context, channelID, userID string) error
+	GetChannelTTL(ctx context.Context, channelID string) (time.Duration, error)
+	GetChannelUserCount(ctx context.Context, channelID string) (int64, error)
+	DelChannel(ctx context.Context, channelID string) error
+}
+
 type MsgModel interface {
 	SeqCache
 	thirdCache
+	VoiceCall
 	AddTokenFlag(ctx context.Context, userID string, platformID int, token string, flag int) error
 	GetTokensWithoutError(ctx context.Context, userID string, platformID int) (map[string]int, error)
 	SetTokenMapByUidPid(ctx context.Context, userID string, platformID int, m map[string]int) error
@@ -743,4 +755,56 @@ func (c *msgCache) DeleteOneMessageKey(
 	subKey string,
 ) error {
 	return errs.Wrap(c.rdb.HDel(ctx, c.getMessageReactionExPrefix(clientMsgID, sessionType), subKey).Err())
+}
+
+func (c *msgCache) getChannelKey(channelID string) string {
+	return voiceCall + channelID
+}
+
+func (c *msgCache) SetUsersToChannel(
+	ctx context.Context,
+	channelID string,
+	userIDs []string,
+) error {
+	key := c.getChannelKey(channelID)
+	pipe := c.rdb.Pipeline()
+
+	mm := make(map[string]interface{})
+	for _, v := range userIDs {
+		mm[v] = 0
+	}
+	if err := pipe.HSet(ctx, key, mm).Err(); err != nil {
+		return errs.Wrap(err)
+	}
+	if duration, err := pipe.TTL(ctx, key).Result(); err == nil && duration <= 0 {
+		if err := pipe.Expire(ctx, key, time.Duration(config.Config.VoiceCallPolicy.Expire)*time.Minute).Err(); err != nil {
+			return errs.Wrap(err)
+		}
+	}
+	_, err := pipe.Exec(ctx)
+	return errs.Wrap(err)
+}
+
+func (c *msgCache) GetChannelUsers(ctx context.Context, channelID string) ([]string, error) {
+	return utils.Wrap2(c.rdb.HKeys(ctx, c.getChannelKey(channelID)).Result())
+}
+
+func (c *msgCache) AddUserToChannel(ctx context.Context, channelID, userID string) error {
+	return errs.Wrap(c.rdb.HSet(ctx, c.getChannelKey(channelID), userID, 0).Err())
+}
+
+func (c *msgCache) DelUserFromChannel(ctx context.Context, channelID, userID string) error {
+	return errs.Wrap(c.rdb.HDel(ctx, c.getChannelKey(channelID), userID).Err())
+}
+
+func (c *msgCache) GetChannelTTL(ctx context.Context, channelID string) (time.Duration, error) {
+	return utils.Wrap2(c.rdb.TTL(ctx, c.getChannelKey(channelID)).Result())
+}
+
+func (c *msgCache) GetChannelUserCount(ctx context.Context, channelID string) (int64, error) {
+	return utils.Wrap2(c.rdb.HLen(ctx, c.getChannelKey(channelID)).Result())
+}
+
+func (c *msgCache) DelChannel(ctx context.Context, channelID string) error {
+	return errs.Wrap(c.rdb.Del(ctx, c.getChannelKey(channelID)).Err())
 }

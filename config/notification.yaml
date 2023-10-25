@@ -335,3 +335,73 @@ conversationSetPrivate:
     desc: "burn after reading"
     ext: "burn after reading"
 
+#####################voiceCall#########################
+signalingInvited:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: true
+    title: ""
+    desc: ""
+    ext: ""
+
+signalingAccepted:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
+signalingRejected:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
+signalingJoined:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
+signalingCanceled:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
+signalingHungUp:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
+signalingClosed:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""

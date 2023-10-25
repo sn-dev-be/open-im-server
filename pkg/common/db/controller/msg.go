@@ -119,6 +119,13 @@ type CommonMsgDatabase interface {
 		showNumber int32,
 	) (msgCount int64, userCount int64, groups []*unrelationtb.GroupCount, dateCount map[string]int64, err error)
 	ConvertMsgsDocLen(ctx context.Context, conversationIDs []string)
+
+	CreateVoiceCallChannel(ctx context.Context, channelID string, userIDs []string) error
+	GetVoiceCallChannelUsersID(ctx context.Context, channelID, excludeID string) ([]string, error)
+	DelUserFromVoiceCallChannel(ctx context.Context, channelID, userID string) error
+	AddUserToVoiceCallChannel(ctx context.Context, channelID, userID string) error
+	DelVoiceCallChannel(ctx context.Context, channelID string) error
+	GetVoiceCallChannelDuration(ctx context.Context, channelID string) (remainingSeconds int, elapsedSeconds int, err error)
 }
 
 func NewCommonMsgDatabase(msgDocModel unrelationtb.MsgDocModelInterface, cacheModel cache.MsgModel) CommonMsgDatabase {
@@ -959,4 +966,54 @@ func (db *commonMsgDatabase) SearchMessage(ctx context.Context, req *pbmsg.Searc
 
 func (db *commonMsgDatabase) ConvertMsgsDocLen(ctx context.Context, conversationIDs []string) {
 	db.msgDocDatabase.ConvertMsgsDocLen(ctx, conversationIDs)
+}
+
+func (db *commonMsgDatabase) CreateVoiceCallChannel(ctx context.Context, channelID string, userIDs []string) error {
+	return db.cache.SetUsersToChannel(ctx, channelID, userIDs)
+}
+
+func (db *commonMsgDatabase) GetVoiceCallChannelUsersID(ctx context.Context, channelID, excludeID string) ([]string, error) {
+	usersID, err := db.cache.GetChannelUsers(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	if index := utils.IndexOf(excludeID, usersID...); excludeID != "" && index != -1 {
+		utils.DeleteAt(&usersID, index)
+	}
+	return usersID, err
+}
+
+func (db *commonMsgDatabase) DelUserFromVoiceCallChannel(ctx context.Context, channelID, userID string) error {
+	err := db.cache.DelUserFromChannel(ctx, channelID, userID)
+	if err != nil {
+		return err
+	}
+	userCount, err := db.cache.GetChannelUserCount(ctx, channelID)
+	if err != nil {
+		return err
+	}
+	if userCount <= 1 {
+		err = db.DelVoiceCallChannel(ctx, channelID)
+	}
+	return err
+}
+
+func (db *commonMsgDatabase) AddUserToVoiceCallChannel(ctx context.Context, channelID, userID string) error {
+	return db.cache.AddUserToChannel(ctx, channelID, userID)
+}
+
+func (db *commonMsgDatabase) DelVoiceCallChannel(ctx context.Context, channelID string) (err error) {
+	return db.cache.DelChannel(ctx, channelID)
+}
+
+func (db *commonMsgDatabase) GetVoiceCallChannelDuration(ctx context.Context, channelID string) (remainingSeconds int, elapsedSeconds int, err error) {
+	ttlDuration, err := db.cache.GetChannelTTL(ctx, channelID)
+	if err != nil {
+		return
+	}
+	limitSeconds := int(config.Config.VoiceCallPolicy.Expire * 60)
+	ttlSeconds := int(ttlDuration.Seconds())
+	elapsedSeconds = limitSeconds - ttlSeconds
+	remainingSeconds = limitSeconds - elapsedSeconds
+	return
 }
