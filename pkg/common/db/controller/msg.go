@@ -17,8 +17,9 @@ package controller
 import (
 	"context"
 	"errors"
-	"github.com/openimsdk/open-im-server/v3/pkg/common/prom_metrics"
 	"time"
+
+	"github.com/openimsdk/open-im-server/v3/pkg/common/prom_metrics"
 
 	"github.com/redis/go-redis/v9"
 
