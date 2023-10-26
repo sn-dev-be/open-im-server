@@ -119,6 +119,7 @@ func (s *friendServer) ApplyToAddFriend(
 	if err = s.friendDatabase.AddFriendRequest(ctx, req.FromUserID, req.ToUserID, req.ReqMsg, req.Ex); err != nil {
 		return nil, err
 	}
+
 	s.notificationSender.FriendApplicationAddNotification(ctx, req)
 	return resp, nil
 }

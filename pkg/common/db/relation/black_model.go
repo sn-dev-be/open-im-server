@@ -99,6 +99,20 @@ func (b *BlackGorm) FindOwnerBlacks(
 	return
 }
 
+func (b *BlackGorm) FindAllBlacksByRelationUser(ctx context.Context, userID string, pageNumber, showNumber int32) (blacks []*relation.BlackModel, total int64, err error) {
+	err = b.db(ctx).Count(&total).Error
+	if err != nil {
+		return nil, 0, utils.Wrap(err, "")
+	}
+	totalUint32, blacks, err := ormutil.GormPage[relation.BlackModel](
+		b.db(ctx).Where("owner_user_id = ? or block_user_id = ?", userID, userID),
+		pageNumber,
+		showNumber,
+	)
+	total = int64(totalUint32)
+	return
+}
+
 func (b *BlackGorm) FindBlackUserIDs(ctx context.Context, ownerUserID string) (blackUserIDs []string, err error) {
 	return blackUserIDs, utils.Wrap(
 		b.db(ctx).Where("owner_user_id = ?", ownerUserID).Pluck("block_user_id", &blackUserIDs).Error,

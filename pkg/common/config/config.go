@@ -229,7 +229,9 @@ type configStruct struct {
 	ChatRecordsClearTime              string `yaml:"chatRecordsClearTime"`
 	MsgDestructTime                   string `yaml:"msgDestructTime"`
 	Secret                            string `yaml:"secret"`
-	TokenPolicy                       struct {
+	SignleFriend                      bool   `yaml:"signleFriend"`
+
+	TokenPolicy struct {
 		Expire int64 `yaml:"expire"`
 	} `yaml:"tokenPolicy"`
 	VoiceCallPolicy struct {

@@ -299,8 +299,8 @@ func (s *userServer) GetUserStatus(ctx context.Context, req *pbuser.GetUserStatu
 }
 
 // SetUserStatus Synchronize user's online status.
-func (s *userServer) SetUserStatus(ctx context.Context, req *pbuser.SetUserStatusReq) (resp *pbuser.SetUserStatusResp,
-	err error) {
+
+func (s *userServer) SetUserStatus(ctx context.Context, req *pbuser.SetUserStatusReq) (resp *pbuser.SetUserStatusResp, err error) {
 	err = s.UserDatabase.SetUserStatus(ctx, req.UserID, req.Status, req.PlatformID)
 	if err != nil {
 		return nil, err

@@ -35,6 +35,12 @@ type BlackDatabase interface {
 		ownerUserID string,
 		pageNumber, showNumber int32,
 	) (blacks []*relation.BlackModel, total int64, err error)
+	// FindAllBlacksRelationUser 获取主动和被动拉黑的黑名单
+	FindAllBlacksByRelationUser(
+		ctx context.Context,
+		ownerUserID string,
+		pageNumber, showNumber int32,
+	) (blacks []*relation.BlackModel, total int64, err error)
 	FindBlackIDs(ctx context.Context, ownerUserID string) (blackIDs []string, err error)
 	FindBlackInfos(ctx context.Context, ownerUserID string, userIDs []string) (blacks []*relation.BlackModel, err error)
 	// CheckIn 检查user2是否在user1的黑名单列表中(inUser1Blacks==true) 检查user1是否在user2的黑名单列表中(inUser2Blacks==true)
@@ -81,6 +87,14 @@ func (b *blackDatabase) FindOwnerBlacks(
 	pageNumber, showNumber int32,
 ) (blacks []*relation.BlackModel, total int64, err error) {
 	return b.black.FindOwnerBlacks(ctx, ownerUserID, pageNumber, showNumber)
+}
+
+func (b *blackDatabase) FindAllBlacksByRelationUser(
+	ctx context.Context,
+	ownerUserID string,
+	pageNumber, showNumber int32,
+) (blacks []*relation.BlackModel, total int64, err error) {
+	return b.black.FindAllBlacksByRelationUser(ctx, ownerUserID, pageNumber, showNumber)
 }
 
 // CheckIn 检查user2是否在user1的黑名单列表中(inUser1Blacks==true) 检查user1是否在user2的黑名单列表中(inUser2Blacks==true).

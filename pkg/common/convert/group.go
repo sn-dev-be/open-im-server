@@ -138,11 +138,30 @@ func Pb2DBGroupInfo(m *sdkws.GroupInfo) *relation.GroupModel {
 	}
 }
 
-//func Pb2DbGroupMember(m *sdkws.UserInfo) *relation.GroupMemberModel {
-//	return &relation.GroupMemberModel{
-//		UserID:   m.UserID,
-//		Nickname: m.Nickname,
-//		FaceURL:  m.FaceURL,
-//		Ex:       m.Ex,
-//	}
-//}
+func Pb2DbGroupMember(m *sdkws.UserInfo) *relation.GroupMemberModel {
+	return &relation.GroupMemberModel{
+		UserID:   m.UserID,
+		Nickname: m.Nickname,
+		FaceURL:  m.FaceURL,
+		Ex:       m.Ex,
+	}
+}
+
+func GroupSavedDB2Pb(m []*relation.GroupSavedModel) []*sdkws.GroupSaved {
+
+	if len(m) == 0 {
+		return nil
+	}
+
+	group_saveds_pb := []*sdkws.GroupSaved{}
+
+	for _, group_saved := range m {
+		group_saved_pb := &sdkws.GroupSaved{
+			UserID:     group_saved.UserID,
+			GroupID:    group_saved.GroupID,
+			CreateTime: group_saved.CreateTime.UnixMilli(),
+		}
+		group_saveds_pb = append(group_saveds_pb, group_saved_pb)
+	}
+	return group_saveds_pb
+}

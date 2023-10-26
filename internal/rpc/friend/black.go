@@ -39,7 +39,8 @@ func (s *friendServer) GetPaginationBlacks(
 		pageNumber = req.Pagination.PageNumber
 		showNumber = req.Pagination.ShowNumber
 	}
-	blacks, total, err := s.blackDatabase.FindOwnerBlacks(ctx, req.UserID, pageNumber, showNumber)
+	//blacks, total, err := s.blackDatabase.FindOwnerBlacks(ctx, req.UserID, pageNumber, showNumber)
+	blacks, total, err := s.blackDatabase.FindAllBlacksByRelationUser(ctx, req.UserID, pageNumber, showNumber)
 	if err != nil {
 		return nil, err
 	}

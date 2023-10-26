@@ -94,7 +94,7 @@ type OANotificationElem struct {
 	Ex                  string      `mapstructure:"ex"                  json:"ex"`
 }
 type MessageRevoked struct {
-	RevokerID       string `mapstructure:"revokerID"       json:"revokerID"       validate:"required"`
+	RevokerID       string `mapstructure:"revokerID" json:"revokerID" validate:"required"`
 	RevokerRole     int32  `mapstructure:"revokerRole"     json:"revokerRole"     validate:"required"`
 	ClientMsgID     string `mapstructure:"clientMsgID"     json:"clientMsgID"     validate:"required"`
 	RevokerNickname string `mapstructure:"revokerNickname" json:"revokerNickname"`

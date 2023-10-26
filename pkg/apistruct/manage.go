@@ -33,6 +33,32 @@ type SendMsg struct {
 	OfflinePushInfo  *sdkws.OfflinePushInfo `json:"offlinePushInfo"`
 }
 
+type SendNotificationReq struct {
+	RecvID string `json:"recvID" binding:"required_if" message:"recvID is required if sessionType is SingleChatType or NotificationChatType"`
+	SendNotification
+}
+
+type SendNotification struct {
+	SendID              string                 `json:"sendID"           binding:"required"`
+	SenderNickname      string                 `json:"senderNickname"`
+	SenderFaceURL       string                 `json:"senderFaceURL"`
+	SenderPlatformID    int32                  `json:"senderPlatformID"`
+	Content             string                 `json:"content"`
+	ContentType         int32                  `json:"contentType"      binding:"required"`
+	SessionType         int32                  `json:"sessionType"      binding:"required"`
+	IsOnlineOnly        bool                   `json:"isOnlineOnly"`
+	NotOfflinePush      bool                   `json:"notOfflinePush"`
+	NotificationOptions NotificationOptions    `json:"notificationOptions" binding:"required"`
+	SendTime            int64                  `json:"sendTime"`
+	OfflinePushInfo     *sdkws.OfflinePushInfo `json:"offlinePushInfo"`
+}
+
+type NotificationOptions struct {
+	IsSendMsg        bool `json:"isSendMsg" binding:"required"`
+	ReliabilityLevel int  `json:"reliabilityLevel" binding:"required"`
+	IsUnreadCount    bool `json:"isUnreadCount" binding:"required"`
+}
+
 type SendMsgReq struct {
 	RecvID string `json:"recvID" binding:"required_if" message:"recvID is required if sessionType is SingleChatType or NotificationChatType"`
 	SendMsg

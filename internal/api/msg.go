@@ -15,6 +15,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -223,12 +225,7 @@ func (m *MessageApi) SendMessage(c *gin.Context) {
 }
 
 func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
-	req := struct {
-		Key        string `json:"key"`
-		Data       string `json:"data"`
-		SendUserID string `json:"sendUserID"`
-		RecvUserID string `json:"recvUserID"`
-	}{}
+	req := apistruct.SendNotificationReq{}
 	if err := c.BindJSON(&req); err != nil {
 		apiresp.GinError(c, errs.ErrArgs.WithDetail(err.Error()).Wrap())
 		return
@@ -237,28 +234,46 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 		apiresp.GinError(c, errs.ErrNoPermission.Wrap("only app manager can send message"))
 		return
 	}
+
+	data := sdkws.PaymentNotificationTips{}
+	switch {
+	case req.ContentType >= constant.TransferSuccessNotification && req.ContentType <= constant.TransferReceivedNotification:
+		err := utils.JsonStringToStruct(req.Content, &data)
+
+		if err != nil {
+			apiresp.GinError(c, errs.ErrArgs.Wrap("content to json failed"))
+			return
+		}
+	default:
+		errorMsg := fmt.Sprintf("Unknown contentType: %v", req.ContentType)
+		log.ZDebug(c, errorMsg)
+		apiresp.GinError(c, errs.ErrArgs.Wrap("unknown contentType"))
+		return
+	}
+
+	// if err := m.validate.Struct(data); err != nil {
+	// 	apiresp.GinError(c, errs.ErrArgs.Wrap("unknown content struct"))
+	// 	return
+	// }
+
 	sendMsgReq := msg.SendMsgReq{
 		MsgData: &sdkws.MsgData{
-			SendID: req.SendUserID,
-			RecvID: req.RecvUserID,
-			Content: []byte(utils.StructToJsonString(&sdkws.NotificationElem{
-				Detail: utils.StructToJsonString(&struct {
-					Key  string `json:"key"`
-					Data string `json:"data"`
-				}{Key: req.Key, Data: req.Data}),
-			})),
+			SendID:      req.SendID,
+			RecvID:      req.RecvID,
 			MsgFrom:     constant.SysMsgType,
-			ContentType: constant.BusinessNotification,
+			ContentType: req.ContentType,
+			Content:     []byte(utils.StructToJsonString(&data)),
 			SessionType: constant.SingleChatType,
 			CreateTime:  utils.GetCurrentTimestampByMill(),
 			ClientMsgID: utils.GetMsgID(mcontext.GetOpUserID(c)),
 			Options: config.GetOptionsByNotification(config.NotificationConf{
-				IsSendMsg:        false,
-				ReliabilityLevel: 1,
-				UnreadCount:      false,
+				IsSendMsg:        req.NotificationOptions.IsSendMsg,
+				ReliabilityLevel: req.NotificationOptions.ReliabilityLevel,
+				UnreadCount:      req.NotificationOptions.IsUnreadCount,
 			}),
 		},
 	}
+
 	respPb, err := m.Client.SendMsg(c, &sendMsgReq)
 	if err != nil {
 		apiresp.GinError(c, err)

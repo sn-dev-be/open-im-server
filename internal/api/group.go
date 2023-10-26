@@ -144,3 +144,15 @@ func (o *GroupApi) GetGroups(c *gin.Context) {
 func (o *GroupApi) GetGroupMemberUserIDs(c *gin.Context) {
 	a2r.Call(group.GroupClient.GetGroupMemberUserIDs, o.Client, c)
 }
+
+func (o *GroupApi) SaveGroup(c *gin.Context) {
+	a2r.Call(group.GroupClient.SaveGroup, o.Client, c)
+}
+
+func (o *GroupApi) UnsaveGroup(c *gin.Context) {
+	a2r.Call(group.GroupClient.UnsaveGroup, o.Client, c)
+}
+
+func (o *GroupApi) GetSavedGroupList(c *gin.Context) {
+	a2r.Call(group.GroupClient.GetSavedGroupList, o.Client, c)
+}

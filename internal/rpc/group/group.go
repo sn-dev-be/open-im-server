@@ -19,6 +19,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -62,7 +63,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	if err != nil {
 		return err
 	}
-	if err := db.AutoMigrate(&relationtb.GroupModel{}, &relationtb.GroupMemberModel{}, &relationtb.GroupRequestModel{}); err != nil {
+	if err := db.AutoMigrate(&relationtb.GroupModel{}, &relationtb.GroupMemberModel{}, &relationtb.GroupRequestModel{}, &relationtb.GroupSavedModel{}); err != nil {
 		return err
 	}
 	mongo, err := unrelation.NewMongo()
@@ -1599,4 +1600,65 @@ func (s *groupServer) groupMemberHashCode(ctx context.Context, groupID string) (
 	}
 	sum := md5.Sum(data)
 	return binary.BigEndian.Uint64(sum[:]), nil
+}
+
+// 保存群到通讯录
+func (s *groupServer) SaveGroup(ctx context.Context, req *pbgroup.SaveGroupReq) (*pbgroup.SaveGroupResp, error) {
+	//首先判断用户是否为该群成员
+	groupIDs := []string{req.GroupID}
+	userIDs := []string{req.UserID}
+
+	groupMembers, err := s.GroupDatabase.FindGroupMember(ctx, groupIDs, userIDs, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(groupMembers) == 0 {
+		return nil, errors.New("user is not one of member in group ")
+	}
+
+	err = s.GroupDatabase.SaveOrUnsaveGroupByUser(ctx, req.GroupID, req.UserID, true)
+	if err != nil {
+		return nil, err
+	}
+	return &pbgroup.SaveGroupResp{}, nil
+}
+
+// 取消保存群到通讯录
+func (s *groupServer) UnsaveGroup(ctx context.Context, req *pbgroup.UnsaveGroupReq) (*pbgroup.UnsaveGroupResp, error) {
+	//首先判断用户是否为该群成员
+	groupIDs := []string{req.GroupID}
+	userIDs := []string{req.UserID}
+
+	groupMembers, err := s.GroupDatabase.FindGroupMember(ctx, groupIDs, userIDs, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(groupMembers) == 0 {
+		return nil, errors.New("user is not one of member in group ")
+	}
+
+	err = s.GroupDatabase.SaveOrUnsaveGroupByUser(ctx, req.GroupID, req.UserID, false)
+	if err != nil {
+		return nil, err
+	}
+	return &pbgroup.UnsaveGroupResp{}, nil
+}
+
+func (s *groupServer) GetSavedGroupList(ctx context.Context, req *pbgroup.GetSavedGroupListReq) (*pbgroup.GetSavedGroupListResp, error) {
+	//首先判断用户是否为该群成员
+
+	group_saveds, total, err := s.GroupDatabase.GetSavedGroupListByUser(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &pbgroup.GetSavedGroupListResp{}
+	resp.GroupSaved = convert.GroupSavedDB2Pb(group_saveds)
+	if err != nil {
+		return nil, err
+	}
+	resp.Total = total
+
+	// 返回响应对象和 nil 错误
+	return resp, nil
 }

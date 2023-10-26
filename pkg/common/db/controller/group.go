@@ -25,6 +25,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/tx"
 	"github.com/OpenIMSDK/tools/utils"
 
@@ -45,6 +46,9 @@ type GroupDatabase interface {
 	UpdateGroup(ctx context.Context, groupID string, data map[string]any) error
 	DismissGroup(ctx context.Context, groupID string, deleteMember bool) error // 解散群，并删除群成员
 	GetGroupIDsByGroupType(ctx context.Context, groupType int) (groupIDs []string, err error)
+	SaveOrUnsaveGroupByUser(ctx context.Context, groupID string, userID string, saveOrNot bool) error                                //保存或取消保存群
+	GetSavedGroupListByUser(ctx context.Context, userID string) (group_saveds []*relationtb.GroupSavedModel, total int64, err error) //获取所有已保存的群id
+
 	// GroupMember
 	TakeGroupMember(ctx context.Context, groupID string, userID string) (groupMember *relationtb.GroupMemberModel, err error)
 	TakeGroupOwner(ctx context.Context, groupID string) (*relationtb.GroupMemberModel, error)
@@ -88,6 +92,7 @@ func NewGroupDatabase(
 	group relationtb.GroupModelInterface,
 	member relationtb.GroupMemberModelInterface,
 	request relationtb.GroupRequestModelInterface,
+	groupSaved relationtb.GroupSavedModelInterface,
 	tx tx.Tx,
 	ctxTx tx.CtxTx,
 	superGroup unrelationtb.SuperGroupModelInterface,
@@ -97,6 +102,7 @@ func NewGroupDatabase(
 		groupDB:        group,
 		groupMemberDB:  member,
 		groupRequestDB: request,
+		groupSavedDB:   groupSaved,
 		tx:             tx,
 		ctxTx:          ctxTx,
 		cache:          cache,
@@ -113,6 +119,7 @@ func InitGroupDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.D
 		relation.NewGroupDB(db),
 		relation.NewGroupMemberDB(db),
 		relation.NewGroupRequest(db),
+		relation.NewGroupSavedDB(db),
 		tx.NewGorm(db),
 		tx.NewMongo(database.Client()),
 		unrelation.NewSuperGroupMongoDriver(database),
@@ -132,10 +139,12 @@ type groupDatabase struct {
 	groupDB        relationtb.GroupModelInterface
 	groupMemberDB  relationtb.GroupMemberModelInterface
 	groupRequestDB relationtb.GroupRequestModelInterface
-	tx             tx.Tx
-	ctxTx          tx.CtxTx
-	cache          cache.GroupCache
-	mongoDB        unrelationtb.SuperGroupModelInterface
+	groupSavedDB   relationtb.GroupSavedModelInterface
+
+	tx      tx.Tx
+	ctxTx   tx.CtxTx
+	cache   cache.GroupCache
+	mongoDB unrelationtb.SuperGroupModelInterface
 }
 
 func (g *groupDatabase) GetGroupIDsByGroupType(ctx context.Context, groupType int) (groupIDs []string, err error) {
@@ -568,4 +577,57 @@ func (g *groupDatabase) DeleteGroupMemberHash(ctx context.Context, groupIDs []st
 	}
 
 	return c.ExecDel(ctx)
+}
+
+func (g *groupDatabase) SaveOrUnsaveGroupByUser(ctx context.Context, groupID string, userID string, saveOrNot bool) error {
+
+	//判断是否已加入过
+	exixts, err := g.groupSavedDB.Take(ctx, groupID, userID)
+	if err != nil && utils.Unwrap(err) != errs.ErrRecordNotFound {
+		return err
+	}
+
+	if saveOrNot {
+		//save
+		if exixts != nil {
+			return nil
+		}
+
+		group_save := &relationtb.GroupSavedModel{
+			GroupID: groupID,
+			UserID:  userID,
+		}
+		err := g.groupSavedDB.Create(ctx, group_save)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		//unsave
+		if exixts == nil {
+			return nil
+		}
+		err := g.groupSavedDB.Delete(ctx, groupID, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (g *groupDatabase) GetSavedGroupListByUser(ctx context.Context, userID string) (group_saveds []*relationtb.GroupSavedModel, total int64, err error) {
+
+	savedGroups, total, err := g.groupSavedDB.FindByUser(ctx, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var transfer []*relationtb.GroupSavedModel
+	for _, v := range savedGroups {
+		v1 := v
+		transfer = append(transfer, v1)
+	}
+
+	return transfer, total, nil
 }
