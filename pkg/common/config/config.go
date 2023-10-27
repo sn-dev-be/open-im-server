@@ -229,7 +229,7 @@ type configStruct struct {
 	ChatRecordsClearTime              string `yaml:"chatRecordsClearTime"`
 	MsgDestructTime                   string `yaml:"msgDestructTime"`
 	Secret                            string `yaml:"secret"`
-	SignleFriend                      bool   `yaml:"signleFriend"`
+	SingleFriend                      bool   `yaml:"singleFriend"`
 
 	TokenPolicy struct {
 		Expire int64 `yaml:"expire"`
@@ -240,7 +240,6 @@ type configStruct struct {
 	MessageVerify struct {
 		FriendVerify *bool `yaml:"friendVerify"`
 	} `yaml:"messageVerify"`
-
 	IOSPush struct {
 		PushSound  string `yaml:"pushSound"`
 		BadgeCount bool   `yaml:"badgeCount"`

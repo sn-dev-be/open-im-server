@@ -256,13 +256,15 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 	// 	return
 	// }
 
+	msgElem := *&sdkws.NotificationElem{Detail: utils.StructToJsonString(&data)}
+
 	sendMsgReq := msg.SendMsgReq{
 		MsgData: &sdkws.MsgData{
 			SendID:      req.SendID,
 			RecvID:      req.RecvID,
 			MsgFrom:     constant.SysMsgType,
 			ContentType: req.ContentType,
-			Content:     []byte(utils.StructToJsonString(&data)),
+			Content:     []byte(utils.StructToJsonString(&msgElem)),
 			SessionType: constant.SingleChatType,
 			CreateTime:  utils.GetCurrentTimestampByMill(),
 			ClientMsgID: utils.GetMsgID(mcontext.GetOpUserID(c)),

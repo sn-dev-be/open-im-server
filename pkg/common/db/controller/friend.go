@@ -145,7 +145,7 @@ func (f *friendDatabase) AddFriendRequest(
 
 		// gorm.ErrRecordNotFound 错误，则新增
 		//whether signle approved opend
-		if config.Config.SignleFriend {
+		if config.Config.SingleFriend {
 			if err := f.AddFriendRecord(ctx, fromUserID, toUserID, reqMsg, ex); err != nil {
 				return err
 			}
