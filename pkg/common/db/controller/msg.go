@@ -71,6 +71,9 @@ type CommonMsgDatabase interface {
 	// 物理删除消息置空
 	DeleteMsgsPhysicalBySeqs(ctx context.Context, conversationID string, seqs []int64) error
 
+	// 重设红包消息
+	RenewRedPacketMsg(ctx context.Context, conversationID string, seq int64, content string) error
+
 	SetMaxSeq(ctx context.Context, conversationID string, maxSeq int64) error
 	GetMaxSeqs(ctx context.Context, conversationIDs []string) (map[string]int64, error)
 	GetMaxSeq(ctx context.Context, conversationID string) (int64, error)
@@ -966,6 +969,13 @@ func (db *commonMsgDatabase) SearchMessage(ctx context.Context, req *pbmsg.Searc
 
 func (db *commonMsgDatabase) ConvertMsgsDocLen(ctx context.Context, conversationIDs []string) {
 	db.msgDocDatabase.ConvertMsgsDocLen(ctx, conversationIDs)
+}
+
+func (db *commonMsgDatabase) RenewRedPacketMsg(ctx context.Context, conversationID string, seq int64, content string) error {
+	docID := db.msg.GetDocID(conversationID, seq)
+	index := db.msg.GetMsgIndex(seq)
+	err := db.msgDocDatabase.UpdateMsgContent(ctx, docID, index, content)
+	return err
 }
 
 func (db *commonMsgDatabase) CreateVoiceCallChannel(ctx context.Context, channelID string, userIDs []string) error {

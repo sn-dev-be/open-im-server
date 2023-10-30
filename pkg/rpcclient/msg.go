@@ -91,6 +91,10 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.SignalingSingleChatClosedNotification:      {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingMicphoneStatusChangedNotification: {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingSpeakStatusChangedNotification:    {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
+		// redPacket
+		constant.RedPacketClaimedByUserNotification: {IsSendMsg: true, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+		constant.RedPacketClaimedNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+		constant.RedPacketExpiredNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 	}
 }
 

@@ -117,6 +117,10 @@ func (m *MessageApi) RevokeMsg(c *gin.Context) {
 	a2r.Call(msg.MsgClient.RevokeMsg, m.Client, c)
 }
 
+func (m *MessageApi) SetRedPacketMsgStatus(c *gin.Context) {
+	a2r.Call(msg.MsgClient.SetRedPacketMsgStatus, m.Client, c)
+}
+
 func (m *MessageApi) MarkMsgsAsRead(c *gin.Context) {
 	a2r.Call(msg.MsgClient.MarkMsgsAsRead, m.Client, c)
 }
@@ -256,7 +260,7 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 	// 	return
 	// }
 
-	msgElem := *&sdkws.NotificationElem{Detail: utils.StructToJsonString(&data)}
+	msgElem := &sdkws.NotificationElem{Detail: utils.StructToJsonString(&data)}
 
 	sendMsgReq := msg.SendMsgReq{
 		MsgData: &sdkws.MsgData{

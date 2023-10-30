@@ -111,11 +111,11 @@ func (m *MsgMongoDriver) PushUnique(
 	return res, nil
 }
 
-func (m *MsgMongoDriver) UpdateMsgContent(ctx context.Context, docID string, index int64, msg []byte) error {
+func (m *MsgMongoDriver) UpdateMsgContent(ctx context.Context, docID string, index int64, msg string) error {
 	_, err := m.MsgCollection.UpdateOne(
 		ctx,
 		bson.M{"doc_id": docID},
-		bson.M{"$set": bson.M{fmt.Sprintf("msgs.%d.msg", index): msg}},
+		bson.M{"$set": bson.M{fmt.Sprintf("msgs.%d.msg.content", index): msg}},
 	)
 	if err != nil {
 		return utils.Wrap(err, "")

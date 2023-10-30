@@ -101,7 +101,7 @@ type MsgDocModelInterface interface {
 	Create(ctx context.Context, model *MsgDocModel) error
 	UpdateMsg(ctx context.Context, docID string, index int64, key string, value any) (*mongo.UpdateResult, error)
 	PushUnique(ctx context.Context, docID string, index int64, key string, value any) (*mongo.UpdateResult, error)
-	UpdateMsgContent(ctx context.Context, docID string, index int64, msg []byte) error
+	UpdateMsgContent(ctx context.Context, docID string, index int64, msg string) error
 	IsExistDocID(ctx context.Context, docID string) (bool, error)
 	FindOneByDocID(ctx context.Context, docID string) (*MsgDocModel, error)
 	GetMsgBySeqIndexIn1Doc(ctx context.Context, userID, docID string, seqs []int64) ([]*MsgInfoModel, error)
