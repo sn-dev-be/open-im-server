@@ -269,7 +269,7 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 			MsgFrom:     constant.SysMsgType,
 			ContentType: req.ContentType,
 			Content:     []byte(utils.StructToJsonString(&msgElem)),
-			SessionType: constant.SingleChatType,
+			SessionType: constant.NotificationChatType,
 			CreateTime:  utils.GetCurrentTimestampByMill(),
 			ClientMsgID: utils.GetMsgID(mcontext.GetOpUserID(c)),
 			Options: config.GetOptionsByNotification(config.NotificationConf{
