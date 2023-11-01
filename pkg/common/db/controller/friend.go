@@ -137,23 +137,41 @@ func (f *friendDatabase) AddFriendRequest(
 			if err := f.friendRequest.NewTx(tx).UpdateByMap(ctx, fromUserID, toUserID, m); err != nil {
 				return err
 			}
-			if err := f.AddFriendRecord(ctx, fromUserID, toUserID, reqMsg, ex); err != nil {
+		} else {
+			if err := f.friendRequest.NewTx(tx).Create(ctx, []*relation.FriendRequestModel{{FromUserID: fromUserID, ToUserID: toUserID, HandleResult: constant.FriendResponseNotHandle, ReqMsg: reqMsg, Ex: ex, CreateTime: time.Now(), HandleTime: time.Unix(0, 0)}}); err != nil {
 				return err
 			}
-			return nil
 		}
 
 		// gorm.ErrRecordNotFound 错误，则新增
 		//whether signle approved opend
 		if config.Config.SingleFriend {
-			if err := f.AddFriendRecord(ctx, fromUserID, toUserID, reqMsg, ex); err != nil {
+			exists, err := f.friend.NewTx(tx).FindUserState(ctx, fromUserID, toUserID)
+			if err != nil {
 				return err
 			}
+			existsMap := utils.SliceSet(utils.Slice(exists, func(friend *relation.FriendModel) [2]string {
+				return [...]string{friend.OwnerUserID, friend.FriendUserID} // 自己 - 好友
+			}))
+			var adds []*relation.FriendModel
+			if _, ok := existsMap[[...]string{fromUserID, toUserID}]; !ok { // 自己 - 好友
+				adds = append(
+					adds,
+					&relation.FriendModel{
+						OwnerUserID:    fromUserID,
+						FriendUserID:   toUserID,
+						AddSource:      int32(constant.BecomeFriendByApply),
+						OperatorUserID: fromUserID,
+					},
+				)
+			}
+			if len(adds) > 0 {
+				if err := f.friend.NewTx(tx).Create(ctx, adds); err != nil {
+					return err
+				}
+			}
+			return f.cache.DelFriendIDs(fromUserID, toUserID).ExecDel(ctx)
 
-		} else {
-			if err := f.friendRequest.NewTx(tx).Create(ctx, []*relation.FriendRequestModel{{FromUserID: fromUserID, ToUserID: toUserID, ReqMsg: reqMsg, Ex: ex, CreateTime: time.Now(), HandleTime: time.Unix(0, 0)}}); err != nil {
-				return err
-			}
 		}
 
 		return nil
@@ -305,49 +323,6 @@ func (f *friendDatabase) AgreeFriendRequest(
 			}
 		}
 		return f.cache.DelFriendIDs(friendRequest.ToUserID, friendRequest.FromUserID).ExecDel(ctx)
-	})
-}
-
-// AddFriendRecord 添加好友  (1)检查是否有申请记录且为未处理状态 （没有记录返回错误） (2)检查是否好友（不返回错误）   (3) 建立单向好友关系（存在的忽略）.
-func (f *friendDatabase) AddFriendRecord(
-	ctx context.Context,
-	fromUserID string,
-	toUserID string,
-	reqMsg string,
-	ex string,
-) (err error) {
-	return f.tx.Transaction(func(tx any) error {
-		defer log.ZDebug(ctx, "return line")
-
-		if err := f.friendRequest.NewTx(tx).Create(ctx, []*relation.FriendRequestModel{{FromUserID: fromUserID, ToUserID: toUserID, HandleResult: constant.FriendResponseNotHandle, ReqMsg: reqMsg, Ex: ex, CreateTime: time.Now(), HandleTime: time.Unix(0, 0)}}); err != nil {
-			return err
-		}
-
-		exists, err := f.friend.NewTx(tx).FindUserState(ctx, fromUserID, toUserID)
-		if err != nil {
-			return err
-		}
-		existsMap := utils.SliceSet(utils.Slice(exists, func(friend *relation.FriendModel) [2]string {
-			return [...]string{friend.OwnerUserID, friend.FriendUserID} // 自己 - 好友
-		}))
-		var adds []*relation.FriendModel
-		if _, ok := existsMap[[...]string{fromUserID, toUserID}]; !ok { // 自己 - 好友
-			adds = append(
-				adds,
-				&relation.FriendModel{
-					OwnerUserID:    fromUserID,
-					FriendUserID:   toUserID,
-					AddSource:      int32(constant.BecomeFriendByApply),
-					OperatorUserID: fromUserID,
-				},
-			)
-		}
-		if len(adds) > 0 {
-			if err := f.friend.NewTx(tx).Create(ctx, adds); err != nil {
-				return err
-			}
-		}
-		return f.cache.DelFriendIDs(fromUserID, toUserID).ExecDel(ctx)
 	})
 }
 
