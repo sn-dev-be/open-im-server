@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
+	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
 	"github.com/OpenIMSDK/protocol/constant"
 	msgv3 "github.com/OpenIMSDK/protocol/msg"
@@ -92,7 +93,7 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 	} else {
 		recvID = msg.RecvID
 	}
-	if err := m.notificationSender.NotificationWithSesstionType(ctx, req.UserID, recvID, req.ContentType, msg.SessionType, &tips); err != nil {
+	if err := m.notificationSender.NotificationWithSesstionType(ctx, req.UserID, recvID, req.ContentType, msg.SessionType, &tips, rpcclient.WithRpcGetUserName()); err != nil {
 		return nil, err
 	}
 	return &msgv3.SetRedPacketMsgStatusResp{}, nil

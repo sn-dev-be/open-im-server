@@ -92,7 +92,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		ConversationLocalCache: localcache.NewConversationLocalCache(&conversationClient),
 		friend:                 &friendRpcClient,
 	}
-	s.notificationSender = rpcclient.NewNotificationSender(rpcclient.WithLocalSendMsg(s.SendMsg))
+	s.notificationSender = rpcclient.NewNotificationSender(rpcclient.WithLocalSendMsg(s.SendMsg), rpcclient.WithUserRpcClient(&userRpcClient))
 	s.addInterceptorHandler(MessageHasReadEnabled)
 	s.initPrometheus()
 	msg.RegisterMsgServer(server, s)
