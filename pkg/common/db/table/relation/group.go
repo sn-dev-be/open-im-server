@@ -26,7 +26,7 @@ const (
 type GroupModel struct {
 	GroupID                string    `gorm:"column:group_id;primary_key;size:64"                 json:"groupID"           binding:"required"`
 	GroupName              string    `gorm:"column:name;size:255"                                json:"groupName"`
-	Notification           string    `gorm:"column:notification;size:255"                        json:"notification"`
+	Notification           string    `gorm:"column:notification;type:text"                       json:"notification"`
 	Introduction           string    `gorm:"column:introduction;size:255"                        json:"introduction"`
 	FaceURL                string    `gorm:"column:face_url;size:255"                            json:"faceURL"`
 	CreateTime             time.Time `gorm:"column:create_time;index:create_time;autoCreateTime"`

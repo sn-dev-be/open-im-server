@@ -73,9 +73,9 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 		ClientMsgID:    msg.ClientMsgID,
 		Seq:            req.Seq,
 		ConversationID: req.ConversationID,
-		SessionType:    msg.SessionType,
 		RedPacketID:    req.RedPacketID,
 		Status:         req.Status,
+		ContentType:    req.ContentType,
 	}
 
 	if req.ContentType == constant.RedPacketClaimedByUserNotification {
