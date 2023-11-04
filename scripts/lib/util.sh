@@ -625,6 +625,7 @@ openim::util::gen-docs() {
   "${genopenimdocs}" "${dest}/docs/guide/en-US/cmd/" "openim-rpc-msg"
   "${genopenimdocs}" "${dest}/docs/guide/en-US/cmd/" "openim-rpc-third"
   "${genopenimdocs}" "${dest}/docs/guide/en-US/cmd/" "openim-rpc-user"
+  "${genopenimdocs}" "${dest}/docs/guide/en-US/cmd/" "openim-rpc-club"
   "${genopenimdocs}" "${dest}/docs/guide/en-US/cmd/openimctl" "openimctl"
 
   mkdir -p "${dest}/docs/man/man1/"
@@ -641,6 +642,7 @@ openim::util::gen-docs() {
 "${genman}" "${dest}/docs/man/man1/" "openim-rpc-msg"
 "${genman}" "${dest}/docs/man/man1/" "openim-rpc-third"
 "${genman}" "${dest}/docs/man/man1/" "openim-rpc-user"
+"${genman}" "${dest}/docs/man/man1/" "openim-rpc-club"
 
   mkdir -p "${dest}/docs/guide/en-US/yaml/openimctl/"
   "${genyaml}" "${dest}/docs/guide/en-US/yaml/openimctl/"

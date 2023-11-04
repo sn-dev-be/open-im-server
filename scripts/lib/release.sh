@@ -420,6 +420,7 @@ function openim::release::package_openim_manifests_tarball() {
   #cp "${src_dir}/openim-rpc-msg.yaml" "${dst_dir}"
   #cp "${src_dir}/openim-rpc-third.yaml" "${dst_dir}"
   #cp "${src_dir}/openim-rpc-user.yaml" "${dst_dir}"
+  #cp "${src_dir}/openim-rpc-club.yaml" "${dst_dir}"
   #cp ""${OPENIM_ROOT}"/cluster/gce/gci/health-monitor.sh" "${dst_dir}/health-monitor.sh"
 
   openim::release::clean_cruft

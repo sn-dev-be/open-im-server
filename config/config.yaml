@@ -186,6 +186,7 @@ rpcRegisterName:
   openImAuthName: Auth
   openImConversationName: Conversation
   openImThirdName: Third
+  openImClubName: Club
 
 ###################### Log Configuration ######################
 # Log configuration
@@ -249,8 +250,8 @@ push:
 # Built-in app manager user IDs
 # Built-in app manager nicknames
 manager:
-  userID: [ "openIM123456", "openIM654321", "openIMAdmin" ]
-  nickname: [ "system1", "system2", "system3" ]
+  userID: [ "openIM123456", "openIM654321", "openIMAdmin", "interactionAdmin", "payAdmin", "tribeAdmin" ]
+  nickname: [ "system1", "system2", "system3", "interactionAdmin", "payAdmin", "tribeAdmin" ]
 
 # Multi-platform login policy
 # For each platform(Android, iOS, Windows, Mac, web), only one can be online at a time
@@ -287,6 +288,14 @@ secret: openIM123
 # Token expiration period in days
 tokenPolicy:
   expire: 90
+
+# voiceCall policy
+#
+# Token expiration period in days
+voiceCallPolicy:
+  expire: 90
+
+singleFriend: true
 
 # Message verification policy
 #

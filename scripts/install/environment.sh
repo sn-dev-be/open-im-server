@@ -275,6 +275,8 @@ readonly OPENIM_PUSH_PORT=${OPENIM_PUSH_PORT:-'10170'}
 readonly OPENIM_CONVERSATION_PORT=${OPENIM_CONVERSATION_PORT:-'10180'}
 # OpenIM第三方服务端口
 readonly OPENIM_THIRD_PORT=${OPENIM_THIRD_PORT:-'10190'}
+# OpenIM部落服务端口
+readonly OPENIM_CLUB_PORT=${OPENIM_CLUB_PORT:-'10200'}
 
 ###################### RPC Register Name Variables ######################
 def "OPENIM_USER_NAME" "User"                       # OpenIM用户服务名称
@@ -358,6 +360,8 @@ readonly CONVERSATION_PROM_PORT=${CONVERSATION_PROM_PORT:-'20230'}
 readonly RTC_PROM_PORT=${RTC_PROM_PORT:-'21300'}
 # Third 服务的 Prometheus 端口
 readonly THIRD_PROM_PORT=${THIRD_PROM_PORT:-'21301'}
+# Club 服务的 Prometheus 端口
+readonly CLUB_PROM_PORT=${CLUB_PROM_PORT:-'20180'}
 
 # Message Transfer 服务的 Prometheus 端口列表
 readonly MSG_TRANSFER_PROM_PORT=${MSG_TRANSFER_PROM_PORT:-'21400, 21401, 21402, 21403'}
@@ -520,6 +524,18 @@ def "OPENIM_RPC_USER_LOG_MAX_BACKUPS" "7"                               # OpenIM
 def "OPENIM_RPC_USER_LOG_MAX_AGE" "7"                                   # OpenIM openim-rpc-user 日志最大保存时间（天）
 def "OPENIM_RPC_USER_LOG_COMPRESS" "false"                              # OpenIM openim-rpc-user 日志是否压缩
 def "OPENIM_RPC_USER_LOG_WITH_STACK" "${LOG_WITH_STACK}"                # OpenIM openim-rpc-user 日志是否带有堆栈信息
+
+###################### OpenIM openim-rpc-club ######################
+def "OPENIM_RPC_CLUB_HOST" "127.0.0.1"
+def "OPENIM_RPC_CLUB_BINARY" "${OPENIM_OUTPUT_HOSTBIN}/openim-rpc-club"  # OpenIM openim-rpc-club 二进制文件路径
+def "OPENIM_RPC_CLUB_CONFIG" ""${OPENIM_ROOT}"/config/"                  # OpenIM openim-rpc-club 配置文件路径
+def "OPENIM_RPC_CLUB_LOG_DIR" "${LOG_STORAGE_LOCATION}/openim-rpc-club"  # OpenIM openim-rpc-club 日志存储路径
+def "OPENIM_RPC_CLUB_LOG_LEVEL" "info"                                   # OpenIM openim-rpc-club 日志级别
+def "OPENIM_RPC_CLUB_LOG_MAX_SIZE" "100"                                 # OpenIM openim-rpc-club 日志最大大小（MB）
+def "OPENIM_RPC_CLUB_LOG_MAX_BACKUPS" "7"                                # OpenIM openim-rpc-club 日志最大备份数
+def "OPENIM_RPC_CLUB_LOG_MAX_AGE" "7"                                    # OpenIM openim-rpc-club 日志最大保存时间（天）
+def "OPENIM_RPC_CLUB_LOG_COMPRESS" "false"                               # OpenIM openim-rpc-club 日志是否压缩
+def "OPENIM_RPC_CLUB_LOG_WITH_STACK" "${LOG_WITH_STACK}"                 # OpenIM openim-rpc-club 日志是否带有堆栈信息
 
 ###################### 设计中...暂时不需要######################
 

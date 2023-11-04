@@ -175,6 +175,7 @@ type configStruct struct {
 		OpenImAuthName           string `yaml:"openImAuthName"`
 		OpenImConversationName   string `yaml:"openImConversationName"`
 		OpenImThirdName          string `yaml:"openImThirdName"`
+		OpenImClubName           string `yaml:"openImClubName"`
 	} `yaml:"rpcRegisterName"`
 
 	Log struct {

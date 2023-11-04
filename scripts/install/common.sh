@@ -44,6 +44,7 @@ openim::common::prometheus_port() {
     ${RTC_PROM_PORT}                # Prometheus port for real-time communication service
     ${THIRD_PROM_PORT}              # Prometheus port for third-party integrations service
     ${MSG_TRANSFER_PROM_PORT}       # Prometheus port for message transfer service
+    ${CLUB_PROM_PORT}               # Prometheus port for club service
   )
   # Print the list of ports
   echo "${targets[@]}"
@@ -88,6 +89,7 @@ openim::common::service_port() {
     ${OPENIM_PUSH_PORT}            # Push service
     ${OPENIM_CONVERSATION_PORT}    # Conversation service
     ${OPENIM_THIRD_PORT}           # Third-party service
+    ${OPENIM_CLUB_PORT}            # Club service
 
     # API PORT
     ${API_OPENIM_PORT}             # API service
