@@ -40,7 +40,8 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		return err
 	}
 
-	if err := db.AutoMigrate(&relationtb.ServerModel{}); err != nil {
+	if err := db.AutoMigrate(&relationtb.ServerModel{}, &relationtb.ChannelCategoryModel{}, &relationtb.ChannelModel{}, &relationtb.ChannelMemberModel{},
+		&relationtb.ServerRoleModel{}, &relationtb.ChannelMemberModel{}, &relationtb.ChannelDappModel{}, &relationtb.RoleAuthModel{}); err != nil {
 		return err
 	}
 

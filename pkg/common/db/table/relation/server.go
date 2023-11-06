@@ -16,6 +16,7 @@ package relation
 
 import (
 	"context"
+	"time"
 )
 
 const (
@@ -23,8 +24,22 @@ const (
 )
 
 type ServerModel struct {
-	ServerID   string `gorm:"column:server_id;primary_key;size:64"                json:"serverID"           binding:"required"`
-	ServerName string `gorm:"column:name;size:255"                                json:"serverName"`
+	ServerID             string    `gorm:"column:server_id;primary_key;size:64"                json:"serverID"           binding:"required"`
+	ServerName           string    `gorm:"column:name;size:255"                                json:"serverName"`
+	Icon                 string    `gorm:"column:icon;size:255"                                json:"icon"`
+	Description          string    `gorm:"column:description;size:255" 						   json:"description"`
+	Banner               string    `gorm:"column:banner;size:255" 							   json:"banner"`
+	OwnerUserID          string    `gorm:"column:owner;size:255" 							   json:"ownerUserID"`
+	MemberNumber         int32     `gorm:"column:memberNumber" 							   	   json:"memberNumber"`
+	ApplyMode            int32     `gorm:"column:applyMode"                                    json:"applyMode"`
+	InviteMode           int32     `gorm:"column:inviteMode"                                   json:"inviteMode"`
+	Searchable           int32     `gorm:"column:searchable"                                   json:"searchable"`
+	UserMutualAccessible int32     `gorm:"column:userMutualAccessible"                         json:"userMutualAccessible"`
+	Status               int32     `gorm:"column:status"                                	   json:"status"`
+	CategoryNumber       int32     `gorm:"column:categoryNumber"                               json:"categoryNumber"`
+	ChannelNumber        int32     `gorm:"column:channelNumber"                                json:"channelNumber"`
+	Ex                   string    `gorm:"column:ex;size:255"                                  json:"ex"`
+	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 }
 
 func (ServerModel) TableName() string {
