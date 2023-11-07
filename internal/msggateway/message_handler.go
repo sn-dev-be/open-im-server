@@ -155,7 +155,7 @@ func (g GrpcHandler) SendMessage(context context.Context, data *Req) ([]byte, er
 	return c, nil
 }
 
-func (g GrpcHandler) SendSignalMessage(context context.Context, data Req) ([]byte, error) {
+func (g GrpcHandler) SendSignalMessage(context context.Context, data *Req) ([]byte, error) {
 	signalData := sdkws.SignalData{}
 	if err := proto.Unmarshal(data.Data, &signalData); err != nil {
 		return nil, err

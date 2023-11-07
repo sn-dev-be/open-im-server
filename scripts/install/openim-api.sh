@@ -72,7 +72,7 @@ function openim::api::start()
     done
 
     OPENIM_API_PORT_STRINGARIES=( $(openim::util::list-to-string ${OPENIM_API_PORT_LISTARIES[@]}) )
-    openim::util::check_ports ${OPENIM_API_PORT_STRINGARIES[@]}
+    # openim::util::check_ports ${OPENIM_API_PORT_STRINGARIES[@]}
 }
 
 function openim::api::start_service() {
