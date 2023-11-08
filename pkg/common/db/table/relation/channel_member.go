@@ -24,14 +24,12 @@ const (
 )
 
 type ChannelMemberModel struct {
-	ID          int64     `gorm:"column:id;primary_key;AUTO_INCREMENT;UNSIGNED" json:"id"`
-	ChannelID   string    `gorm:"column:channel_id;size:64" json:"channelID"`
-	ServerID    string    `gorm:"column:server_id;size:64" json:"serverID"`
-	UserID      string    `gorm:"column:user_id;size:64" json:"userID"`
-	SererRoleID string    `gorm:"column:server_role_id;size:64" json:"sererRoleID"`
-	RoleLevel   int32     `gorm:"column:role_level" json:"roleLevel"`
-	Ex          string    `gorm:"column:ex;size:255" json:"ex"`
-	CreateTime  time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
+	ID             uint64    `gorm:"column:id;primary_key;AUTO_INCREMENT;UNSIGNED" json:"id"`
+	ChannelID      string    `gorm:"column:channel_id;size:64" json:"channelID"`
+	ServerID       string    `gorm:"column:server_id;size:64" json:"serverID"`
+	ServerMemberID uint64    `gorm:"column:server_member_id" json:"serverMemberId"`
+	Ex             string    `gorm:"column:ex;size:255" json:"ex"`
+	CreateTime     time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 }
 
 func (ChannelMemberModel) TableName() string {
@@ -41,4 +39,5 @@ func (ChannelMemberModel) TableName() string {
 type ChannelMemberModelInterface interface {
 	NewTx(tx any) ChannelMemberModelInterface
 	Create(ctx context.Context, groups []*ChannelMemberModel) (err error)
+	PageChannelMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*ChannelMemberModel, total int64, err error)
 }

@@ -60,6 +60,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 	conversationRpc := rpcclient.NewConversation(discov)
 	authRpc := rpcclient.NewAuth(discov)
 	thirdRpc := rpcclient.NewThird(discov)
+	clubRpc := rpcclient.NewClub(discov)
 
 	u := NewUserApi(*userRpc)
 	m := NewMessageApi(messageRpc, userRpc)
@@ -217,6 +218,15 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		statisticsGroup.POST("/user/active", m.GetActiveUser)
 		statisticsGroup.POST("/group/create", g.GroupCreateCount)
 		statisticsGroup.POST("/group/active", m.GetActiveGroup)
+	}
+
+	//club
+	clubGroup := r.Group("/club", ParseToken)
+	{
+		cg := NewClubApi(*clubRpc)
+		clubGroup.POST("/create_server", cg.CreateServer)
+		clubGroup.POST("/get_server_list", cg.GetServerList)
+
 	}
 	return r
 }

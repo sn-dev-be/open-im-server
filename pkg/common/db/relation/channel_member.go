@@ -24,41 +24,36 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
-var _ relation.ServerModelInterface = (*ServerGorm)(nil)
+var _ relation.ChannelMemberModelInterface = (*ChannelMemberGorm)(nil)
 
-type ServerGorm struct {
+type ChannelMemberGorm struct {
 	*MetaDB
 }
 
-func NewServerDB(db *gorm.DB) relation.ServerModelInterface {
-	return &ServerGorm{NewMetaDB(db, &relation.ServerModel{})}
+func NewChannelMemberDB(db *gorm.DB) relation.ChannelMemberModelInterface {
+	return &ChannelMemberGorm{NewMetaDB(db, &relation.ChannelMemberModel{})}
 }
 
-func (s *ServerGorm) NewTx(tx any) relation.ServerModelInterface {
-	return &ServerGorm{NewMetaDB(tx.(*gorm.DB), &relation.ServerModel{})}
+func (s *ChannelMemberGorm) NewTx(tx any) relation.ChannelMemberModelInterface {
+	return &ChannelMemberGorm{NewMetaDB(tx.(*gorm.DB), &relation.ChannelMemberModel{})}
 }
 
-func (s *ServerGorm) Create(ctx context.Context, servers []*relation.ServerModel) (err error) {
+func (s *ChannelMemberGorm) Create(ctx context.Context, servers []*relation.ChannelMemberModel) (err error) {
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
 }
 
-func (s *ServerGorm) Take(ctx context.Context, serverID string) (server *relation.ServerModel, err error) {
-	server = &relation.ServerModel{}
-	return server, utils.Wrap(s.DB.Where("server_id = ?", serverID).Take(server).Error, "")
-}
-
-func (s *ServerGorm) FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*relation.ServerModel, total int64, err error) {
-	err = s.DB.Model(&relation.ServerModel{}).Where("searchable = 1 ").Count(&total).Error
+func (s *ChannelMemberGorm) PageChannelMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*relation.ChannelMemberModel, total int64, err error) {
+	err = s.DB.Model(&relation.ChannelMemberModel{}).Where("serverID = ? ", serverID).Count(&total).Error
 	if err != nil {
 		return nil, 0, utils.Wrap(err, "")
 	}
 	err = utils.Wrap(
 		s.db(ctx).
-			Where("searchable = 1 ").
-			Order("memberNumber desc").
+			Where("serverID = ? ", serverID).
+			Order("create_time asc").
 			Limit(int(showNumber)).
 			Offset(int((pageNumber-1)*showNumber)).
-			Find(&servers).
+			Find(&members).
 			Error,
 		"",
 	)

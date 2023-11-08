@@ -29,7 +29,7 @@ type ServerModel struct {
 	Icon                 string    `gorm:"column:icon;size:255"                                json:"icon"`
 	Description          string    `gorm:"column:description;size:255" 						   json:"description"`
 	Banner               string    `gorm:"column:banner;size:255" 							   json:"banner"`
-	OwnerUserID          string    `gorm:"column:owner;size:255" 							   json:"ownerUserID"`
+	OwnerUserID          string    `gorm:"column:owner_user_id;size:255" 					   json:"ownerUserID"`
 	MemberNumber         int32     `gorm:"column:memberNumber" 							   	   json:"memberNumber"`
 	ApplyMode            int32     `gorm:"column:applyMode"                                    json:"applyMode"`
 	InviteMode           int32     `gorm:"column:inviteMode"                                   json:"inviteMode"`
@@ -48,5 +48,7 @@ func (ServerModel) TableName() string {
 
 type ServerModelInterface interface {
 	NewTx(tx any) ServerModelInterface
-	Create(ctx context.Context, groups []*ServerModel) (err error)
+	Create(ctx context.Context, servers []*ServerModel) (err error)
+	Take(ctx context.Context, serverID string) (server *ServerModel, err error)
+	FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*ServerModel, total int64, err error)
 }

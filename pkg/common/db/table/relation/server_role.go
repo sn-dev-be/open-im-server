@@ -30,7 +30,7 @@ type ServerRoleModel struct {
 	Type         int32     `gorm:"column:type;default:0" json:"type"`
 	Priority     int32     `gorm:"column:priority" json:"priority"`
 	ServerID     string    `gorm:"column:server_id" json:"serverID"`
-	RoleAuthID   string    `gorm:"column:role_auth_id" json:"roleAuthID"`
+	RoleAuth     string    `gorm:"column:role_auth" json:"roleAuth"`
 	ColorLevel   int32     `gorm:"column:color_level" json:"colorLevel"`
 	MemberNumber int32     `gorm:"column:member_number" json:"memberNumber"`
 	Ex           string    `gorm:"column:ex;size:255" json:"ex"`
@@ -43,5 +43,6 @@ func (ServerRoleModel) TableName() string {
 
 type ServerRoleModelInterface interface {
 	NewTx(tx any) ServerRoleModelInterface
-	Create(ctx context.Context, groups []*ServerRoleModel) (err error)
+	Create(ctx context.Context, serverRoles []*ServerRoleModel) (err error)
+	Take(ctx context.Context, serverRoleID string) (serverRole *ServerRoleModel, err error)
 }

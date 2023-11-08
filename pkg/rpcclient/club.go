@@ -32,7 +32,7 @@ type Club struct {
 }
 
 func NewClub(discov discoveryregistry.SvcDiscoveryRegistry) *Club {
-	conn, err := discov.GetConn(context.Background(), config.Config.RpcRegisterName.OpenImGroupName)
+	conn, err := discov.GetConn(context.Background(), config.Config.RpcRegisterName.OpenImClubName)
 	if err != nil {
 		panic(err)
 	}

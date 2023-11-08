@@ -47,5 +47,6 @@ func (ChannelModel) TableName() string {
 
 type ChannelModelInterface interface {
 	NewTx(tx any) ChannelModelInterface
-	Create(ctx context.Context, groups []*ChannelModel) (err error)
+	Create(ctx context.Context, channels []*ChannelModel) (err error)
+	Take(ctx context.Context, channelID string) (channel *ChannelModel, err error)
 }

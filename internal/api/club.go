@@ -15,6 +15,9 @@
 package api
 
 import (
+	"github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/tools/a2r"
+	"github.com/gin-gonic/gin"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 )
 
@@ -22,4 +25,20 @@ type ClubApi rpcclient.Club
 
 func NewClubApi(client rpcclient.Club) ClubApi {
 	return ClubApi(client)
+}
+
+func (o *ClubApi) CreateServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.CreateServer, o.Client, c)
+}
+
+func (o *ClubApi) GetServerList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerList, o.Client, c)
+}
+
+func (o *ClubApi) GetServerDetails(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerDetails, o.Client, c)
+}
+
+func (o *ClubApi) BatchDeleteServers(c *gin.Context) {
+	a2r.Call(club.ClubClient.BatchDeleteServers, o.Client, c)
 }
