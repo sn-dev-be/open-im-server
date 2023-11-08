@@ -44,6 +44,11 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	opUserID := mcontext.GetOpUserID(ctx)
 	serverDB := convert.Pb2DBServerInfo(req)
 	serverDB.OwnerUserID = opUserID
+	//这几个配置是默认写死的，后期根据需求调整
+	serverDB.CategoryNumber = 3
+	serverDB.ChannelNumber = 4
+	serverDB.MemberNumber = 1
+
 	if err := s.GenServerID(ctx, &serverDB.ServerID); err != nil {
 		return nil, err
 	}
@@ -68,32 +73,30 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	}
 
 	//创建默认分组与房间
-	channelIDs := []*string{}
+	channelIDs := []string{}
 	if categoryID, err := s.CreateChannelCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
 		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "公告栏", opUserID, constant.ChatChannelType, 0); err == nil {
-			channelIDs = append(channelIDs, &channelID)
+			channelIDs = append(channelIDs, channelID)
 		}
 	}
 	if categoryID, err := s.CreateChannelCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
 		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "日常聊天", opUserID, constant.ChatChannelType, 0); err == nil {
-			channelIDs = append(channelIDs, &channelID)
+			channelIDs = append(channelIDs, channelID)
 		}
 		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "资讯互动", opUserID, constant.ChatChannelType, 1); err == nil {
-			channelIDs = append(channelIDs, &channelID)
+			channelIDs = append(channelIDs, channelID)
 		}
 	}
 	if categoryID, err := s.CreateChannelCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
 		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "部落事务讨论", opUserID, constant.ChatChannelType, 0); err == nil {
-			channelIDs = append(channelIDs, &channelID)
+			channelIDs = append(channelIDs, channelID)
 		}
 	}
 
 	//todo 部落主统一进入所有房间
-	go func() {
-		if err := s.CreateChannelMembser(ctx, serverDB.ServerID, channelIDs, serverMemberId); err != nil {
-			log.ZDebug(ctx, "owner join channel failed", "user_id", opUserID, "channelIDs", channelIDs)
-		}
-	}()
+	if err := s.CreateChannelMembser(ctx, serverDB.ServerID, channelIDs, serverMemberId); err != nil {
+		log.ZDebug(ctx, "owner join channel failed", "user_id", opUserID, "channelIDs", channelIDs)
+	}
 	return &pbclub.CreateServerResp{}, nil
 }
 

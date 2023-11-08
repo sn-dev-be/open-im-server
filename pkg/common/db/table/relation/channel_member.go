@@ -38,6 +38,6 @@ func (ChannelMemberModel) TableName() string {
 
 type ChannelMemberModelInterface interface {
 	NewTx(tx any) ChannelMemberModelInterface
-	Create(ctx context.Context, groups []*ChannelMemberModel) (err error)
+	Create(ctx context.Context, channelMembers []*ChannelMemberModel) (err error)
 	PageChannelMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*ChannelMemberModel, total int64, err error)
 }
