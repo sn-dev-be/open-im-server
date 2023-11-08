@@ -111,18 +111,18 @@ ifeq ($(origin PLATFORM), undefined)
 	ifeq ($(origin GOARCH), undefined)
 		GOARCH := $(shell go env GOARCH)
 	endif
-	ifeq ($(origin GOARCH), undefined)
-		GOARCH := $(shell go env GOARCH)
-	endif
+	# Determine the host OS
+	GOOS := $(shell go env GOOS)
 	PLATFORM := $(GOOS)_$(GOARCH)
-	# Use linux as the default OS when building images
-	IMAGE_PLAT := linux_$(GOARCH)
+	# Use the host OS and GOARCH as the default when building images
+	IMAGE_PLAT := $(PLATFORM)
 else
-	# such as: PLATFORM = linux_amd64
+	# Parse the PLATFORM variable
 	GOOS := $(word 1, $(subst _, ,$(PLATFORM)))
 	GOARCH := $(word 2, $(subst _, ,$(PLATFORM)))
 	IMAGE_PLAT := $(PLATFORM)
 endif
+
 
 # Protobuf file storage path
 APIROOT=$(ROOT_DIR)/pkg/proto

@@ -476,11 +476,13 @@ func (s *groupServer) GetGroupAllMember(ctx context.Context, req *pbgroup.GetGro
 		return nil, err
 	}
 	resp.Members = utils.Slice(members, func(e *relationtb.GroupMemberModel) *sdkws.GroupMemberFullInfo {
-		if e.Nickname == "" {
-			e.Nickname = publicUserInfoMap[e.UserID].Nickname
-		}
-		if e.FaceURL == "" {
-			e.FaceURL = publicUserInfoMap[e.UserID].FaceURL
+		if userInfo, ok := publicUserInfoMap[e.UserID]; ok {
+			if e.Nickname == "" {
+				e.Nickname = userInfo.Nickname
+			}
+			if e.FaceURL == "" {
+				e.FaceURL = userInfo.FaceURL
+			}
 		}
 		return convert.Db2PbGroupMember(e)
 	})
@@ -627,11 +629,13 @@ func (s *groupServer) GetGroupMembersInfo(ctx context.Context, req *pbgroup.GetG
 		return nil, err
 	}
 	resp.Members = utils.Slice(members, func(e *relationtb.GroupMemberModel) *sdkws.GroupMemberFullInfo {
-		if e.Nickname == "" {
-			e.Nickname = publicUserInfoMap[e.UserID].Nickname
-		}
-		if e.FaceURL == "" {
-			e.FaceURL = publicUserInfoMap[e.UserID].FaceURL
+		if userInfo, ok := publicUserInfoMap[e.UserID]; ok {
+			if e.Nickname == "" {
+				e.Nickname = userInfo.Nickname
+			}
+			if e.FaceURL == "" {
+				e.FaceURL = userInfo.FaceURL
+			}
 		}
 		return convert.Db2PbGroupMember(e)
 	})
@@ -1074,18 +1078,20 @@ func (s *groupServer) GetGroupMembersCMS(ctx context.Context, req *pbgroup.GetGr
 		return nil, err
 	}
 	resp.Total = total
-	nameMap, err := s.GetPublicUserInfoMap(ctx, utils.Filter(members, func(e *relationtb.GroupMemberModel) (string, bool) {
+	publicUserInfoMap, err := s.GetPublicUserInfoMap(ctx, utils.Filter(members, func(e *relationtb.GroupMemberModel) (string, bool) {
 		return e.UserID, e.Nickname == "" || e.FaceURL == ""
 	}), true)
 	if err != nil {
 		return nil, err
 	}
 	resp.Members = utils.Slice(members, func(e *relationtb.GroupMemberModel) *sdkws.GroupMemberFullInfo {
-		if e.Nickname == "" {
-			e.Nickname = nameMap[e.UserID].Nickname
-		}
-		if e.FaceURL == "" {
-			e.FaceURL = nameMap[e.UserID].FaceURL
+		if userInfo, ok := publicUserInfoMap[e.UserID]; ok {
+			if e.Nickname == "" {
+				e.Nickname = userInfo.Nickname
+			}
+			if e.FaceURL == "" {
+				e.FaceURL = userInfo.FaceURL
+			}
 		}
 		return convert.Db2PbGroupMember(e)
 	})
@@ -1472,17 +1478,19 @@ func (s *groupServer) GetUserInGroupMembers(ctx context.Context, req *pbgroup.Ge
 		return nil, err
 	}
 	publicUserInfoMap, err := s.GetPublicUserInfoMap(ctx, utils.Filter(members, func(e *relationtb.GroupMemberModel) (string, bool) {
-		return e.UserID, e.Nickname == ""
+		return e.UserID, e.Nickname == "" || e.FaceURL == ""
 	}), true)
 	if err != nil {
 		return nil, err
 	}
 	resp.Members = utils.Slice(members, func(e *relationtb.GroupMemberModel) *sdkws.GroupMemberFullInfo {
-		if e.Nickname == "" {
-			e.Nickname = publicUserInfoMap[e.UserID].Nickname
-		}
-		if e.FaceURL == "" {
-			e.FaceURL = publicUserInfoMap[e.UserID].FaceURL
+		if userInfo, ok := publicUserInfoMap[e.UserID]; ok {
+			if e.Nickname == "" {
+				e.Nickname = userInfo.Nickname
+			}
+			if e.FaceURL == "" {
+				e.FaceURL = userInfo.FaceURL
+			}
 		}
 		return convert.Db2PbGroupMember(e)
 	})
@@ -1514,11 +1522,13 @@ func (s *groupServer) GetGroupMemberRoleLevel(ctx context.Context, req *pbgroup.
 		return nil, err
 	}
 	resp.Members = utils.Slice(members, func(e *relationtb.GroupMemberModel) *sdkws.GroupMemberFullInfo {
-		if e.Nickname == "" {
-			e.Nickname = publicUserInfoMap[e.UserID].Nickname
-		}
-		if e.FaceURL == "" {
-			e.FaceURL = publicUserInfoMap[e.UserID].FaceURL
+		if userInfo, ok := publicUserInfoMap[e.UserID]; ok {
+			if e.Nickname == "" {
+				e.Nickname = userInfo.Nickname
+			}
+			if e.FaceURL == "" {
+				e.FaceURL = userInfo.FaceURL
+			}
 		}
 		return convert.Db2PbGroupMember(e)
 	})

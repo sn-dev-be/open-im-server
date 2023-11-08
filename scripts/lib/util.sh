@@ -301,13 +301,8 @@ openim::util::check_ports() {
     openim::log::info "Checking ports: $*"
     # Iterate over each given port.
     for port in "$@"; do
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            # macOS command
-            local info=$(lsof -iTCP -sTCP:LISTEN -n -P | grep ":$port" || true)
-        else
-            # Use the `ss` command to find process information related to the given port.
-            local info=$(ss -ltnp | grep ":$port" || true)
-        fi
+        # Use the `ss` command to find process information related to the given port.
+        local info=$(ss -ltnp | grep ":$port" || true)
 
         # If there's no process information, it means the process associated with the port is not running.
         if [[ -z $info ]]; then
