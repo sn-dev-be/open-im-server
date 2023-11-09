@@ -8,24 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OpenIMSDK/protocol/constant"
+
+	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
-
-type roleAuth struct {
-	manageServer          bool
-	shareServer           bool
-	manageMember          bool
-	sendMsg               bool
-	manageMsg             bool
-	manageCommunity       bool
-	postTweet             bool
-	tweetReply            bool
-	manageChannelCategory bool
-	manageChannel         bool
-}
 
 func (s *clubServer) GenServerRoleID(ctx context.Context, serverRoleID *string) error {
 	if *serverRoleID != "" {
@@ -66,17 +56,17 @@ func (s *clubServer) CreateServerRole(ctx context.Context, server_roles []*relat
 // 创建两个默认身份组
 func (s *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID string) error {
 	//全体成员
-	everyoneAuth := &roleAuth{
-		manageServer:          false,
-		shareServer:           true,
-		manageMember:          false,
-		sendMsg:               true,
-		manageMsg:             false,
-		manageCommunity:       false,
-		postTweet:             true,
-		tweetReply:            true,
-		manageChannelCategory: false,
-		manageChannel:         false,
+	everyoneAuth := &pbclub.RoleAuth{
+		ManageServer:        constant.ServerRoleAuthDenied,
+		ShareServer:         constant.ServerRoleAuthAllowed,
+		ManageMember:        constant.ServerRoleAuthDenied,
+		SendMsg:             constant.ServerRoleAuthAllowed,
+		ManageMsg:           constant.ServerRoleAuthDenied,
+		ManageCommunity:     constant.ServerRoleAuthDenied,
+		PostTweet:           constant.ServerRoleAuthAllowed,
+		TweetReply:          constant.ServerRoleAuthAllowed,
+		ManageGroupCategory: constant.ServerRoleAuthDenied,
+		ManageGroup:         constant.ServerRoleAuthDenied,
 	}
 	everyone := &relationtb.ServerRoleModel{
 		RoleName:     "全体成员",
@@ -86,7 +76,7 @@ func (s *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID s
 		ServerID:     serverID,
 		RoleAuth:     utils.StructToJsonString(everyoneAuth),
 		ColorLevel:   0,
-		MemberNumber: 0,
+		MemberNumber: 1,
 		Ex:           "",
 		CreateTime:   time.Now(),
 	}
@@ -97,54 +87,22 @@ func (s *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID s
 		return err
 	}
 
-	//部落主
-	ownerAuth := &roleAuth{
-		manageServer:          true,
-		shareServer:           true,
-		manageMember:          true,
-		sendMsg:               true,
-		manageMsg:             true,
-		manageCommunity:       true,
-		postTweet:             true,
-		tweetReply:            true,
-		manageChannelCategory: true,
-		manageChannel:         true,
-	}
-	owner := &relationtb.ServerRoleModel{
-		RoleName:     "部落主",
-		Icon:         "",
-		Type:         0,
-		Priority:     0,
-		ServerID:     serverID,
-		RoleAuth:     utils.StructToJsonString(ownerAuth),
-		ColorLevel:   0,
-		MemberNumber: 0,
-		Ex:           "",
-		CreateTime:   time.Now(),
-	}
-	if err := s.GenServerRoleID(ctx, &owner.RoleID); err != nil {
-		return err
-	}
-	if err := s.ClubDatabase.CreateServerRole(ctx, []*relationtb.ServerRoleModel{owner}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (s *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID string) (string, error) {
 	//部落主
-	ownerAuth := &roleAuth{
-		manageServer:          true,
-		shareServer:           true,
-		manageMember:          true,
-		sendMsg:               true,
-		manageMsg:             true,
-		manageCommunity:       true,
-		postTweet:             true,
-		tweetReply:            true,
-		manageChannelCategory: true,
-		manageChannel:         true,
+	ownerAuth := &pbclub.RoleAuth{
+		ManageServer:        constant.ServerRoleAuthAllowed,
+		ShareServer:         constant.ServerRoleAuthAllowed,
+		ManageMember:        constant.ServerRoleAuthAllowed,
+		SendMsg:             constant.ServerRoleAuthAllowed,
+		ManageMsg:           constant.ServerRoleAuthAllowed,
+		ManageCommunity:     constant.ServerRoleAuthAllowed,
+		PostTweet:           constant.ServerRoleAuthAllowed,
+		TweetReply:          constant.ServerRoleAuthAllowed,
+		ManageGroupCategory: constant.ServerRoleAuthAllowed,
+		ManageGroup:         constant.ServerRoleAuthAllowed,
 	}
 	owner := &relationtb.ServerRoleModel{
 		RoleName:     "部落主",
@@ -154,7 +112,7 @@ func (s *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 		ServerID:     serverID,
 		RoleAuth:     utils.StructToJsonString(ownerAuth),
 		ColorLevel:   0,
-		MemberNumber: 0,
+		MemberNumber: 1,
 		Ex:           "",
 		CreateTime:   time.Now(),
 	}

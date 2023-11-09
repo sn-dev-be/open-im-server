@@ -24,25 +24,20 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
-var _ relation.ChannelModelInterface = (*ChannelGorm)(nil)
+var _ relation.ServerRecommendedModelInterface = (*ServerRecommendedGorm)(nil)
 
-type ChannelGorm struct {
+type ServerRecommendedGorm struct {
 	*MetaDB
 }
 
-func NewChannelDB(db *gorm.DB) relation.ChannelModelInterface {
-	return &ChannelGorm{NewMetaDB(db, &relation.ChannelModel{})}
+func NewServerRecommendedDB(db *gorm.DB) relation.ServerRecommendedModelInterface {
+	return &ServerRecommendedGorm{NewMetaDB(db, &relation.ServerRecommendedModel{})}
 }
 
-func (s *ChannelGorm) NewTx(tx any) relation.ChannelModelInterface {
-	return &ChannelGorm{NewMetaDB(tx.(*gorm.DB), &relation.ChannelModel{})}
+func (s *ServerRecommendedGorm) NewTx(tx any) relation.ServerRecommendedModelInterface {
+	return &ServerRecommendedGorm{NewMetaDB(tx.(*gorm.DB), &relation.ServerRecommendedModel{})}
 }
 
-func (s *ChannelGorm) Create(ctx context.Context, channels []*relation.ChannelModel) (err error) {
-	return utils.Wrap(s.DB.Create(&channels).Error, "")
-}
-
-func (s *ChannelGorm) Take(ctx context.Context, channelID string) (channel *relation.ChannelModel, err error) {
-	channel = &relation.ChannelModel{}
-	return channel, utils.Wrap(s.DB.Where("channel_id = ?", channelID).Take(channel).Error, "")
+func (s *ServerRecommendedGorm) GetServerRecommendedList(ctx context.Context) (servers []*relation.ServerRecommendedModel, err error) {
+	return servers, utils.Wrap(s.db(ctx).Order("reorder_weight asc").Find(&servers).Error, "")
 }

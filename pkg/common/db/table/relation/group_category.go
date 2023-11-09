@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	ChannelCategoryModelTableName = "channel_categories"
+	GroupCategoryModelTableName = "group_categories"
 )
 
-type ChannelCategoryModel struct {
+type GroupCategoryModel struct {
 	CategoryID    string    `gorm:"column:category_id;primary_key;primary_key;size:64"             json:"categoryID"           binding:"required"`
 	CategoryName  string    `gorm:"column:name;size:255" json:"categoryName"`
 	ReorderWeight int32     `gorm:"column:reorder_weight" json:"reorderWeight"`
@@ -34,12 +34,12 @@ type ChannelCategoryModel struct {
 	CreateTime    time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 }
 
-func (ChannelCategoryModel) TableName() string {
-	return ChannelCategoryModelTableName
+func (GroupCategoryModel) TableName() string {
+	return GroupCategoryModelTableName
 }
 
-type ChannelCategoryModelInterface interface {
-	NewTx(tx any) ChannelCategoryModelInterface
-	Create(ctx context.Context, channelCategories []*ChannelCategoryModel) (err error)
-	Take(ctx context.Context, channelCategoryID string) (ChannelCategory *ChannelCategoryModel, err error)
+type GroupCategoryModelInterface interface {
+	NewTx(tx any) GroupCategoryModelInterface
+	Create(ctx context.Context, groupCategories []*GroupCategoryModel) (err error)
+	Take(ctx context.Context, groupCategoryID string) (GroupCategory *GroupCategoryModel, err error)
 }

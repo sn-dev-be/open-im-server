@@ -17,6 +17,11 @@ package relation
 import (
 	"context"
 	"time"
+
+	"github.com/OpenIMSDK/protocol/constant"
+
+	pbclub "github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/tools/utils"
 )
 
 const (
@@ -45,4 +50,56 @@ type ServerRoleModelInterface interface {
 	NewTx(tx any) ServerRoleModelInterface
 	Create(ctx context.Context, serverRoles []*ServerRoleModel) (err error)
 	Take(ctx context.Context, serverRoleID string) (serverRole *ServerRoleModel, err error)
+}
+
+func (s ServerRoleModel) AllowManageServer() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageServer == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ServerRoleModel) AllowShareServer() bool {
+	return false
+}
+
+func (s ServerRoleModel) AllowSendMsg() bool {
+	return false
+}
+
+func (s ServerRoleModel) AllowManageMsg() bool {
+	return false
+}
+
+func (s ServerRoleModel) AllowManageCommunity() bool {
+	return false
+}
+
+func (s ServerRoleModel) AllowPostTweet() bool {
+	return false
+}
+
+func (s ServerRoleModel) AllowManageGroupCategory() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageGroupCategory == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ServerRoleModel) AllowManageGroup() bool {
+	return false
 }

@@ -43,13 +43,13 @@ func (s *ServerMemberGorm) Create(ctx context.Context, servers []*relation.Serve
 }
 
 func (s *ServerMemberGorm) PageServerMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*relation.ServerMemberModel, total int64, err error) {
-	err = s.DB.Model(&relation.ServerMemberModel{}).Where("serverID = ? ", serverID).Count(&total).Error
+	err = s.DB.Model(&relation.ServerMemberModel{}).Where("server_id = ? ", serverID).Count(&total).Error
 	if err != nil {
 		return nil, 0, utils.Wrap(err, "")
 	}
 	err = utils.Wrap(
 		s.db(ctx).
-			Where("serverID = ? ", serverID).
+			Where("server_id = ? ", serverID).
 			Order("join_time asc").
 			Limit(int(showNumber)).
 			Offset(int((pageNumber-1)*showNumber)).
@@ -67,4 +67,8 @@ func (s *ServerMemberGorm) GetServerMembers(ctx context.Context, ids []uint64, s
 	}
 	err = utils.Wrap(query.Find(&members).Error, "")
 	return
+}
+
+func (s *ServerMemberGorm) GetServerMemberByUserID(ctx context.Context, userID string, serverID string) (member *relation.ServerMemberModel, err error) {
+	return member, utils.Wrap(s.DB.Where("server_id = ? and user_id =?", serverID, userID).Take(&member).Error, "")
 }

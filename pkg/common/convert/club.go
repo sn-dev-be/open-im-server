@@ -30,10 +30,14 @@ func DB2PbServerInfo(servers []*relation.ServerModel) ([]*sdkws.ServerFullInfo, 
 		return nil, nil
 	}
 
-	res := make([]*sdkws.ServerFullInfo, 0, len(servers))
+	//res := make([]*sdkws.ServerFullInfo, 0, len(servers))
+	res := []*sdkws.ServerFullInfo{}
 	for _, m := range servers {
 		res = append(res, &sdkws.ServerFullInfo{
 			ServerID:             m.ServerID,
+			ServerName:           m.ServerName,
+			ChannelNumber:        m.ChannelNumber,
+			MemberNumber:         m.MemberNumber,
 			Icon:                 m.Icon,
 			Description:          m.Description,
 			ApplyMode:            m.ApplyMode,
@@ -42,8 +46,9 @@ func DB2PbServerInfo(servers []*relation.ServerModel) ([]*sdkws.ServerFullInfo, 
 			Status:               m.Status,
 			Banner:               m.Banner,
 			UserMutualAccessible: m.UserMutualAccessible,
+			CategoryNumber:       m.CategoryNumber,
 			OwnerUserID:          m.OwnerUserID,
-			CreateTime:           m.CreateTime.Format("yyyy-MM-mm HH:mm:ss"),
+			CreateTime:           m.CreateTime.Format("2006-01-02 15:04:05"),
 			Ex:                   m.Ex,
 		})
 	}

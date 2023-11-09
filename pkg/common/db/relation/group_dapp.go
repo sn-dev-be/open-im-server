@@ -24,20 +24,20 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
-var _ relation.ChannelDappModellInterface = (*ChannelDappGorm)(nil)
+var _ relation.GroupDappModellInterface = (*GroupDappGorm)(nil)
 
-type ChannelDappGorm struct {
+type GroupDappGorm struct {
 	*MetaDB
 }
 
-func NewChannelDappDB(db *gorm.DB) relation.ChannelDappModellInterface {
-	return &ChannelDappGorm{NewMetaDB(db, &relation.ChannelDappModel{})}
+func NewGroupDappDB(db *gorm.DB) relation.GroupDappModellInterface {
+	return &GroupDappGorm{NewMetaDB(db, &relation.GroupDappModel{})}
 }
 
-func (s *ChannelDappGorm) NewTx(tx any) relation.ChannelDappModellInterface {
-	return &ChannelDappGorm{NewMetaDB(tx.(*gorm.DB), &relation.ChannelDappModel{})}
+func (s *GroupDappGorm) NewTx(tx any) relation.GroupDappModellInterface {
+	return &GroupDappGorm{NewMetaDB(tx.(*gorm.DB), &relation.GroupDappModel{})}
 }
 
-func (s *ChannelDappGorm) Create(ctx context.Context, servers []*relation.ChannelDappModel) (err error) {
+func (s *GroupDappGorm) Create(ctx context.Context, servers []*relation.GroupDappModel) (err error) {
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
 }

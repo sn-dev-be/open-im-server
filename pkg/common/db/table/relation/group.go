@@ -39,6 +39,13 @@ type GroupModel struct {
 	ApplyMemberFriend      int32     `gorm:"column:apply_member_friend"                          json:"applyMemberFriend"`
 	NotificationUpdateTime time.Time `gorm:"column:notification_update_time"`
 	NotificationUserID     string    `gorm:"column:notification_user_id;size:64"`
+	Condition              int32     `gorm:"column:condition" 									 json:"condition"`
+	ConditionType          int32     `gorm:"column:condition_type" 								 json:"conditionType"`
+	SyncMode               int32     `gorm:"column:sync_mode" 									 json:"syncMode"`
+	VisitorMode            int32     `gorm:"column:visitor_mode" 								 json:"visitorMode"`
+	ViewMode               int32     `gorm:"column:view_mode" 									 json:"viewMode"`
+	GroupCategoryID        string    `gorm:"column:group_category_id;size:64" 					 json:"groupCategoryID"`
+	ServerID               string    `gorm:"column:server_id;size:64"							 json:"serverID"`
 }
 
 func (GroupModel) TableName() string {

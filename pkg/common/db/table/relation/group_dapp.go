@@ -20,21 +20,21 @@ import (
 )
 
 const (
-	ChannelDappModelTableName = "channel_dapps"
+	GroupDappModelTableName = "group_dapps"
 )
 
-type ChannelDappModel struct {
+type GroupDappModel struct {
 	ID         int64     `gorm:"column:id;primary_key;AUTO_INCREMENT;UNSIGNED" json:"id"`
-	ChannelID  string    `gorm:"column:channel_id;size:64" json:"channelID"`
+	GroupID    string    `gorm:"column:group_id;size:64" json:"groupID"`
 	DappID     string    `gorm:"column:dapp_id;size:64" json:"dappID"`
 	CreateTime time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 }
 
-func (ChannelDappModel) TableName() string {
-	return ChannelDappModelTableName
+func (GroupDappModel) TableName() string {
+	return GroupDappModelTableName
 }
 
-type ChannelDappModellInterface interface {
-	NewTx(tx any) ChannelDappModellInterface
-	Create(ctx context.Context, groups []*ChannelDappModel) (err error)
+type GroupDappModellInterface interface {
+	NewTx(tx any) GroupDappModellInterface
+	Create(ctx context.Context, groups []*GroupDappModel) (err error)
 }

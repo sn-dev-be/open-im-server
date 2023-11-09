@@ -34,7 +34,7 @@ type ServerMemberModel struct {
 	InviterUserID string    `gorm:"column:inviter_user_id;size:64" json:"inviterUserID"`
 	muteEndTime   time.Time `gorm:"column:mute_end_time" json:"muteEndTime"`
 	Ex            string    `gorm:"column:ex;size:255" json:"ex"`
-	JoinTime      time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"joinTime"`
+	JoinTime      time.Time `gorm:"column:join_time;index:join_time;autoCreateTime" json:"joinTime"`
 }
 
 func (ServerMemberModel) TableName() string {
@@ -46,4 +46,5 @@ type ServerMemberModelInterface interface {
 	Create(ctx context.Context, groups []*ServerMemberModel) (err error)
 	PageServerMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*ServerMemberModel, total int64, err error)
 	GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*ServerMemberModel, err error)
+	GetServerMemberByUserID(ctx context.Context, userID string, serverID string) (member *ServerMemberModel, err error)
 }

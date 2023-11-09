@@ -12,9 +12,7 @@ import (
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	pbuser "github.com/OpenIMSDK/protocol/user"
-	"github.com/OpenIMSDK/tools/log"
 
-	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/mw/specialerror"
@@ -67,36 +65,37 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	}
 
 	//部落主进部落
-	serverMemberId, err := s.createServerMember(ctx, serverDB.ServerID, opUserID, "", roleID, opUserID, "", 0, 0)
+	err = s.createServerMember(ctx, serverDB.ServerID, opUserID, "", roleID, opUserID, "", 0, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	//创建默认分组与房间
-	channelIDs := []string{}
-	if categoryID, err := s.CreateChannelCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
-		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "公告栏", opUserID, constant.ChatChannelType, 0); err == nil {
-			channelIDs = append(channelIDs, channelID)
-		}
-	}
-	if categoryID, err := s.CreateChannelCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
-		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "日常聊天", opUserID, constant.ChatChannelType, 0); err == nil {
-			channelIDs = append(channelIDs, channelID)
-		}
-		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "资讯互动", opUserID, constant.ChatChannelType, 1); err == nil {
-			channelIDs = append(channelIDs, channelID)
-		}
-	}
-	if categoryID, err := s.CreateChannelCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
-		if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "部落事务讨论", opUserID, constant.ChatChannelType, 0); err == nil {
-			channelIDs = append(channelIDs, channelID)
-		}
-	}
+	//if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
+	//todo 创建分组
 
-	//todo 部落主统一进入所有房间
-	if err := s.CreateChannelMembser(ctx, serverDB.ServerID, channelIDs, serverMemberId); err != nil {
-		log.ZDebug(ctx, "owner join channel failed", "user_id", opUserID, "channelIDs", channelIDs)
-	}
+	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "公告栏", opUserID, constant.ChatChannelType, 0); err == nil {
+	// 	channelIDs = append(channelIDs, channelID)
+	// }
+	//}
+	//i//f categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
+	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "日常聊天", opUserID, constant.ChatChannelType, 0); err == nil {
+	// 	channelIDs = append(channelIDs, channelID)
+	// }
+	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "资讯互动", opUserID, constant.ChatChannelType, 1); err == nil {
+	// 	channelIDs = append(channelIDs, channelID)
+	// }
+	//}
+	//if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
+	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "部落事务讨论", opUserID, constant.ChatChannelType, 0); err == nil {
+	// 	channelIDs = append(channelIDs, channelID)
+	// }
+	//}
+
+	// //todo 部落主统一进入所有房间
+	// if err := s.CreateChannelMembser(ctx, serverDB.ServerID, channelIDs, serverMemberId); err != nil {
+	// 	log.ZDebug(ctx, "owner join channel failed", "user_id", opUserID, "channelIDs", channelIDs)
+	// }
 	return &pbclub.CreateServerResp{}, nil
 }
 
@@ -170,22 +169,26 @@ func (s *clubServer) GenServerID(ctx context.Context, serverID *string) error {
 	return errs.ErrData.Wrap("server id gen error")
 }
 
-func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerFullInfo) {
+func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerFullInfo) error {
 	members, _, err := s.ClubDatabase.PageServerMembers(ctx, 1, 3, server.ServerID)
 	if err == nil {
-		userIDs := make([]string, len(members))
+		userIDs := []string{}
 		for _, member := range members {
 			userIDs = append(userIDs, member.UserID)
 		}
 		getDesignateUsersReq := &pbuser.GetDesignateUsersReq{
 			UserIDs: userIDs,
 		}
-		if getDesignateUsersResp, err := s.User.Client.GetDesignateUsers(ctx, getDesignateUsersReq); err == nil {
-			userAvatarList := make([]string, len(getDesignateUsersResp.UsersInfo))
-			for _, user := range getDesignateUsersResp.UsersInfo {
-				userAvatarList = append(userAvatarList, user.FaceURL)
-			}
-			server.MemberAvatarList = userAvatarList
+		getDesignateUsersResp, err := s.User.Client.GetDesignateUsers(ctx, getDesignateUsersReq)
+		if err != nil {
+			return err
 		}
+
+		userAvatarList := make([]string, len(getDesignateUsersResp.UsersInfo))
+		for _, user := range getDesignateUsersResp.UsersInfo {
+			userAvatarList = append(userAvatarList, user.FaceURL)
+		}
+		server.MemberAvatarList = userAvatarList
 	}
+	return nil
 }

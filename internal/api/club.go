@@ -42,3 +42,11 @@ func (o *ClubApi) GetServerDetails(c *gin.Context) {
 func (o *ClubApi) BatchDeleteServers(c *gin.Context) {
 	a2r.Call(club.ClubClient.BatchDeleteServers, o.Client, c)
 }
+
+func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
+	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
+}
+
+// func (o *ClubApi) CreateChannel(c *gin.Context) {
+// 	a2r.Call(club.ClubClient.CreateChannel, o.Client, c)
+// }

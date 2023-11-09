@@ -37,24 +37,16 @@ type ClubDatabase interface {
 	//server_role
 	TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error)
 	CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error
+	GetServerRoleByUserIDAndServerID(ctx context.Context, userID string, serverID string) (server *relationtb.ServerRoleModel, err error)
 
 	//server_request
 
 	//server_black
 
-	//channel_category
-	TakeChannelCategory(ctx context.Context, channelCategoryID string) (channelCategory *relationtb.ChannelCategoryModel, err error)
-	CreateChannelCategory(ctx context.Context, categories []*relationtb.ChannelCategoryModel) error
-	GetAllChannelCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.ChannelCategoryModel, error)
-
-	//channel
-	TakeChannel(ctx context.Context, channelID string) (channel *relationtb.ChannelModel, err error)
-	CreateChannel(ctx context.Context, channels []*relationtb.ChannelModel) error
-	GetAllChannelByCategory(ctx context.Context, categoryID string) ([]*relationtb.ChannelModel, error)
-
-	//channel_member
-	PageChannelMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ChannelMemberModel, total int64, err error)
-	CreateChannelMember(ctx context.Context, channelMembers []*relationtb.ChannelMemberModel) error
+	//group_category
+	TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error)
+	CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error
+	GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error)
 
 	//server_member
 	PageServerMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error)
@@ -64,28 +56,25 @@ type ClubDatabase interface {
 
 func NewClubDatabase(
 	server relationtb.ServerModelInterface,
-	server_member relationtb.ServerMemberModelInterface,
-	channel_category relationtb.ChannelCategoryModelInterface,
-	channel relationtb.ChannelModelInterface,
-	channelMember relationtb.ChannelMemberModelInterface,
+	serverMember relationtb.ServerMemberModelInterface,
+	groupCategory relationtb.GroupCategoryModelInterface,
 	serverRole relationtb.ServerRoleModelInterface,
 	serverRequest relationtb.ServerRequestModelInterface,
 	serverBlack relationtb.ServerBlackModelInterface,
-	channelDapp relationtb.ChannelDappModellInterface,
+	groupDapp relationtb.GroupDappModellInterface,
 	tx tx.Tx,
 	ctxTx tx.CtxTx,
 ) ClubDatabase {
 	database := &clubDatabase{
-		serverDB:          server,
-		serverMemberDB:    server_member,
-		serverRoleDB:      serverRole,
-		serverRequestDB:   serverRequest,
-		serverBlackDB:     serverBlack,
-		channelCategoryDB: channel_category,
-		channelDappDB:     channelDapp,
-		channelDB:         channel,
-		tx:                tx,
-		ctxTx:             ctxTx,
+		serverDB:        server,
+		serverMemberDB:  serverMember,
+		serverRoleDB:    serverRole,
+		serverRequestDB: serverRequest,
+		serverBlackDB:   serverBlack,
+		groupCategoryDB: groupCategory,
+		groupDappDB:     groupDapp,
+		tx:              tx,
+		ctxTx:           ctxTx,
 	}
 	return database
 }
@@ -97,30 +86,45 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 	return NewClubDatabase(
 		relation.NewServerDB(db),
 		relation.NewServerMemberDB(db),
-		relation.NewChannelCategoryDB(db),
-		relation.NewChannelDB(db),
-		relation.NewChannelMemberDB(db),
+		relation.NewGroupCategoryDB(db),
 		relation.NewServerRoleDB(db),
 		relation.NewServerRequestDB(db),
 		relation.NewServerBlackDB(db),
-		relation.NewChannelDappDB(db),
+		relation.NewGroupDappDB(db),
 		tx.NewGorm(db),
 		tx.NewMongo(database.Client()),
 	)
 }
 
 type clubDatabase struct {
-	serverDB          relationtb.ServerModelInterface
-	serverMemberDB    relationtb.ServerMemberModelInterface
-	channelCategoryDB relationtb.ChannelCategoryModelInterface
-	channelDB         relationtb.ChannelModelInterface
-	channelMemberDB   relationtb.ChannelMemberModelInterface
-	serverRoleDB      relationtb.ServerRoleModelInterface
-	serverRequestDB   relationtb.ServerRequestModelInterface
-	serverBlackDB     relationtb.ServerBlackModelInterface
-	channelDappDB     relationtb.ChannelDappModellInterface
-	tx                tx.Tx
-	ctxTx             tx.CtxTx
+	serverDB        relationtb.ServerModelInterface
+	serverMemberDB  relationtb.ServerMemberModelInterface
+	groupCategoryDB relationtb.GroupCategoryModelInterface
+	serverRoleDB    relationtb.ServerRoleModelInterface
+	serverRequestDB relationtb.ServerRequestModelInterface
+	serverBlackDB   relationtb.ServerBlackModelInterface
+	groupDappDB     relationtb.GroupDappModellInterface
+	tx              tx.Tx
+	ctxTx           tx.CtxTx
+}
+
+// TakeChanneCategory implements ClubDatabase.
+func (*clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
+	panic("unimplemented")
+}
+
+// GetServerRoleByUserIDAndServerID implements ClubDatabase.
+func (c *clubDatabase) GetServerRoleByUserIDAndServerID(ctx context.Context, userID string, serverID string) (server *relationtb.ServerRoleModel, err error) {
+	if member, err := c.serverMemberDB.GetServerMemberByUserID(ctx, userID, serverID); err != nil {
+		return nil, err
+	} else {
+		roleID := member.ServerRoleID
+		if role, err := c.serverRoleDB.Take(ctx, roleID); err != nil {
+			return nil, err
+		} else {
+			return role, nil
+		}
+	}
 }
 
 // CreateServerMember implements ClubDatabase.
@@ -138,23 +142,8 @@ func (c *clubDatabase) PageServerMembers(ctx context.Context, pageNumber int32, 
 	return c.serverMemberDB.PageServerMembers(ctx, showNumber, pageNumber, serverID)
 }
 
-// CreateChannelMember implements ClubDatabase.
-func (c *clubDatabase) CreateChannelMember(ctx context.Context, channelMembers []*relationtb.ChannelMemberModel) error {
-	return c.channelMemberDB.Create(ctx, channelMembers)
-}
-
-// PageChannelMembers implements ClubDatabase.
-func (c *clubDatabase) PageChannelMembers(ctx context.Context, pageNumber int32, showNumber int32, serverID string) (members []*relationtb.ChannelMemberModel, total int64, err error) {
-	return c.channelMemberDB.PageChannelMembers(ctx, pageNumber, showNumber, serverID)
-}
-
-// GetAllChannelByCategory implements ClubDatabase.
-func (c *clubDatabase) GetAllChannelByCategory(ctx context.Context, categoryID string) ([]*relationtb.ChannelModel, error) {
-	return nil, nil
-}
-
 // GetAllChannelCategoriesByServer implements ClubDatabase.
-func (c *clubDatabase) GetAllChannelCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.ChannelCategoryModel, error) {
+func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {
 	panic("unimplemented")
 }
 
@@ -186,31 +175,14 @@ func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) 
 	return c.serverRoleDB.Take(ctx, serverRoleID)
 }
 
-func (c *clubDatabase) TakeChannelCategory(ctx context.Context, channelCategoryID string) (channelCategory *relationtb.ChannelCategoryModel, err error) {
-	return c.channelCategoryDB.Take(ctx, channelCategoryID)
-}
-
-func (c *clubDatabase) TakeChannel(ctx context.Context, channelID string) (channel *relationtb.ChannelModel, err error) {
-	return c.channelDB.Take(ctx, channelID)
-}
-
-// CreateChannel implements ClubDatabase.
-func (c *clubDatabase) CreateChannel(ctx context.Context, channels []*relationtb.ChannelModel) error {
-	if err := c.tx.Transaction(func(tx any) error {
-		if err := c.channelDB.NewTx(tx).Create(ctx, channels); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+func (c *clubDatabase) TakeChannelCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
+	return c.groupCategoryDB.Take(ctx, groupCategoryID)
 }
 
 // CreateChannelCategory implements ClubDatabase.
-func (c *clubDatabase) CreateChannelCategory(ctx context.Context, categories []*relationtb.ChannelCategoryModel) error {
+func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
 	if err := c.tx.Transaction(func(tx any) error {
-		if err := c.channelCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
+		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
 			return err
 		}
 		return nil

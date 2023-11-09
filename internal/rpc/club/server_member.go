@@ -7,7 +7,7 @@ import (
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
-func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) (uint64, error) {
+func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) error {
 	server_member := &relationtb.ServerMemberModel{
 		ServerID:      serverID,
 		UserID:        user_id,
@@ -20,7 +20,7 @@ func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, 
 		JoinTime:      time.Now(),
 	}
 	if err := s.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{server_member}); err != nil {
-		return 0, err
+		return err
 	}
-	return server_member.ID, nil
+	return nil
 }
