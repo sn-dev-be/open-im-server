@@ -302,6 +302,39 @@ func (s *groupServer) CreateGroup(ctx context.Context, req *pbgroup.CreateGroupR
 	return resp, nil
 }
 
+func (s *groupServer) CreateServerGroup(ctx context.Context, req *pbgroup.CreateServerGroupReq) (*pbgroup.CreateServerGroupResp, error) {
+	if req.OwnerUserID == "" {
+		return nil, errs.ErrArgs.Wrap("no group owner")
+	}
+	if req.GroupInfo.GroupType != constant.ServerGroup {
+		return nil, errs.ErrArgs.Wrap(fmt.Sprintf("group type %d not support", req.GroupInfo.GroupType))
+	}
+	if err := authverify.CheckAccessV3(ctx, req.OwnerUserID); err != nil {
+		return nil, err
+	}
+	opUserID := mcontext.GetOpUserID(ctx)
+	group := convert.Pb2DBGroupInfo(req.GroupInfo)
+	group.ServerID = req.ServerID
+	group.SyncMode = req.SyncMode
+	group.Condition = req.Condition
+	group.ConditionType = req.ConditionType
+	group.GroupCategoryID = req.GroupCategoryID
+	group.ViewMode = req.ViewMode
+	group.VisitorMode = req.VisitorMode
+	group.CreatorUserID = opUserID
+	if err := s.GenGroupID(ctx, &group.GroupID); err != nil {
+		return nil, err
+	}
+
+	if err := s.GroupDatabase.CreateGroup(ctx, []*relationtb.GroupModel{group}, nil); err != nil {
+		return nil, err
+	}
+	resp := &pbgroup.CreateServerGroupResp{GroupInfo: &sdkws.GroupInfo{}}
+	resp.GroupInfo = convert.Db2PbGroupInfo(group, req.OwnerUserID, 0)
+	resp.GroupInfo.MemberCount = 0
+	return resp, nil
+}
+
 func (s *groupServer) GetJoinedGroupList(ctx context.Context, req *pbgroup.GetJoinedGroupListReq) (*pbgroup.GetJoinedGroupListResp, error) {
 	resp := &pbgroup.GetJoinedGroupListResp{}
 	if err := authverify.CheckAccessV3(ctx, req.FromUserID); err != nil {
