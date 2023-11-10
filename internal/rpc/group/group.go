@@ -314,13 +314,6 @@ func (s *groupServer) CreateServerGroup(ctx context.Context, req *pbgroup.Create
 	}
 	opUserID := mcontext.GetOpUserID(ctx)
 	group := convert.Pb2DBGroupInfo(req.GroupInfo)
-	group.ServerID = req.ServerID
-	group.SyncMode = req.SyncMode
-	group.Condition = req.Condition
-	group.ConditionType = req.ConditionType
-	group.GroupCategoryID = req.GroupCategoryID
-	group.ViewMode = req.ViewMode
-	group.VisitorMode = req.VisitorMode
 	group.CreatorUserID = opUserID
 	if err := s.GenGroupID(ctx, &group.GroupID); err != nil {
 		return nil, err

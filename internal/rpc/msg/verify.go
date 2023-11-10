@@ -76,7 +76,7 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			return nil
 		}
 		return nil
-	case constant.SuperGroupChatType:
+	case constant.SuperGroupChatType, constant.ServerGroupChatType:
 		groupInfo, err := m.Group.GetGroupInfoCache(ctx, data.MsgData.GroupID)
 		if err != nil {
 			return err
@@ -86,6 +86,9 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			return errs.ErrDismissedAlready.Wrap()
 		}
 		if groupInfo.GroupType == constant.SuperGroup {
+			return nil
+		}
+		if groupInfo.GroupType == constant.ServerGroup {
 			return nil
 		}
 		if utils.IsContain(data.MsgData.SendID, config.Config.Manager.UserID) {

@@ -46,6 +46,8 @@ func (m *msgServer) SendMsg(ctx context.Context, req *pbmsg.SendMsgReq) (resp *p
 			return m.sendMsgNotification(ctx, req)
 		case constant.SuperGroupChatType:
 			return m.sendMsgSuperGroupChat(ctx, req)
+		case constant.ServerGroupChatType:
+			return m.sendMsgSuperGroupChat(ctx, req)
 		default:
 			return nil, errs.ErrArgs.Wrap("unknown sessionType")
 		}

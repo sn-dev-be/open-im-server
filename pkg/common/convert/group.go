@@ -42,6 +42,13 @@ func Db2PbGroupInfo(m *relation.GroupModel, ownerUserID string, memberCount uint
 		ApplyMemberFriend:      m.ApplyMemberFriend,
 		NotificationUpdateTime: m.NotificationUpdateTime.UnixMilli(),
 		NotificationUserID:     m.NotificationUserID,
+		Condition:              m.Condition,
+		ConditionType:          m.ConditionType,
+		SyncMode:               m.SyncMode,
+		VisitorMode:            m.VisitorMode,
+		ViewMode:               m.ViewMode,
+		GroupCategoryID:        m.GroupCategoryID,
+		ServerID:               m.ServerID,
 	}
 }
 
@@ -135,6 +142,13 @@ func Pb2DBGroupInfo(m *sdkws.GroupInfo) *relation.GroupModel {
 		ApplyMemberFriend:      m.ApplyMemberFriend,
 		NotificationUpdateTime: time.UnixMilli(m.NotificationUpdateTime),
 		NotificationUserID:     m.NotificationUserID,
+		Condition:              m.Condition,
+		ConditionType:          m.ConditionType,
+		SyncMode:               m.SyncMode,
+		VisitorMode:            m.VisitorMode,
+		ViewMode:               m.ViewMode,
+		GroupCategoryID:        m.GroupCategoryID,
+		ServerID:               m.ServerID,
 	}
 }
 
