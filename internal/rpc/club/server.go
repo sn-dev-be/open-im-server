@@ -10,6 +10,7 @@ import (
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
+	pbgroup "github.com/OpenIMSDK/protocol/group"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	pbuser "github.com/OpenIMSDK/protocol/user"
 
@@ -71,26 +72,26 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	}
 
 	//创建默认分组与房间
-	//if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
-	//todo 创建分组
-
-	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "公告栏", opUserID, constant.ChatChannelType, 0); err == nil {
-	// 	channelIDs = append(channelIDs, channelID)
+	// if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
+	// 	//todo 创建分组
+	// 	//s.Group.Client.CreateServerGroup(ctx, )
+	// 	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "公告栏", opUserID, constant.ChatChannelType, 0); err == nil {
+	// 	// 	channelIDs = append(channelIDs, channelID)
+	// 	// }
 	// }
-	//}
-	//i//f categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
+	// //f categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
 	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "日常聊天", opUserID, constant.ChatChannelType, 0); err == nil {
 	// 	channelIDs = append(channelIDs, channelID)
 	// }
 	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "资讯互动", opUserID, constant.ChatChannelType, 1); err == nil {
 	// 	channelIDs = append(channelIDs, channelID)
 	// }
-	//}
-	//if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
-	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "部落事务讨论", opUserID, constant.ChatChannelType, 0); err == nil {
-	// 	channelIDs = append(channelIDs, channelID)
+	// //}
+	// if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
+	// 	if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "部落事务讨论", opUserID, constant.ChatChannelType, 0); err == nil {
+	// 		channelIDs = append(channelIDs, channelID)
+	// 	}
 	// }
-	//}
 
 	// //todo 部落主统一进入所有房间
 	// if err := s.CreateChannelMembser(ctx, serverDB.ServerID, channelIDs, serverMemberId); err != nil {
@@ -99,14 +100,15 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	return &pbclub.CreateServerResp{}, nil
 }
 
+// 获取所有热门部落
 func (s *clubServer) GetServerList(ctx context.Context, req *pbclub.GetServerListReq) (*pbclub.GetServerListResp, error) {
 	resp := &pbclub.GetServerListResp{}
 
-	servers, total, err := s.ClubDatabase.PageServers(ctx, req.Pagination.PageNumber, req.Pagination.ShowNumber)
+	servers, err := s.ClubDatabase.GetServerRecommendedList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	resp_servers, err := convert.DB2PbServerInfo(servers)
+	resp_servers, err := convert.DB2PbServerList(servers)
 	if err != nil {
 		return nil, err
 	}
@@ -124,15 +126,55 @@ func (s *clubServer) GetServerList(ctx context.Context, req *pbclub.GetServerLis
 	wg.Wait()
 
 	resp.Servers = resp_servers
-	resp.Total = int32(total)
+	resp.Total = int32(len(resp_servers))
 	return resp, nil
 }
 
 func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServerDetailsReq) (*pbclub.GetServerDetailsResp, error) {
-	return nil, nil
+	resp := &pbclub.GetServerDetailsResp{}
+	loginUserID := mcontext.GetOpUserID(ctx)
+
+	if _, err := s.ClubDatabase.GetServerMemberByUserID(ctx, req.ServerID, loginUserID); err != nil {
+		return nil, errs.ErrNoPermission
+	}
+
+	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	resp_server, err := convert.DB2PbServerInfo(*server)
+	if err != nil {
+		return nil, err
+	}
+	resp.Server = resp_server
+
+	//查询分组与房间信息
+	resp_categories := []*sdkws.GroupCategoryListInfo{}
+	categories, _ := s.ClubDatabase.GetAllGroupCategoriesByServer(ctx, server.ServerID)
+	if len(categories) > 0 {
+		if groups, err := s.Group.GetServerGroups(ctx, server.ServerID); err == nil {
+			for _, category := range categories {
+				for _, group := range groups {
+					if category.CategoryID == group.GroupCategoryID {
+						if gc, err := convert.DB2PbCategory(category, groups); err == nil {
+							resp_categories = append(resp_categories, gc)
+						}
+					}
+				}
+			}
+			resp.CategoryList = resp_categories
+		}
+	}
+
+	//查询db
+	return resp, nil
 }
 
 func (s *clubServer) BatchDeleteServers(ctx context.Context, req *pbclub.DeleteServerReq) (*pbclub.DeleteServerResp, error) {
+	return nil, nil
+}
+
+func (s *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
 	return nil, nil
 }
 
@@ -191,4 +233,21 @@ func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.Ser
 		server.MemberAvatarList = userAvatarList
 	}
 	return nil
+}
+
+func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ownerUserID string) *pbgroup.CreateServerGroupReq {
+	req := &pbgroup.CreateServerGroupReq{
+		Condition:       0,
+		ConditionType:   0,
+		GroupCategoryID: categoryID,
+		ServerID:        serverID,
+		OwnerUserID:     ownerUserID,
+		// GroupInfo: &pbgroup.CreateGroupReq{
+		// 	GroupName:  groupName,
+		// 	CreateTime: time.Now(),
+		// 	Status:     constant.GroupOk,
+		// 	GroupType:  constant.ServerGroup,
+		// },
+	}
+	return req
 }

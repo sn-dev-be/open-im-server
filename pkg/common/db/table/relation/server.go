@@ -51,4 +51,5 @@ type ServerModelInterface interface {
 	Create(ctx context.Context, servers []*ServerModel) (err error)
 	Take(ctx context.Context, serverID string) (server *ServerModel, err error)
 	FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*ServerModel, total int64, err error)
+	GetServers(ctx context.Context, serverIDs []string) (servers []*ServerModel, err error)
 }

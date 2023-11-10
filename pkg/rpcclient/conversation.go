@@ -136,3 +136,27 @@ func (c *ConversationRpcClient) GetConversations(
 	}
 	return resp.Conversations, nil
 }
+
+func (c *ConversationRpcClient) GetConversationsByGroupIDs(
+	ctx context.Context,
+	groupIDs []string,
+	userID string,
+) ([]*pbconversation.Conversation, error) {
+	params := []*pbconversation.GetConversationsByGroupIDReq{}
+	for _, groupID := range groupIDs {
+		param := &pbconversation.GetConversationsByGroupIDReq{
+			GroupID: groupID,
+			UserID:  userID,
+		}
+		params = append(params, param)
+	}
+
+	resp, err := c.Client.GetConversationsByGroupIDs(
+		ctx,
+		&pbconversation.GetConversationsByGroupIDsReq{GetConversationsByGroupIDReq: params},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Conversations, nil
+}

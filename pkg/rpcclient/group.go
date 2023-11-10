@@ -215,3 +215,11 @@ func (g *GroupRpcClient) NotificationUserInfoUpdate(ctx context.Context, userID 
 	})
 	return err
 }
+
+func (g *GroupRpcClient) GetServerGroups(ctx context.Context, serverID string) ([]*sdkws.ServerGroupListInfo, error) {
+	resp, err := g.Client.GetServerGroups(ctx, &group.GetServerGroupsReq{ServerID: serverID})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Groups, nil
+}

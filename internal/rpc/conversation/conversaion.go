@@ -65,6 +65,27 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	return nil
 }
 
+func (c *conversationServer) GetConversationsByGroupIDs(ctx context.Context, req *pbconversation.GetConversationsByGroupIDsReq) (*pbconversation.GetConversationsByGroupIDsResp, error) {
+	reqs := req.GetConversationsByGroupIDReq
+	if len(reqs) == 0 {
+		return nil, errs.ErrArgs
+	}
+	conversations := []*tablerelation.ConversationModel{}
+	for _, req := range reqs {
+		conversation, err := c.conversationDatabase.GetConversationByGroupID(ctx, req.GroupID, req.UserID)
+		if err == nil {
+			conversations = append(conversations, conversation)
+		}
+	}
+
+	if len(conversations) < 1 {
+		return nil, errs.ErrRecordNotFound.Wrap("conversation not found")
+	}
+	resp := &pbconversation.GetConversationsByGroupIDsResp{}
+	resp.Conversations = convert.ConversationsDB2Pb(conversations)
+	return resp, nil
+}
+
 func (c *conversationServer) GetConversation(ctx context.Context, req *pbconversation.GetConversationReq) (*pbconversation.GetConversationResp, error) {
 	conversations, err := c.conversationDatabase.FindConversations(ctx, req.OwnerUserID, []string{req.ConversationID})
 	if err != nil {

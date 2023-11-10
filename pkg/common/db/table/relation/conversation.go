@@ -70,4 +70,5 @@ type ConversationModelInterface interface {
 	GetConversationIDsNeedDestruct(ctx context.Context) ([]*ConversationModel, error)
 	GetConversationNotReceiveMessageUserIDs(ctx context.Context, conversationID string) ([]string, error)
 	NewTx(tx any) ConversationModelInterface
+	GetConversationByGroupID(ctx context.Context, groupID, ownerUserID string) (*ConversationModel, error)
 }

@@ -42,4 +42,5 @@ type GroupCategoryModelInterface interface {
 	NewTx(tx any) GroupCategoryModelInterface
 	Create(ctx context.Context, groupCategories []*GroupCategoryModel) (err error)
 	Take(ctx context.Context, groupCategoryID string) (GroupCategory *GroupCategoryModel, err error)
+	GetGroupCategoriesByServerID(ctx context.Context, serverID string) (categories []*GroupCategoryModel, err error)
 }

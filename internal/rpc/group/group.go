@@ -115,6 +115,38 @@ type groupServer struct {
 	msgRpcClient          rpcclient.MessageRpcClient
 }
 
+func (s *groupServer) GetServerGroups(ctx context.Context, req *pbgroup.GetServerGroupsReq) (*pbgroup.GetServerGroupsResp, error) {
+	defer log.ZDebug(ctx, "return")
+	resp := &pbgroup.GetServerGroupsResp{}
+	groups, err := s.GroupDatabase.GetGroupListByServer(ctx, req.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	ownerUserId := mcontext.GetOpUserID(ctx)
+	groupIDs := []string{}
+	for _, group := range groups {
+		groupIDs = append(groupIDs, group.GroupID)
+	}
+
+	conversations, err := s.conversationRpcClient.GetConversationsByGroupIDs(ctx, groupIDs, ownerUserId)
+	if err != nil {
+		log.ZDebug(ctx, "GetConversationsByGroupIDs failed")
+		return nil, err
+	}
+	//convert
+	resp_groups := []*sdkws.ServerGroupListInfo{}
+	for _, group := range groups {
+		groupID := group.GroupID
+		for _, conversation := range conversations {
+			if groupID == conversation.GroupID {
+				resp_groups = append(resp_groups, convert.Db2PbServerGroupInfo(group, conversation.ConversationID, conversation.ConversationType))
+			}
+		}
+	}
+	resp.Groups = resp_groups
+	return resp, nil
+}
+
 func (s *groupServer) NotificationUserInfoUpdate(ctx context.Context, req *pbgroup.NotificationUserInfoUpdateReq) (*pbgroup.NotificationUserInfoUpdateResp, error) {
 	defer log.ZDebug(ctx, "return")
 

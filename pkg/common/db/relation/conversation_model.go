@@ -16,6 +16,7 @@ package relation
 
 import (
 	"context"
+
 	"github.com/OpenIMSDK/tools/errs"
 	"gorm.io/gorm"
 
@@ -245,5 +246,15 @@ func (c *ConversationGorm) GetConversationNotReceiveMessageUserIDs(ctx context.C
 			Model(&relation.ConversationModel{}).
 			Where("conversation_id = ? and recv_msg_opt <> ?", conversationID, constant.ReceiveMessage).
 			Pluck("owner_user_id", &userIDs).Error,
+	)
+}
+
+func (c *ConversationGorm) GetConversationByGroupID(ctx context.Context, groupID, ownerUserID string) (conversation *relation.ConversationModel, err error) {
+	return conversation, utils.Wrap(
+		c.db(ctx).
+			Where("owner_user_id = ? and group_id = ?", ownerUserID, groupID).
+			Find(&conversation).
+			Error,
+		"",
 	)
 }

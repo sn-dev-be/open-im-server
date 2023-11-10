@@ -57,6 +57,7 @@ type ConversationDatabase interface {
 	GetConversationsByConversationID(ctx context.Context, conversationIDs []string) ([]*relationtb.ConversationModel, error)
 	GetConversationIDsNeedDestruct(ctx context.Context) ([]*relationtb.ConversationModel, error)
 	GetConversationNotReceiveMessageUserIDs(ctx context.Context, conversationID string) ([]string, error)
+	GetConversationByGroupID(ctx context.Context, groupID, ownerUserId string) (*relationtb.ConversationModel, error)
 }
 
 func NewConversationDatabase(conversation relationtb.ConversationModelInterface, cache cache.ConversationCache, tx tx.Tx) ConversationDatabase {
@@ -71,6 +72,10 @@ type conversationDatabase struct {
 	conversationDB relationtb.ConversationModelInterface
 	cache          cache.ConversationCache
 	tx             tx.Tx
+}
+
+func (c *conversationDatabase) GetConversationByGroupID(ctx context.Context, groupID, ownerUserID string) (*relationtb.ConversationModel, error) {
+	return c.conversationDB.GetConversationByGroupID(ctx, groupID, ownerUserID)
 }
 
 func (c *conversationDatabase) SetUsersConversationFiledTx(ctx context.Context, userIDs []string, conversation *relationtb.ConversationModel, filedMap map[string]interface{}) (err error) {

@@ -52,6 +52,20 @@ func Db2PbGroupInfo(m *relation.GroupModel, ownerUserID string, memberCount uint
 	}
 }
 
+func Db2PbServerGroupInfo(m *relation.GroupModel, conevrsationID string, conversationType int32) *sdkws.ServerGroupListInfo {
+	return &sdkws.ServerGroupListInfo{
+		GroupID:          m.GroupID,
+		GroupName:        m.GroupName,
+		Introduction:     m.Introduction,
+		FaceURL:          m.FaceURL,
+		GroupType:        m.GroupType,
+		ConversationID:   conevrsationID,
+		ConversationType: conversationType,
+		GroupCategoryID:  m.GroupCategoryID,
+		ServerID:         m.ServerID,
+	}
+}
+
 func Pb2DbGroupRequest(req *pbgroup.GroupApplicationResponseReq, handleUserID string) *relation.GroupRequestModel {
 	return &relation.GroupRequestModel{
 		UserID:       req.FromUserID,

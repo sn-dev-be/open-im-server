@@ -39,6 +39,7 @@ type ClubDatabase interface {
 	PageServers(ctx context.Context, pageNumber, showNumber int32) (servers []*relationtb.ServerModel, total int64, err error)
 	////
 	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
+	GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error)
 
 	//server_role
 	TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error)
@@ -78,10 +79,12 @@ type ClubDatabase interface {
 	TransferServerOwner(ctx context.Context, serverID string, oldOwnerUserID, newOwnerUserID string, roleLevel int32) error // 转让群
 	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
 	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
+	GetServerMemberByUserID(ctx context.Context, serverID, userID string) (serverMember *relationtb.ServerMemberModel, err error)
 }
 
 func NewClubDatabase(
 	server relationtb.ServerModelInterface,
+	ServerRecommended relationtb.ServerRecommendedModelInterface,
 	serverMember relationtb.ServerMemberModelInterface,
 	groupCategory relationtb.GroupCategoryModelInterface,
 	serverRole relationtb.ServerRoleModelInterface,
@@ -93,16 +96,17 @@ func NewClubDatabase(
 	cache cache.ClubCache,
 ) ClubDatabase {
 	database := &clubDatabase{
-		serverDB:        server,
-		serverMemberDB:  serverMember,
-		serverRoleDB:    serverRole,
-		serverRequestDB: serverRequest,
-		serverBlackDB:   serverBlack,
-		groupCategoryDB: groupCategory,
-		groupDappDB:     groupDapp,
-		tx:              tx,
-		ctxTx:           ctxTx,
-		cache:           cache,
+		serverDB:            server,
+		serverRecommendedDB: ServerRecommended,
+		serverMemberDB:      serverMember,
+		serverRoleDB:        serverRole,
+		serverRequestDB:     serverRequest,
+		serverBlackDB:       serverBlack,
+		groupCategoryDB:     groupCategory,
+		groupDappDB:         groupDapp,
+		tx:                  tx,
+		ctxTx:               ctxTx,
+		cache:               cache,
 	}
 	return database
 }
@@ -113,6 +117,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 	rcOptions.RandomExpireAdjustment = 0.2
 	return NewClubDatabase(
 		relation.NewServerDB(db),
+		relation.NewServerRecommendedDB(db),
 		relation.NewServerMemberDB(db),
 		relation.NewGroupCategoryDB(db),
 		relation.NewServerRoleDB(db),
@@ -133,18 +138,39 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 }
 
 type clubDatabase struct {
-	serverDB        relationtb.ServerModelInterface
-	serverMemberDB  relationtb.ServerMemberModelInterface
-	groupCategoryDB relationtb.GroupCategoryModelInterface
-	serverRoleDB    relationtb.ServerRoleModelInterface
-	serverRequestDB relationtb.ServerRequestModelInterface
-	serverBlackDB   relationtb.ServerBlackModelInterface
-	groupDappDB     relationtb.GroupDappModellInterface
+	serverDB            relationtb.ServerModelInterface
+	serverRecommendedDB relationtb.ServerRecommendedModelInterface
+	serverMemberDB      relationtb.ServerMemberModelInterface
+	groupCategoryDB     relationtb.GroupCategoryModelInterface
+	serverRoleDB        relationtb.ServerRoleModelInterface
+	serverRequestDB     relationtb.ServerRequestModelInterface
+	serverBlackDB       relationtb.ServerBlackModelInterface
+	groupDappDB         relationtb.GroupDappModellInterface
+	tx                  tx.Tx
+	ctxTx               tx.CtxTx
+	cache               cache.ClubCache
+}
 
-	tx    tx.Tx
-	ctxTx tx.CtxTx
+// IsServerMember implements ClubDatabase.
+func (c *clubDatabase) GetServerMemberByUserID(ctx context.Context, serverID string, userID string) (serverMember *relationtb.ServerMemberModel, err error) {
+	return c.serverMemberDB.GetServerMemberByUserID(ctx, userID, serverID)
+}
 
-	cache cache.ClubCache
+// GetServerRecommendedList implements ClubDatabase.
+func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error) {
+	if recommends, err := c.serverRecommendedDB.GetServerRecommendedList(ctx); err == nil {
+		serverIDs := []string{}
+		for _, recommend := range recommends {
+			serverIDs = append(serverIDs, recommend.ServerID)
+		}
+		if server_recommendeds, err := c.serverDB.GetServers(ctx, serverIDs); err != nil {
+			return nil, err
+		} else {
+			return server_recommendeds, nil
+		}
+	} else {
+		return nil, err
+	}
 }
 
 // TakeChanneCategory implements ClubDatabase.
@@ -183,7 +209,7 @@ func (c *clubDatabase) PageServerMembers(ctx context.Context, pageNumber int32, 
 
 // GetAllChannelCategoriesByServer implements ClubDatabase.
 func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {
-	panic("unimplemented")
+	return c.groupCategoryDB.GetGroupCategoriesByServerID(ctx, serverID)
 }
 
 // PageServers implements ClubDatabase.
