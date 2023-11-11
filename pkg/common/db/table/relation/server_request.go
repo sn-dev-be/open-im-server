@@ -41,4 +41,11 @@ type ServerRequestModelInterface interface {
 	// 插入多条记录
 	Create(ctx context.Context, serverRequests []*ServerRequestModel) (err error)
 	NewTx(tx any) ServerRequestModelInterface
+	UpdateHandler(ctx context.Context, serverID string, userID string, handledMsg string, handleResult int32) (err error)
+
+	PageServer(
+		ctx context.Context,
+		serverIDs []string,
+		pageNumber, showNumber int32,
+	) (total uint32, servers []*ServerRequestModel, err error)
 }

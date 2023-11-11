@@ -282,6 +282,14 @@ func (c *conversationServer) CreateGroupChatConversations(ctx context.Context, r
 	return &pbconversation.CreateGroupChatConversationsResp{}, nil
 }
 
+func (c *conversationServer) CreateServerGroupChatConversations(ctx context.Context, req *pbconversation.CreateGroupChatConversationsReq) (*pbconversation.CreateGroupChatConversationsResp, error) {
+	err := c.conversationDatabase.CreateGroupChatConversation(ctx, req.GroupID, req.UserIDs)
+	if err != nil {
+		return nil, err
+	}
+	return &pbconversation.CreateGroupChatConversationsResp{}, nil
+}
+
 func (c *conversationServer) SetConversationMaxSeq(ctx context.Context, req *pbconversation.SetConversationMaxSeqReq) (*pbconversation.SetConversationMaxSeqResp, error) {
 	if err := c.conversationDatabase.UpdateUsersConversationFiled(ctx, req.OwnerUserID, req.ConversationID,
 		map[string]interface{}{"max_seq": req.MaxSeq}); err != nil {

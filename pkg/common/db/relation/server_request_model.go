@@ -19,6 +19,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/OpenIMSDK/tools/ormutil"
 	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -40,4 +41,36 @@ func (s *ServerRequestGorm) NewTx(tx any) relation.ServerRequestModelInterface {
 
 func (s *ServerRequestGorm) Create(ctx context.Context, servers []*relation.ServerRequestModel) (err error) {
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
+}
+
+func (s *ServerRequestGorm) UpdateHandler(
+	ctx context.Context,
+	serverID string,
+	userID string,
+	handledMsg string,
+	handleResult int32,
+) (err error) {
+	return utils.Wrap(
+		s.DB.WithContext(ctx).
+			Model(&relation.GroupRequestModel{}).
+			Where("server_id = ? and user_id = ? ", serverID, userID).
+			Updates(map[string]any{
+				"handle_msg":    handledMsg,
+				"handle_result": handleResult,
+			}).
+			Error,
+		utils.GetSelfFuncName(),
+	)
+}
+
+func (s *ServerRequestGorm) PageServer(
+	ctx context.Context,
+	serverIDs []string,
+	pageNumber, showNumber int32,
+) (total uint32, servers []*relation.ServerRequestModel, err error) {
+	return ormutil.GormPage[relation.ServerRequestModel](
+		s.DB.WithContext(ctx).Where("server_id in ?", serverIDs),
+		pageNumber,
+		showNumber,
+	)
 }

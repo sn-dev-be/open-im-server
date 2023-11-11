@@ -47,6 +47,7 @@ type ConversationDatabase interface {
 	// SetUsersConversationFiledTx 设置多个用户会话关于某个字段的更新操作，如果会话不存在则创建，否则更新，内部保证事务操作
 	SetUsersConversationFiledTx(ctx context.Context, userIDs []string, conversation *relationtb.ConversationModel, filedMap map[string]interface{}) error
 	CreateGroupChatConversation(ctx context.Context, groupID string, userIDs []string) error
+	CreateServerGroupChatConversation(ctx context.Context, groupID string, userIDs []string) error
 	GetConversationIDs(ctx context.Context, userID string) ([]string, error)
 	GetUserConversationIDsHash(ctx context.Context, ownerUserID string) (hash uint64, err error)
 	GetAllConversationIDs(ctx context.Context) ([]string, error)
@@ -271,6 +272,42 @@ func (c *conversationDatabase) CreateGroupChatConversation(ctx context.Context, 
 		var conversations []*relationtb.ConversationModel
 		for _, v := range notExistUserIDs {
 			conversation := relationtb.ConversationModel{ConversationType: constant.SuperGroupChatType, GroupID: groupID, OwnerUserID: v, ConversationID: conversationID}
+			conversations = append(conversations, &conversation)
+			cache = cache.DelConversations(v, conversationID).DelConversationNotReceiveMessageUserIDs(conversationID)
+		}
+		cache = cache.DelConversationIDs(notExistUserIDs...).DelUserConversationIDsHash(notExistUserIDs...)
+		if len(conversations) > 0 {
+			err = c.conversationDB.Create(ctx, conversations)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = c.conversationDB.UpdateByMap(ctx, existConversationUserIDs, conversationID, map[string]interface{}{"max_seq": 0})
+		if err != nil {
+			return err
+		}
+		for _, v := range existConversationUserIDs {
+			cache = cache.DelConversations(v, conversationID)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return cache.ExecDel(ctx)
+}
+
+func (c *conversationDatabase) CreateServerGroupChatConversation(ctx context.Context, groupID string, userIDs []string) error {
+	cache := c.cache.NewCache()
+	conversationID := msgprocessor.GetConversationIDBySessionType(constant.ServerGroupChatType, groupID)
+	if err := c.tx.Transaction(func(tx any) error {
+		existConversationUserIDs, err := c.conversationDB.FindUserID(ctx, userIDs, []string{conversationID})
+		if err != nil {
+			return err
+		}
+		notExistUserIDs := utils.DifferenceString(userIDs, existConversationUserIDs)
+		var conversations []*relationtb.ConversationModel
+		for _, v := range notExistUserIDs {
+			conversation := relationtb.ConversationModel{ConversationType: constant.ServerGroupChatType, GroupID: groupID, OwnerUserID: v, ConversationID: conversationID}
 			conversations = append(conversations, &conversation)
 			cache = cache.DelConversations(v, conversationID).DelConversationNotReceiveMessageUserIDs(conversationID)
 		}

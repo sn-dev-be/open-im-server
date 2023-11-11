@@ -16,14 +16,18 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/dtm-labs/rockscache"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 
+	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/tools/tx"
+	"github.com/OpenIMSDK/tools/utils"
 
+	"github.com/openimsdk/open-im-server/v3/pkg/common/db/cache"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/relation"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
@@ -33,6 +37,8 @@ type ClubDatabase interface {
 	CreateServer(ctx context.Context, servers []*relationtb.ServerModel) error
 	TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error)
 	PageServers(ctx context.Context, pageNumber, showNumber int32) (servers []*relationtb.ServerModel, total int64, err error)
+	////
+	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
 
 	//server_role
 	TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error)
@@ -52,6 +58,26 @@ type ClubDatabase interface {
 	PageServerMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error)
 	GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relationtb.ServerMemberModel, err error)
 	CreateServerMember(ctx context.Context, serverMembers []*relationtb.ServerMemberModel) error
+
+	//
+	TakeServerMember(ctx context.Context, serverID string, userID string) (groupMember *relationtb.ServerMemberModel, err error)
+	TakeServerOwner(ctx context.Context, serverID string) (*relationtb.ServerMemberModel, error)
+	FindServerMember(ctx context.Context, serverIDs []string, userIDs []string, roleLevels []int32) ([]*relationtb.ServerMemberModel, error)
+	FindServerMemberUserID(ctx context.Context, serverID string) ([]string, error)
+	FindServerMemberNum(ctx context.Context, serverID string) (uint32, error)
+	FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error)
+	PageServerRequest(ctx context.Context, serverIDs []string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
+
+	PageGetJoinServer(ctx context.Context, userID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
+	PageGetServerMember(ctx context.Context, serverID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
+	SearchServerMember(ctx context.Context, keyword string, serverIDs []string, userIDs []string, roleLevels []int32, pageNumber, showNumber int32) (uint32, []*relationtb.ServerMemberModel, error)
+	HandlerServerRequest(ctx context.Context, serverID string, userID string, handledMsg string, handleResult int32, member *relationtb.ServerMemberModel) error
+	DeleteServerMember(ctx context.Context, serverID string, userIDs []string) error
+	MapServerMemberUserID(ctx context.Context, serverIDs []string) (map[string]*relationtb.GroupSimpleUserID, error)
+	MapServerMemberNum(ctx context.Context, serverIDs []string) (map[string]uint32, error)
+	TransferServerOwner(ctx context.Context, serverID string, oldOwnerUserID, newOwnerUserID string, roleLevel int32) error // 转让群
+	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
+	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
 }
 
 func NewClubDatabase(
@@ -64,6 +90,7 @@ func NewClubDatabase(
 	groupDapp relationtb.GroupDappModellInterface,
 	tx tx.Tx,
 	ctxTx tx.CtxTx,
+	cache cache.ClubCache,
 ) ClubDatabase {
 	database := &clubDatabase{
 		serverDB:        server,
@@ -75,11 +102,12 @@ func NewClubDatabase(
 		groupDappDB:     groupDapp,
 		tx:              tx,
 		ctxTx:           ctxTx,
+		cache:           cache,
 	}
 	return database
 }
 
-func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Database) ClubDatabase {
+func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Database, hashCode func(ctx context.Context, serverID string) (uint64, error)) ClubDatabase {
 	rcOptions := rockscache.NewDefaultOptions()
 	rcOptions.StrongConsistency = true
 	rcOptions.RandomExpireAdjustment = 0.2
@@ -93,6 +121,14 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		relation.NewGroupDappDB(db),
 		tx.NewGorm(db),
 		tx.NewMongo(database.Client()),
+		cache.NewClubCacheRedis(
+			rdb,
+			relation.NewServerDB(db),
+			relation.NewServerMemberDB(db),
+			relation.NewServerRequestDB(db),
+			hashCode,
+			rcOptions,
+		),
 	)
 }
 
@@ -104,8 +140,11 @@ type clubDatabase struct {
 	serverRequestDB relationtb.ServerRequestModelInterface
 	serverBlackDB   relationtb.ServerBlackModelInterface
 	groupDappDB     relationtb.GroupDappModellInterface
-	tx              tx.Tx
-	ctxTx           tx.CtxTx
+
+	tx    tx.Tx
+	ctxTx tx.CtxTx
+
+	cache cache.ClubCache
 }
 
 // TakeChanneCategory implements ClubDatabase.
@@ -171,6 +210,10 @@ func (c *clubDatabase) TakeServer(ctx context.Context, serverID string) (server 
 	return c.serverDB.Take(ctx, serverID)
 }
 
+func (c *clubDatabase) FindServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error) {
+	return c.cache.GetServersInfo(ctx, serverIDs)
+}
+
 func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error) {
 	return c.serverRoleDB.Take(ctx, serverRoleID)
 }
@@ -203,4 +246,223 @@ func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*rela
 		return err
 	}
 	return nil
+}
+
+// ///////////////////////////////////////serverMember////////////////////
+func (c *clubDatabase) TakeServerMember(
+	ctx context.Context,
+	serverID string,
+	userID string,
+) (groupMember *relationtb.ServerMemberModel, err error) {
+	return c.cache.GetServerMemberInfo(ctx, serverID, userID)
+}
+
+func (c *clubDatabase) TakeServerOwner(ctx context.Context, serverID string) (*relationtb.ServerMemberModel, error) {
+	return c.serverMemberDB.TakeOwner(ctx, serverID)
+}
+
+func (c *clubDatabase) FindServerMember(ctx context.Context, serverIDs []string, userIDs []string, roleLevels []int32) (totalServerMembers []*relationtb.ServerMemberModel, err error) {
+	if len(serverIDs) == 0 && len(roleLevels) == 0 && len(userIDs) == 1 {
+		gIDs, err := c.cache.GetJoinedServerIDs(ctx, userIDs[0])
+		if err != nil {
+			return nil, err
+		}
+		var res []*relationtb.ServerMemberModel
+		for _, serverID := range gIDs {
+			v, err := c.cache.GetServerMemberInfo(ctx, serverID, userIDs[0])
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, v)
+		}
+		return res, nil
+	}
+	if len(roleLevels) == 0 {
+		for _, serverID := range serverIDs {
+			groupMembers, err := c.cache.GetServerMembersInfo(ctx, serverID, userIDs)
+			if err != nil {
+				return nil, err
+			}
+			totalServerMembers = append(totalServerMembers, groupMembers...)
+		}
+		return totalServerMembers, nil
+	}
+	return c.serverMemberDB.Find(ctx, serverIDs, userIDs, roleLevels)
+}
+
+func (c *clubDatabase) FindServerMemberUserID(ctx context.Context, serverID string) ([]string, error) {
+	return c.cache.GetServerMemberIDs(ctx, serverID)
+}
+
+func (c *clubDatabase) FindServerMemberNum(ctx context.Context, serverID string) (uint32, error) {
+	num, err := c.cache.GetServerMemberNum(ctx, serverID)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(num), nil
+}
+
+func (c *clubDatabase) FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error) {
+	return c.serverMemberDB.FindUserManagedServerID(ctx, userID)
+}
+
+func (c *clubDatabase) PageServerRequest(
+	ctx context.Context,
+	serverIDs []string,
+	pageNumber, showNumber int32,
+) (uint32, []*relationtb.ServerRequestModel, error) {
+	return c.serverRequestDB.PageServer(ctx, serverIDs, pageNumber, showNumber)
+}
+
+func (c *clubDatabase) PageGetJoinServer(
+	ctx context.Context,
+	userID string,
+	pageNumber, showNumber int32,
+) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error) {
+	serverIDs, err := c.cache.GetJoinedServerIDs(ctx, userID)
+	if err != nil {
+		return 0, nil, err
+	}
+	for _, serverID := range utils.Paginate(serverIDs, int(pageNumber), int(showNumber)) {
+		groupMembers, err := c.cache.GetServerMembersInfo(ctx, serverID, []string{userID})
+		if err != nil {
+			return 0, nil, err
+		}
+		totalServerMembers = append(totalServerMembers, groupMembers...)
+	}
+	return uint32(len(serverIDs)), totalServerMembers, nil
+}
+
+func (c *clubDatabase) PageGetServerMember(
+	ctx context.Context,
+	serverID string,
+	pageNumber, showNumber int32,
+) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error) {
+	groupMemberIDs, err := c.cache.GetServerMemberIDs(ctx, serverID)
+	if err != nil {
+		return 0, nil, err
+	}
+	pageIDs := utils.Paginate(groupMemberIDs, int(pageNumber), int(showNumber))
+	if len(pageIDs) == 0 {
+		return uint32(len(groupMemberIDs)), nil, nil
+	}
+	members, err := c.cache.GetServerMembersInfo(ctx, serverID, pageIDs)
+	if err != nil {
+		return 0, nil, err
+	}
+	return uint32(len(groupMemberIDs)), members, nil
+}
+
+func (c *clubDatabase) SearchServerMember(
+	ctx context.Context,
+	keyword string,
+	serverIDs []string,
+	userIDs []string,
+	roleLevels []int32,
+	pageNumber, showNumber int32,
+) (uint32, []*relationtb.ServerMemberModel, error) {
+	return c.serverMemberDB.SearchMember(ctx, keyword, serverIDs, userIDs, roleLevels, pageNumber, showNumber)
+}
+
+func (c *clubDatabase) HandlerServerRequest(
+	ctx context.Context,
+	serverID string,
+	userID string,
+	handledMsg string,
+	handleResult int32,
+	member *relationtb.ServerMemberModel,
+) error {
+	return c.tx.Transaction(func(tx any) error {
+		if err := c.serverRequestDB.NewTx(tx).UpdateHandler(ctx, serverID, userID, handledMsg, handleResult); err != nil {
+			return err
+		}
+		if member != nil {
+			if err := c.serverMemberDB.NewTx(tx).Create(ctx, []*relationtb.ServerMemberModel{member}); err != nil {
+				return err
+			}
+			if err := c.cache.NewCache().DelServerMembersHash(serverID).DelServerMembersInfo(serverID, member.UserID).DelServerMemberIDs(serverID).DelServersMemberNum(serverID).DelJoinedServerID(member.UserID).ExecDel(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (c *clubDatabase) DeleteServerMember(ctx context.Context, serverID string, userIDs []string) error {
+	if err := c.serverMemberDB.Delete(ctx, serverID, userIDs); err != nil {
+		return err
+	}
+	return c.cache.DelServerMembersHash(serverID).
+		DelServerMemberIDs(serverID).
+		DelServersMemberNum(serverID).
+		DelJoinedServerID(userIDs...).
+		DelServerMembersInfo(serverID, userIDs...).
+		ExecDel(ctx)
+}
+
+func (c *clubDatabase) MapServerMemberUserID(
+	ctx context.Context,
+	serverIDs []string,
+) (map[string]*relationtb.GroupSimpleUserID, error) {
+	return c.cache.GetServerMemberHashMap(ctx, serverIDs)
+}
+
+func (c *clubDatabase) MapServerMemberNum(ctx context.Context, serverIDs []string) (m map[string]uint32, err error) {
+	m = make(map[string]uint32)
+	for _, serverID := range serverIDs {
+		num, err := c.cache.GetServerMemberNum(ctx, serverID)
+		if err != nil {
+			return nil, err
+		}
+		m[serverID] = uint32(num)
+	}
+	return m, nil
+}
+
+func (c *clubDatabase) TransferServerOwner(ctx context.Context, serverID string, oldOwnerUserID, newOwnerUserID string, roleLevel int32) error {
+	return c.tx.Transaction(func(tx any) error {
+		rowsAffected, err := c.serverMemberDB.NewTx(tx).UpdateRoleLevel(ctx, serverID, oldOwnerUserID, roleLevel)
+		if err != nil {
+			return err
+		}
+		if rowsAffected != 1 {
+			return utils.Wrap(fmt.Errorf("oldOwnerUserID %s rowsAffected = %d", oldOwnerUserID, rowsAffected), "")
+		}
+		rowsAffected, err = c.serverMemberDB.NewTx(tx).UpdateRoleLevel(ctx, serverID, newOwnerUserID, constant.ServerOwner)
+		if err != nil {
+			return err
+		}
+		if rowsAffected != 1 {
+			return utils.Wrap(fmt.Errorf("newOwnerUserID %s rowsAffected = %d", newOwnerUserID, rowsAffected), "")
+		}
+		return c.cache.DelServerMembersInfo(serverID, oldOwnerUserID, newOwnerUserID).DelServerMembersHash(serverID).ExecDel(ctx)
+	})
+}
+
+func (c *clubDatabase) UpdateServerMember(
+	ctx context.Context,
+	serverID string,
+	userID string,
+	data map[string]any,
+) error {
+	if err := c.serverMemberDB.Update(ctx, serverID, userID, data); err != nil {
+		return err
+	}
+	return c.cache.DelServerMembersInfo(serverID, userID).ExecDel(ctx)
+}
+
+func (c *clubDatabase) UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error {
+	cache := c.cache.NewCache()
+	if err := c.tx.Transaction(func(tx any) error {
+		for _, item := range data {
+			if err := c.serverMemberDB.NewTx(tx).Update(ctx, item.GroupID, item.UserID, item.Map); err != nil {
+				return err
+			}
+			cache = cache.DelServerMembersInfo(item.GroupID, item.UserID)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return cache.ExecDel(ctx)
 }

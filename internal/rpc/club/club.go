@@ -60,7 +60,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	conversationRpcClient := rpcclient.NewConversationRpcClient(client)
 
 	var cs clubServer
-	database := controller.InitClubDatabase(db, rdb, mongo.GetDatabase())
+	database := controller.InitClubDatabase(db, rdb, mongo.GetDatabase(), cs.serverMemberHashCode)
 	cs.ClubDatabase = database
 	cs.User = userRpcClient
 	cs.Notification = notification.NewClubNotificationSender(database, &msgRpcClient, &userRpcClient, func(ctx context.Context, userIDs []string) ([]notification.CommonUser, error) {
@@ -82,4 +82,17 @@ type clubServer struct {
 	Notification          *notification.ClubNotificationSender
 	conversationRpcClient rpcclient.ConversationRpcClient
 	msgRpcClient          rpcclient.MessageRpcClient
+}
+
+func (c *clubServer) GetPublicUserInfoMap(ctx context.Context, userIDs []string, complete bool) (map[string]*sdkws.PublicUserInfo, error) {
+	if len(userIDs) == 0 {
+		return map[string]*sdkws.PublicUserInfo{}, nil
+	}
+	users, err := c.User.GetPublicUserInfos(ctx, userIDs, complete)
+	if err != nil {
+		return nil, err
+	}
+	return utils.SliceToMapAny(users, func(e *sdkws.PublicUserInfo) (string, *sdkws.PublicUserInfo) {
+		return e.UserID, e
+	}), nil
 }
