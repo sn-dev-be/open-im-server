@@ -43,17 +43,7 @@ func (s *ServerRequestGorm) Create(ctx context.Context, servers []*relation.Serv
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
 }
 
-func (g *ServerRequestGorm) Delete(ctx context.Context, serverID string, userID string) (err error) {
-	return utils.Wrap(
-		g.DB.WithContext(ctx).
-			Where("server_id = ? and user_id = ? ", serverID, userID).
-			Delete(&relation.ServerRequestModel{}).
-			Error,
-		utils.GetSelfFuncName(),
-	)
-}
-
-func (g *ServerRequestGorm) UpdateHandler(
+func (s *ServerRequestGorm) UpdateHandler(
 	ctx context.Context,
 	serverID string,
 	userID string,
@@ -61,8 +51,8 @@ func (g *ServerRequestGorm) UpdateHandler(
 	handleResult int32,
 ) (err error) {
 	return utils.Wrap(
-		g.DB.WithContext(ctx).
-			Model(&relation.ServerRequestModel{}).
+		s.DB.WithContext(ctx).
+			Model(&relation.GroupRequestModel{}).
 			Where("server_id = ? and user_id = ? ", serverID, userID).
 			Updates(map[string]any{
 				"handle_msg":    handledMsg,
@@ -73,45 +63,14 @@ func (g *ServerRequestGorm) UpdateHandler(
 	)
 }
 
-func (g *ServerRequestGorm) Take(
-	ctx context.Context,
-	serverID string,
-	userID string,
-) (serverRequest *relation.ServerRequestModel, err error) {
-	serverRequest = &relation.ServerRequestModel{}
-	return serverRequest, utils.Wrap(
-		g.DB.WithContext(ctx).Where("server_id = ? and user_id = ? ", serverID, userID).Take(serverRequest).Error,
-		utils.GetSelfFuncName(),
-	)
-}
-
-func (g *ServerRequestGorm) Page(
-	ctx context.Context,
-	userID string,
-	pageNumber, showNumber int32,
-) (total uint32, servers []*relation.ServerRequestModel, err error) {
-	return ormutil.GormSearch[relation.ServerRequestModel](
-		g.DB.WithContext(ctx).Where("user_id = ?", userID),
-		nil,
-		"",
-		pageNumber,
-		showNumber,
-	)
-}
-
-func (g *ServerRequestGorm) PageServer(
+func (s *ServerRequestGorm) PageServer(
 	ctx context.Context,
 	serverIDs []string,
 	pageNumber, showNumber int32,
 ) (total uint32, servers []*relation.ServerRequestModel, err error) {
 	return ormutil.GormPage[relation.ServerRequestModel](
-		g.DB.WithContext(ctx).Where("server_id in ?", serverIDs),
+		s.DB.WithContext(ctx).Where("server_id in ?", serverIDs),
 		pageNumber,
 		showNumber,
 	)
-}
-
-func (g *ServerRequestGorm) FindServerRequests(ctx context.Context, serverID string, userIDs []string) (total int64, serverRequests []*relation.ServerRequestModel, err error) {
-	err = g.DB.WithContext(ctx).Where("server_id = ? and user_id in ?", serverID, userIDs).Find(&serverRequests).Error
-	return int64(len(serverRequests)), serverRequests, utils.Wrap(err, utils.GetSelfFuncName())
 }
