@@ -77,4 +77,5 @@ type ServerMemberModelInterface interface {
 	TakeServerMemberNum(ctx context.Context, serverID string) (count int64, err error)
 	FindUsersJoinedServerID(ctx context.Context, userIDs []string) (map[string][]string, error)
 	FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error)
+	GetJoinedServerByUserID(ctx context.Context, userID string) (member []*ServerMemberModel, err error)
 }

@@ -46,3 +46,7 @@ func (s *ServerRoleGorm) Take(ctx context.Context, serverRoleID string) (serverR
 	serverRole = &relation.ServerRoleModel{}
 	return serverRole, utils.Wrap(s.DB.Where("id = ?", serverRoleID).Take(serverRole).Error, "")
 }
+
+func (s *ServerRoleGorm) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relation.ServerRoleModel, err error) {
+	return serverRole, utils.Wrap(s.DB.Where("server_id = ? and type = ?", serverID, roleType).Take(&serverRole).Error, "")
+}

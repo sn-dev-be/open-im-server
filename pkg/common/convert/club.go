@@ -3,6 +3,8 @@ package convert
 import (
 	"time"
 
+	"github.com/OpenIMSDK/protocol/constant"
+
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -33,10 +35,10 @@ func Pb2DBServerInfo(m *pbclub.CreateServerReq) *relation.ServerModel {
 		ServerName:           m.ServerName,
 		Icon:                 m.Icon,
 		Description:          m.Description,
-		ApplyMode:            1,
-		InviteMode:           0,
-		Searchable:           0,
-		Status:               0,
+		ApplyMode:            constant.JoinServerNeedVerification,
+		InviteMode:           constant.ServerInvitedDenied,
+		Searchable:           constant.ServerSearchableDenied,
+		Status:               constant.ServerOk,
 		Banner:               m.Banner,
 		UserMutualAccessible: m.UserMutualAccessible,
 		OwnerUserID:          m.OwnerUserID,
@@ -45,7 +47,7 @@ func Pb2DBServerInfo(m *pbclub.CreateServerReq) *relation.ServerModel {
 	}
 }
 
-func DB2PbServerList(servers []*relation.ServerModel) ([]*sdkws.ServerFullInfo, error) {
+func DB2PbServerFullInfoList(servers []*relation.ServerModel) ([]*sdkws.ServerFullInfo, error) {
 	if len(servers) == 0 {
 		return nil, nil
 	}
@@ -99,6 +101,22 @@ func Pb2DbServerMember(m *sdkws.UserInfo) *relation.ServerMemberModel {
 		Ex:       m.Ex,
 	}
 }
+func DB2PbServerBaseInfoList(servers []*relation.ServerModel) ([]*sdkws.ServersListInfo, error) {
+	if len(servers) == 0 {
+		return nil, nil
+	}
+
+	res := []*sdkws.ServersListInfo{}
+	for _, m := range servers {
+		res = append(res, &sdkws.ServersListInfo{
+			ServerID:   m.ServerID,
+			ServerName: m.ServerName,
+			Icon:       m.Icon,
+		})
+	}
+	return res, nil
+}
+
 func DB2PbServerInfo(m relation.ServerModel) (*sdkws.ServerFullInfo, error) {
 	res := &sdkws.ServerFullInfo{
 		ServerID:             m.ServerID,

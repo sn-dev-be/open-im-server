@@ -31,8 +31,12 @@ func (o *ClubApi) CreateServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateServer, o.Client, c)
 }
 
-func (o *ClubApi) GetServerList(c *gin.Context) {
-	a2r.Call(club.ClubClient.GetServerList, o.Client, c)
+func (o *ClubApi) GetServerRecommendedList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerRecommendedList, o.Client, c)
+}
+
+func (o *ClubApi) GetJoinedServerList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetJoinedServerList, o.Client, c)
 }
 
 func (o *ClubApi) GetServerDetails(c *gin.Context) {
@@ -46,7 +50,3 @@ func (o *ClubApi) BatchDeleteServers(c *gin.Context) {
 func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
 }
-
-// func (o *ClubApi) CreateChannel(c *gin.Context) {
-// 	a2r.Call(club.ClubClient.CreateChannel, o.Client, c)
-// }

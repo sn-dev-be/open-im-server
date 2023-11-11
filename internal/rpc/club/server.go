@@ -16,6 +16,7 @@ import (
 	pbuser "github.com/OpenIMSDK/protocol/user"
 
 	"github.com/OpenIMSDK/tools/errs"
+	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/mw/specialerror"
 	"github.com/OpenIMSDK/tools/utils"
@@ -93,14 +94,14 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 }
 
 // 获取所有热门部落
-func (s *clubServer) GetServerList(ctx context.Context, req *pbclub.GetServerListReq) (*pbclub.GetServerListResp, error) {
-	resp := &pbclub.GetServerListResp{}
+func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.GetServerRecommendedListReq) (*pbclub.GetServerRecommendecListResp, error) {
+	resp := &pbclub.GetServerRecommendecListResp{}
 
 	servers, err := s.ClubDatabase.GetServerRecommendedList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	resp_servers, err := convert.DB2PbServerList(servers)
+	resp_servers, err := convert.DB2PbServerFullInfoList(servers)
 	if err != nil {
 		return nil, err
 	}
@@ -118,17 +119,32 @@ func (s *clubServer) GetServerList(ctx context.Context, req *pbclub.GetServerLis
 	wg.Wait()
 
 	resp.Servers = resp_servers
-	resp.Total = int32(len(resp_servers))
+	return resp, nil
+}
+
+func (s *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
+	resp := &pbclub.GetJoinedServerListResp{}
+	servers, err := s.ClubDatabase.GetJoinedServerList(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+	resp_servers, err := convert.DB2PbServerBaseInfoList(servers)
+	if err != nil {
+		return nil, err
+	}
+	resp.Servers = resp_servers
 	return resp, nil
 }
 
 func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServerDetailsReq) (*pbclub.GetServerDetailsResp, error) {
 	resp := &pbclub.GetServerDetailsResp{}
 	loginUserID := mcontext.GetOpUserID(ctx)
+	isJoined := false
 
-	if _, err := s.ClubDatabase.GetServerMemberByUserID(ctx, req.ServerID, loginUserID); err != nil {
-		return nil, errs.ErrNoPermission
+	if _, err := s.ClubDatabase.GetServerMemberByUserID(ctx, req.ServerID, loginUserID); err == nil {
+		isJoined = true
 	}
+	resp.Joined = isJoined
 
 	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
 	if err != nil {
@@ -157,16 +173,110 @@ func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServer
 			}
 		}
 	}
-
-	//查询db
 	return resp, nil
 }
 
-func (s *clubServer) BatchDeleteServers(ctx context.Context, req *pbclub.DeleteServerReq) (*pbclub.DeleteServerResp, error) {
+func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) (resp *pbclub.JoinServerResp, err error) {
+	defer log.ZInfo(ctx, "JoinServer.Return")
+	user, err := s.User.GetUserInfo(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	if server.Status != constant.ServerOk {
+		return nil, errs.ErrDismissedAlready.Wrap()
+	}
+
+	_, err = s.ClubDatabase.GetServerMemberByUserID(ctx, req.ServerID, req.UserID)
+	if err == nil {
+		return nil, errs.ErrArgs.Wrap("already in server")
+	} else if !s.IsNotFound(err) && utils.Unwrap(err) != errs.ErrRecordNotFound {
+		return nil, err
+	}
+
+	serverRole, err := s.getServerRoleByType(ctx, req.ServerID, constant.ServerRoleTypeEveryOne)
+	if err != nil {
+		return nil, errs.ErrRecordNotFound.Wrap("server role is not exists")
+	}
+
+	if server.ApplyMode == constant.JoinServerDirectly {
+		serverMember := &relationtb.ServerMemberModel{
+			ServerID:      req.ServerID,
+			UserID:        req.UserID,
+			Nickname:      user.Nickname,
+			ServerRoleID:  serverRole.RoleID,
+			JoinSource:    req.JoinSource,
+			InviterUserID: req.InvitedUserID,
+			JoinTime:      time.Now(),
+		}
+		err = s.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{serverMember})
+		if err != nil {
+			return nil, err
+		}
+		//todo 是否需要发送notification
+		return &pbclub.JoinServerResp{}, nil
+	} else {
+		//保存server_request
+		server_request := relationtb.ServerRequestModel{
+			FromUserID:   req.UserID,
+			ServerID:     req.ServerID,
+			HandleResult: constant.ServerResponseNotHandle,
+			ReqMsg:       req.ReqMessage,
+			CreateTime:   time.Now(),
+			HandleTime:   time.Unix(0, 0),
+		}
+		if err = s.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&server_request}); err != nil {
+			return nil, err
+		}
+		//给群主、管理员发送消息
+		// s.Notification.JoinGroupApplicationNotification(ctx, req)
+	}
 	return nil, nil
 }
 
-func (s *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
+func (s *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) (*pbclub.QuitServerResp, error) {
+	// resp := &pbgroup.QuitGroupResp{}
+	// if req.UserID == "" {
+	// 	req.UserID = mcontext.GetOpUserID(ctx)
+	// } else {
+	// 	if err := authverify.CheckAccessV3(ctx, req.UserID); err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// group, err := s.GroupDatabase.TakeGroup(ctx, req.GroupID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if group.GroupType == constant.SuperGroup {
+	// 	if err := s.GroupDatabase.DeleteSuperGroupMember(ctx, req.GroupID, []string{req.UserID}); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	_ = s.Notification.SuperGroupNotification(ctx, req.UserID, req.UserID)
+	// } else {
+	// 	info, err := s.TakeGroupMember(ctx, req.GroupID, req.UserID)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if info.RoleLevel == constant.GroupOwner {
+	// 		return nil, errs.ErrNoPermission.Wrap("group owner can't quit")
+	// 	}
+	// 	err = s.GroupDatabase.DeleteGroupMember(ctx, req.GroupID, []string{req.UserID})
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	_ = s.Notification.MemberQuitNotification(ctx, s.groupMemberDB2PB(info, 0))
+	// }
+	// if err := s.deleteMemberAndSetConversationSeq(ctx, req.GroupID, []string{req.UserID}); err != nil {
+	// 	return nil, err
+	// }
+
+	return nil, nil
+}
+
+func (s *clubServer) BatchDeleteServers(ctx context.Context, req *pbclub.DeleteServerReq) (*pbclub.DeleteServerResp, error) {
 	return nil, nil
 }
 
