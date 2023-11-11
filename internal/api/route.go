@@ -220,8 +220,8 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		cg := NewClubApi(*clubRpc)
 		clubGroup.POST("/create_server", cg.CreateServer)
 		clubGroup.POST("/get_server_list", cg.GetServerList)
+		clubGroup.POST("/get_server_detail", cg.GetServerDetails)
 		clubGroup.POST("/create_category", cg.CreateGroupCategory)
-		//clubGroup.POST("/create_channel", cg.CreateChannel)
 	}
 	return r
 }

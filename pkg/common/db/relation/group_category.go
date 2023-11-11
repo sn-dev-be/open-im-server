@@ -31,7 +31,7 @@ type GroupCategoryGorm struct {
 }
 
 func (s *GroupCategoryGorm) GetGroupCategoriesByServerID(ctx context.Context, serverID string) (categories []*relation.GroupCategoryModel, err error) {
-	return categories, utils.Wrap(s.DB.Where("server_id = ?", serverID).Take(&categories).Error, "")
+	return categories, utils.Wrap(s.DB.Where("server_id = ?", serverID).Find(&categories).Error, "")
 }
 
 func NewGroupCategoryDB(db *gorm.DB) relation.GroupCategoryModelInterface {

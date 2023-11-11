@@ -10,6 +10,7 @@ import (
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/protocol/constant"
 	pbgroup "github.com/OpenIMSDK/protocol/group"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	pbuser "github.com/OpenIMSDK/protocol/user"
@@ -72,31 +73,22 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	}
 
 	//创建默认分组与房间
-	// if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
-	// 	//todo 创建分组
-	// 	//s.Group.Client.CreateServerGroup(ctx, )
-	// 	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "公告栏", opUserID, constant.ChatChannelType, 0); err == nil {
-	// 	// 	channelIDs = append(channelIDs, channelID)
-	// 	// }
-	// }
-	// //f categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
-	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "日常聊天", opUserID, constant.ChatChannelType, 0); err == nil {
-	// 	channelIDs = append(channelIDs, channelID)
-	// }
-	// if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "资讯互动", opUserID, constant.ChatChannelType, 1); err == nil {
-	// 	channelIDs = append(channelIDs, channelID)
-	// }
-	// //}
-	// if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
-	// 	if channelID, err := s.CreateChannelByDefault(ctx, serverDB.ServerID, categoryID, "部落事务讨论", opUserID, constant.ChatChannelType, 0); err == nil {
-	// 		channelIDs = append(channelIDs, channelID)
-	// 	}
-	// }
+	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
+		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "公告栏", opUserID)
+		s.Group.Client.CreateServerGroup(ctx, createServerReq)
+	}
+	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
+		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "日常聊天", opUserID)
+		s.Group.Client.CreateServerGroup(ctx, createServerReq)
+		createServerReq = s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "资讯互动", opUserID)
+		s.Group.Client.CreateServerGroup(ctx, createServerReq)
+	}
+	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
+		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "部落事务讨论", opUserID)
+		s.Group.Client.CreateServerGroup(ctx, createServerReq)
 
-	// //todo 部落主统一进入所有房间
-	// if err := s.CreateChannelMembser(ctx, serverDB.ServerID, channelIDs, serverMemberId); err != nil {
-	// 	log.ZDebug(ctx, "owner join channel failed", "user_id", opUserID, "channelIDs", channelIDs)
-	// }
+	}
+
 	return &pbclub.CreateServerResp{}, nil
 }
 
@@ -149,20 +141,20 @@ func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServer
 	resp.Server = resp_server
 
 	//查询分组与房间信息
-	resp_categories := []*sdkws.GroupCategoryListInfo{}
 	categories, _ := s.ClubDatabase.GetAllGroupCategoriesByServer(ctx, server.ServerID)
 	if len(categories) > 0 {
 		if groups, err := s.Group.GetServerGroups(ctx, server.ServerID); err == nil {
 			for _, category := range categories {
+				temp := []*sdkws.ServerGroupListInfo{}
+
 				for _, group := range groups {
 					if category.CategoryID == group.GroupCategoryID {
-						if gc, err := convert.DB2PbCategory(category, groups); err == nil {
-							resp_categories = append(resp_categories, gc)
-						}
+						temp = append(temp, group)
 					}
 				}
+				resp_category, _ := convert.DB2PbCategory(category, temp)
+				resp.CategoryList = append(resp.CategoryList, resp_category)
 			}
-			resp.CategoryList = resp_categories
 		}
 	}
 
@@ -237,17 +229,20 @@ func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.Ser
 
 func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ownerUserID string) *pbgroup.CreateServerGroupReq {
 	req := &pbgroup.CreateServerGroupReq{
-		Condition:       0,
+		OwnerUserID: ownerUserID,
+	}
+
+	groupInfo := &sdkws.GroupInfo{
+		GroupName:       groupName,
+		OwnerUserID:     ownerUserID,
+		Status:          constant.GroupOk,
+		CreatorUserID:   ownerUserID,
+		GroupType:       constant.ServerGroup,
 		ConditionType:   0,
+		Condition:       "",
 		GroupCategoryID: categoryID,
 		ServerID:        serverID,
-		OwnerUserID:     ownerUserID,
-		// GroupInfo: &pbgroup.CreateGroupReq{
-		// 	GroupName:  groupName,
-		// 	CreateTime: time.Now(),
-		// 	Status:     constant.GroupOk,
-		// 	GroupType:  constant.ServerGroup,
-		// },
 	}
+	req.GroupInfo = groupInfo
 	return req
 }

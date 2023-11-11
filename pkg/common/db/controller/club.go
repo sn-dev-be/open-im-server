@@ -174,8 +174,8 @@ func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []
 }
 
 // TakeChanneCategory implements ClubDatabase.
-func (*clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
-	panic("unimplemented")
+func (c *clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
+	return c.groupCategoryDB.Take(ctx, groupCategoryID)
 }
 
 // GetServerRoleByUserIDAndServerID implements ClubDatabase.
