@@ -165,6 +165,10 @@ func (s *clubServer) BatchDeleteServers(ctx context.Context, req *pbclub.DeleteS
 	return nil, nil
 }
 
+func (s *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
+	return nil, nil
+}
+
 func (s *clubServer) IsNotFound(err error) bool {
 	return errs.ErrRecordNotFound.Is(specialerror.ErrCode(errs.Unwrap(err)))
 }

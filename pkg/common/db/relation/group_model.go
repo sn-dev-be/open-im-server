@@ -108,3 +108,6 @@ func (g *GroupGorm) FindNotDismissedGroup(ctx context.Context, groupIDs []string
 func (g *GroupGorm) GetGroupsByServerID(ctx context.Context, serverID string) (groups []*relation.GroupModel, err error) {
 	return groups, utils.Wrap(g.DB.Where("server_id = ? and status != ?", serverID, constant.GroupStatusDismissed).Find(&groups).Error, "")
 }
+func (g *GroupGorm) GetGroupIDsByServerIDs(ctx context.Context, serverIDS []string) (groupIDs []string, err error) {
+	return groupIDs, utils.Wrap(g.DB.Model(&relation.GroupModel{}).Where("server_id in (?) ", serverIDS).Pluck("group_id", &groupIDs).Error, "")
+}

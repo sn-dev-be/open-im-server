@@ -108,6 +108,10 @@ func (s *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	return resp, nil
 }
 
+func (*clubServer) ServerApplicationResponse(context.Context, *pbclub.ServerApplicationResponseReq) (*pbclub.ServerApplicationResponseResp, error) {
+	panic("unimplemented")
+}
+
 func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) error {
 	server_member := &relationtb.ServerMemberModel{
 		ServerID:      serverID,
@@ -305,7 +309,7 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 	return resp, nil
 }
 
-func (c *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
+func (c *clubServer) getJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
 	resp := &pbclub.GetJoinedServerListResp{}
 	if err := authverify.CheckAccessV3(ctx, req.FromUserID); err != nil {
 		return nil, err

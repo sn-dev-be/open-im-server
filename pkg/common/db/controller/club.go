@@ -60,6 +60,9 @@ type ClubDatabase interface {
 	CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error
 	GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error)
 
+	// group
+	FindGroup(ctx context.Context, serverIDs []string) (groups []*relationtb.GroupModel, err error)
+
 	//server_member
 	PageServerMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error)
 	GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relationtb.ServerMemberModel, err error)
@@ -92,6 +95,7 @@ func NewClubDatabase(
 	ServerRecommended relationtb.ServerRecommendedModelInterface,
 	serverMember relationtb.ServerMemberModelInterface,
 	groupCategory relationtb.GroupCategoryModelInterface,
+	group relationtb.GroupModelInterface,
 	serverRole relationtb.ServerRoleModelInterface,
 	serverRequest relationtb.ServerRequestModelInterface,
 	serverBlack relationtb.ServerBlackModelInterface,
@@ -108,6 +112,7 @@ func NewClubDatabase(
 		serverRequestDB:     serverRequest,
 		serverBlackDB:       serverBlack,
 		groupCategoryDB:     groupCategory,
+		groupDB:             group,
 		groupDappDB:         groupDapp,
 		tx:                  tx,
 		ctxTx:               ctxTx,
@@ -125,6 +130,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		relation.NewServerRecommendedDB(db),
 		relation.NewServerMemberDB(db),
 		relation.NewGroupCategoryDB(db),
+		relation.NewGroupDB(db),
 		relation.NewServerRoleDB(db),
 		relation.NewServerRequestDB(db),
 		relation.NewServerBlackDB(db),
@@ -134,6 +140,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		cache.NewClubCacheRedis(
 			rdb,
 			relation.NewServerDB(db),
+			relation.NewGroupDB(db),
 			relation.NewServerMemberDB(db),
 			relation.NewServerRequestDB(db),
 			hashCode,
@@ -147,6 +154,7 @@ type clubDatabase struct {
 	serverRecommendedDB relationtb.ServerRecommendedModelInterface
 	serverMemberDB      relationtb.ServerMemberModelInterface
 	groupCategoryDB     relationtb.GroupCategoryModelInterface
+	groupDB             relationtb.GroupModelInterface
 	serverRoleDB        relationtb.ServerRoleModelInterface
 	serverRequestDB     relationtb.ServerRequestModelInterface
 	serverBlackDB       relationtb.ServerBlackModelInterface
@@ -312,6 +320,12 @@ func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*rela
 		return err
 	}
 	return nil
+}
+
+// / group
+func (c *clubDatabase) FindGroup(ctx context.Context, serverIDs []string) (groups []*relationtb.GroupModel, err error) {
+	groupIDs, err := c.groupDB.GetGroupIDsByServerIDs(ctx, serverIDs)
+	return c.cache.GetGroupsInfo(ctx, groupIDs)
 }
 
 // ///////////////////////////////////////serverMember////////////////////
