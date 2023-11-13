@@ -48,6 +48,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		&relationtb.ServerBlackModel{},
 		&relationtb.ServerRequestModel{},
 		&relationtb.ServerMemberModel{},
+		&relationtb.ServerRecommendedModel{},
 	); err != nil {
 		return err
 	}
@@ -65,6 +66,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	userRpcClient := rpcclient.NewUserRpcClient(client)
 	msgRpcClient := rpcclient.NewMessageRpcClient(client)
 	conversationRpcClient := rpcclient.NewConversationRpcClient(client)
+	groupRpcClient := rpcclient.NewGroupRpcClient(client)
 
 	var cs clubServer
 	database := controller.InitClubDatabase(db, rdb, mongo.GetDatabase(), cs.serverMemberHashCode)
@@ -79,6 +81,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	})
 	cs.conversationRpcClient = conversationRpcClient
 	cs.msgRpcClient = msgRpcClient
+	cs.Group = groupRpcClient
 	pbclub.RegisterClubServer(server, &cs)
 	return nil
 }
@@ -86,6 +89,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 type clubServer struct {
 	ClubDatabase          controller.ClubDatabase
 	User                  rpcclient.UserRpcClient
+	Group                 rpcclient.GroupRpcClient
 	Notification          *notification.ClubNotificationSender
 	conversationRpcClient rpcclient.ConversationRpcClient
 	msgRpcClient          rpcclient.MessageRpcClient

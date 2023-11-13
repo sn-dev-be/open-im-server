@@ -71,7 +71,7 @@ func (s *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID s
 	everyone := &relationtb.ServerRoleModel{
 		RoleName:     "全体成员",
 		Icon:         "",
-		Type:         0,
+		Type:         constant.ServerRoleTypeEveryOne,
 		Priority:     0,
 		ServerID:     serverID,
 		RoleAuth:     utils.StructToJsonString(everyoneAuth),
@@ -107,7 +107,7 @@ func (s *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 	owner := &relationtb.ServerRoleModel{
 		RoleName:     "部落主",
 		Icon:         "",
-		Type:         0,
+		Type:         constant.ServerRoleTypeOwner,
 		Priority:     0,
 		ServerID:     serverID,
 		RoleAuth:     utils.StructToJsonString(ownerAuth),
@@ -131,4 +131,8 @@ func (s *clubServer) CreateServerRoleByPb(ctx context.Context, server_roles []*r
 		return err
 	}
 	return nil
+}
+
+func (s *clubServer) getServerRoleByType(ctx context.Context, serverID string, roleType int32) (*relationtb.ServerRoleModel, error) {
+	return s.ClubDatabase.TakeServerRoleByType(ctx, serverID, roleType)
 }

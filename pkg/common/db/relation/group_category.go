@@ -30,6 +30,10 @@ type GroupCategoryGorm struct {
 	*MetaDB
 }
 
+func (s *GroupCategoryGorm) GetGroupCategoriesByServerID(ctx context.Context, serverID string) (categories []*relation.GroupCategoryModel, err error) {
+	return categories, utils.Wrap(s.DB.Where("server_id = ?", serverID).Find(&categories).Error, "")
+}
+
 func NewGroupCategoryDB(db *gorm.DB) relation.GroupCategoryModelInterface {
 	return &GroupCategoryGorm{NewMetaDB(db, &relation.GroupCategoryModel{})}
 }

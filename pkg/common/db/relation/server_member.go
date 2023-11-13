@@ -227,3 +227,6 @@ func (g *ServerMemberGorm) FindUserManagedServerID(ctx context.Context, userID s
 		"",
 	)
 }
+func (s *ServerMemberGorm) GetJoinedServerByUserID(ctx context.Context, userID string) (members []*relation.ServerMemberModel, err error) {
+	return members, utils.Wrap(s.DB.Where("user_id =?", userID).Take(&members).Error, "")
+}

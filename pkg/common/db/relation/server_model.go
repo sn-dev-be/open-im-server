@@ -62,5 +62,9 @@ func (s *ServerGorm) FindServersSplit(ctx context.Context, pageNumber, showNumbe
 			Error,
 		"",
 	)
-	return
+	return servers, total, nil
+}
+
+func (s *ServerGorm) GetServers(ctx context.Context, serverIDs []string) (servers []*relation.ServerModel, err error) {
+	return servers, utils.Wrap(s.db(ctx).Where("server_id in ?", serverIDs).Find(&servers).Error, "")
 }

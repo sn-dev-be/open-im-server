@@ -34,8 +34,8 @@ type ServerRoleModel struct {
 	Icon         string    `gorm:"column:icon;size:64" json:"icon"`
 	Type         int32     `gorm:"column:type;default:0" json:"type"`
 	Priority     int32     `gorm:"column:priority" json:"priority"`
-	ServerID     string    `gorm:"column:server_id" json:"serverID"`
-	RoleAuth     string    `gorm:"column:role_auth" json:"roleAuth"`
+	ServerID     string    `gorm:"column:server_id;size:64" json:"serverID"`
+	RoleAuth     string    `gorm:"column:role_auth;size:255" json:"roleAuth"`
 	ColorLevel   int32     `gorm:"column:color_level" json:"colorLevel"`
 	MemberNumber int32     `gorm:"column:member_number" json:"memberNumber"`
 	Ex           string    `gorm:"column:ex;size:255" json:"ex"`
@@ -50,6 +50,7 @@ type ServerRoleModelInterface interface {
 	NewTx(tx any) ServerRoleModelInterface
 	Create(ctx context.Context, serverRoles []*ServerRoleModel) (err error)
 	Take(ctx context.Context, serverRoleID string) (serverRole *ServerRoleModel, err error)
+	TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *ServerRoleModel, err error)
 }
 
 func (s ServerRoleModel) AllowManageServer() bool {
@@ -67,22 +68,86 @@ func (s ServerRoleModel) AllowManageServer() bool {
 }
 
 func (s ServerRoleModel) AllowShareServer() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ShareServer == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowSendMsg() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.SendMsg == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowManageMsg() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageMsg == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowManageCommunity() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageCommunity == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowPostTweet() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.PostTweet == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ServerRoleModel) AllowTweetReply() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.TweetReply == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
@@ -101,5 +166,15 @@ func (s ServerRoleModel) AllowManageGroupCategory() bool {
 }
 
 func (s ServerRoleModel) AllowManageGroup() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageGroup == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }

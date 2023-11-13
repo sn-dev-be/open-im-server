@@ -16,6 +16,7 @@ package relation
 
 import (
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -52,11 +53,12 @@ func (s *ServerRequestGorm) UpdateHandler(
 ) (err error) {
 	return utils.Wrap(
 		s.DB.WithContext(ctx).
-			Model(&relation.GroupRequestModel{}).
-			Where("server_id = ? and user_id = ? ", serverID, userID).
+			Model(&relation.ServerRequestModel{}).
+			Where("server_id = ? and from_user_id = ? ", serverID, userID).
 			Updates(map[string]any{
 				"handle_msg":    handledMsg,
 				"handle_result": handleResult,
+				"create_time":   time.Now(),
 			}).
 			Error,
 		utils.GetSelfFuncName(),
@@ -73,4 +75,12 @@ func (s *ServerRequestGorm) PageServer(
 		pageNumber,
 		showNumber,
 	)
+}
+
+func (s *ServerRequestGorm) Take(ctx context.Context, serverID string, UserID string) (serverRequest *relation.ServerRequestModel, err error) {
+	err = utils.Wrap(
+		s.db(ctx).Where("server_ID = ? and from_user_ID = ?", serverID, UserID).Take(&serverRequest).Error,
+		"",
+	)
+	return serverRequest, err
 }

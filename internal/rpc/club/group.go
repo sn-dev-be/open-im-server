@@ -7,6 +7,7 @@ import (
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
+	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
@@ -63,5 +64,22 @@ func (c *clubServer) GetJoinedServerGroupList(ctx context.Context, req *pbclub.G
 		}
 		return convert.Db2PbGroupInfo(group, userID, serverMemberNum[group.ServerID])
 	})
+	return resp, nil
+}
+
+func (c *clubServer) GetServerGroups(ctx context.Context, req *pbclub.GetServerGroupsReq) (*pbclub.GetServerGroupsResp, error) {
+	defer log.ZDebug(ctx, "return")
+	resp := &pbclub.GetServerGroupsResp{}
+	groups, err := c.ClubDatabase.FindGroup(ctx, []string{req.ServerID})
+	if err != nil {
+		return nil, err
+	}
+	//convert
+	serverGroups := []*sdkws.ServerGroupListInfo{}
+	for _, group := range groups {
+		serverGroups = append(serverGroups, convert.Db2PbServerGroupInfo(group))
+	}
+
+	resp.Groups = serverGroups
 	return resp, nil
 }

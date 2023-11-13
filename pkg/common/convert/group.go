@@ -17,10 +17,12 @@ package convert
 import (
 	"time"
 
+	"github.com/OpenIMSDK/protocol/constant"
 	pbgroup "github.com/OpenIMSDK/protocol/group"
 	sdkws "github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
+	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
 )
 
 func Db2PbGroupInfo(m *relation.GroupModel, ownerUserID string, memberCount uint32) *sdkws.GroupInfo {
@@ -49,6 +51,20 @@ func Db2PbGroupInfo(m *relation.GroupModel, ownerUserID string, memberCount uint
 		ViewMode:               m.ViewMode,
 		GroupCategoryID:        m.GroupCategoryID,
 		ServerID:               m.ServerID,
+	}
+}
+
+func Db2PbServerGroupInfo(m *relation.GroupModel) *sdkws.ServerGroupListInfo {
+	return &sdkws.ServerGroupListInfo{
+		GroupID:          m.GroupID,
+		GroupName:        m.GroupName,
+		Introduction:     m.Introduction,
+		FaceURL:          m.FaceURL,
+		GroupType:        m.GroupType,
+		ConversationID:   msgprocessor.GetConversationIDBySessionType(constant.ServerGroupChatType, m.GroupID),
+		ConversationType: constant.ServerGroupChatType,
+		GroupCategoryID:  m.GroupCategoryID,
+		ServerID:         m.ServerID,
 	}
 }
 
