@@ -48,7 +48,9 @@ type GroupDatabase interface {
 	GetGroupIDsByGroupType(ctx context.Context, groupType int) (groupIDs []string, err error)
 	SaveOrUnsaveGroupByUser(ctx context.Context, groupID string, userID string, saveOrNot bool) error                                //保存或取消保存群
 	GetSavedGroupListByUser(ctx context.Context, userID string) (group_saveds []*relationtb.GroupSavedModel, total int64, err error) //获取所有已保存的群id
-	GetGroupListByServer(ctx context.Context, serverID string) (groups []*relationtb.GroupModel, err error)                          //获取部落所有群聊
+
+	//server
+	GetGroupListByServer(ctx context.Context, serverID string) (groups []*relationtb.GroupModel, err error) //获取部落所有群聊
 
 	// GroupMember
 	TakeGroupMember(ctx context.Context, groupID string, userID string) (groupMember *relationtb.GroupMemberModel, err error)

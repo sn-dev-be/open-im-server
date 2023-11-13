@@ -17,6 +17,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/dtm-labs/rockscache"
 	"github.com/redis/go-redis/v9"
@@ -24,6 +25,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/tx"
 	"github.com/OpenIMSDK/tools/utils"
 
@@ -49,7 +51,7 @@ type ClubDatabase interface {
 	GetServerRoleByUserIDAndServerID(ctx context.Context, userID string, serverID string) (server *relationtb.ServerRoleModel, err error)
 
 	//server_request
-	CreateServerRequest(ctx context.Context, requests []*relationtb.ServerRequestModel) error
+	CreateServerRequest(ctx context.Context, serverID, userID, invitedUserID string, reqMsg string, ex string, joinSource int32) error
 
 	//server_black
 
@@ -154,8 +156,35 @@ type clubDatabase struct {
 	cache               cache.ClubCache
 }
 
-func (c *clubDatabase) CreateServerRequest(ctx context.Context, requests []*relationtb.ServerRequestModel) error {
-	return c.serverRequestDB.Create(ctx, requests)
+func (c *clubDatabase) CreateServerRequest(ctx context.Context, serverID, userID, invitedUserID string, reqMsg string, ex string, joinSource int32) error {
+	return c.tx.Transaction(func(tx any) error {
+		_, err := c.serverRequestDB.Take(ctx, serverID, userID)
+		// 有db错误
+		if err != nil && errs.Unwrap(err) != gorm.ErrRecordNotFound {
+			return err
+		}
+		// 无错误 则更新
+		if err == nil {
+			if err := c.serverRequestDB.NewTx(tx).UpdateHandler(ctx, serverID, userID, "", constant.ServerResponseNotHandle); err != nil {
+				return err
+			}
+		} else {
+			if err := c.serverRequestDB.NewTx(tx).Create(ctx, []*relationtb.ServerRequestModel{{
+				FromUserID:    userID,
+				ServerID:      serverID,
+				InviterUserID: invitedUserID,
+				HandleResult:  constant.ServerResponseNotHandle,
+				ReqMsg:        reqMsg,
+				Ex:            ex,
+				JoinSource:    joinSource,
+				CreateTime:    time.Now(),
+				HandleTime:    time.Unix(0, 0),
+			}}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (c *clubDatabase) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error) {
@@ -180,15 +209,14 @@ func (c *clubDatabase) GetServerMemberByUserID(ctx context.Context, serverID str
 
 func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error) {
 	if recommends, err := c.serverRecommendedDB.GetServerRecommendedList(ctx); err == nil {
-		serverIDs := []string{}
+		server_recommendeds := []*relationtb.ServerModel{}
 		for _, recommend := range recommends {
-			serverIDs = append(serverIDs, recommend.ServerID)
+			server, err := c.serverDB.Take(ctx, recommend.ServerID)
+			if err == nil {
+				server_recommendeds = append(server_recommendeds, server)
+			}
 		}
-		if server_recommendeds, err := c.serverDB.GetServers(ctx, serverIDs); err != nil {
-			return nil, err
-		} else {
-			return server_recommendeds, nil
-		}
+		return server_recommendeds, nil
 	} else {
 		return nil, err
 	}

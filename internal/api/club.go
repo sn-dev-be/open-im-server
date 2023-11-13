@@ -50,3 +50,11 @@ func (o *ClubApi) BatchDeleteServers(c *gin.Context) {
 func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
 }
+
+func (o *ClubApi) JoinServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.JoinServer, o.Client, c)
+}
+
+func (o *ClubApi) QuitServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.QuitServer, o.Client, c)
+}

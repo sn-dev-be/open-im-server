@@ -92,7 +92,6 @@ func Db2PbServerMember(m *relation.ServerMemberModel) *sdkws.ServerMemberFullInf
 		InviterUserID:  m.InviterUserID,
 	}
 }
-<<<<<<< HEAD
 
 func Pb2DbServerMember(m *sdkws.UserInfo) *relation.ServerMemberModel {
 	return &relation.ServerMemberModel{
@@ -102,8 +101,6 @@ func Pb2DbServerMember(m *sdkws.UserInfo) *relation.ServerMemberModel {
 		Ex:       m.Ex,
 	}
 }
-=======
->>>>>>> 5a262efc1 (feat: getServerDetail)
 func DB2PbServerBaseInfoList(servers []*relation.ServerModel) ([]*sdkws.ServersListInfo, error) {
 	if len(servers) == 0 {
 		return nil, nil

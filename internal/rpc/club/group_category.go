@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OpenIMSDK/protocol/constant"
+
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/mcontext"
@@ -32,7 +34,18 @@ func (s *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 		}
 	}
 
-	return s.CreateGroupCategory(ctx, req)
+	category := &relationtb.GroupCategoryModel{
+		CategoryName: req.CategoryName,
+		CategoryType: constant.CustomCategoryType,
+		ServerID:     req.ServerID,
+		CreateTime:   time.Now(),
+	}
+	s.GenGroupCategoryID(ctx, &category.CategoryID)
+
+	if err := s.createGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
+		return nil, err
+	}
+	return &pbclub.CreateGroupCategoryResp{CategoryID: category.CategoryID}, nil
 }
 
 func (s *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string) error {

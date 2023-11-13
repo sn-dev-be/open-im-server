@@ -68,22 +68,86 @@ func (s ServerRoleModel) AllowManageServer() bool {
 }
 
 func (s ServerRoleModel) AllowShareServer() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ShareServer == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowSendMsg() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.SendMsg == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowManageMsg() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageMsg == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowManageCommunity() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageCommunity == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
 func (s ServerRoleModel) AllowPostTweet() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.PostTweet == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ServerRoleModel) AllowTweetReply() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.TweetReply == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }
 
@@ -102,5 +166,15 @@ func (s ServerRoleModel) AllowManageGroupCategory() bool {
 }
 
 func (s ServerRoleModel) AllowManageGroup() bool {
+	if s.RoleAuth != "" {
+		data := pbclub.RoleAuth{}
+		err := utils.JsonStringToStruct(s.RoleAuth, &data)
+		if err != nil {
+			return false
+		}
+		if data.ManageGroup == constant.ServerRoleAuthAllowed {
+			return true
+		}
+	}
 	return false
 }

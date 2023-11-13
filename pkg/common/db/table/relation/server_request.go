@@ -30,6 +30,8 @@ type ServerRequestModel struct {
 	HandlerUserID string    `gorm:"column:handler_user_id;size:64"`
 	HandleMsg     string    `gorm:"column:handle_msg;size:255"`
 	HandleTime    time.Time `gorm:"column:handle_time"`
+	JoinSource    int32     `gorm:"column:join_source"`
+	InviterUserID string    `gorm:"column:inviter_user_id;size:64"`
 	Ex            string    `gorm:"column:ex;size:1024"`
 }
 
@@ -41,8 +43,8 @@ type ServerRequestModelInterface interface {
 	// 插入多条记录
 	Create(ctx context.Context, serverRequests []*ServerRequestModel) (err error)
 	NewTx(tx any) ServerRequestModelInterface
-	UpdateHandler(ctx context.Context, serverID string, userID string, handledMsg string, handleResult int32) (err error)
-
+	UpdateHandler(ctx context.Context, serverID, userID string, handledMsg string, handleResult int32) (err error)
+	Take(ctx context.Context, serverID, UserID string) (serverRequest *ServerRequestModel, err error)
 	PageServer(
 		ctx context.Context,
 		serverIDs []string,
