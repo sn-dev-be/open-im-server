@@ -70,4 +70,6 @@ type GroupModelInterface interface {
 	CountTotal(ctx context.Context, before *time.Time) (count int64, err error)
 	// 获取范围内群增量
 	CountRangeEverydayTotal(ctx context.Context, start time.Time, end time.Time) (map[string]int64, error)
+	// 根据serverID获取群id列表
+	GetGroupIDsByServerIDs(ctx context.Context, serverIDS []string) (groupIDs []string, err error)
 }

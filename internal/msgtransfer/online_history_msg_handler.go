@@ -302,20 +302,16 @@ func (och *OnlineHistoryRedisConsumerHandler) handleMsg(
 					}
 				}
 			case constant.ServerGroupChatType:
-				log.ZInfo(ctx, "server group chat first create conversation", "conversationID",
-					conversationID)
+				log.ZInfo(ctx, "server group chat first create conversation", "conversationID", conversationID)
 				userIDs, err := och.clubRpcClient.GetServerMemberIDs(ctx, storageList[0].GroupID)
 				if err != nil {
-					log.ZWarn(ctx, "get group member ids error", err, "conversationID",
-						conversationID)
+					log.ZWarn(ctx, "get server group member ids error", err, "conversationID", conversationID)
 				} else {
 					if err := och.conversationRpcClient.ServerGroupChatFirstCreateConversation(ctx,
 						storageList[0].GroupID, userIDs); err != nil {
-						log.ZWarn(ctx, "server group chat first create conversation error", err,
-							"conversationID", conversationID)
+						log.ZWarn(ctx, "server group chat first create conversation error", err, "conversationID", conversationID)
 					}
 				}
-
 			case constant.SingleChatType, constant.NotificationChatType:
 				if err := och.conversationRpcClient.SingleChatFirstCreateConversation(ctx, storageList[0].RecvID,
 					storageList[0].SendID, conversationID, storageList[0].SessionType); err != nil {

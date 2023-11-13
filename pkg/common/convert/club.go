@@ -10,9 +10,8 @@ import (
 
 func Db2PbServerInfo(m *relation.ServerModel, ownerUserID string, memberCount uint32) *sdkws.ServerInfo {
 	return &sdkws.ServerInfo{
-		ServerID:   m.ServerID,
-		ServerName: m.ServerName,
-
+		ServerID:             m.ServerID,
+		ServerName:           m.ServerName,
 		Icon:                 m.Icon,
 		Description:          m.Description,
 		ApplyMode:            m.ApplyMode,

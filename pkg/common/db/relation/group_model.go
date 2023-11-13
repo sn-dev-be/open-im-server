@@ -104,3 +104,7 @@ func (g *GroupGorm) CountRangeEverydayTotal(ctx context.Context, start time.Time
 func (g *GroupGorm) FindNotDismissedGroup(ctx context.Context, groupIDs []string) (groups []*relation.GroupModel, err error) {
 	return groups, utils.Wrap(g.DB.Where("group_id in (?) and status != ?", groupIDs, constant.GroupStatusDismissed).Find(&groups).Error, "")
 }
+
+func (g *GroupGorm) GetGroupIDsByServerIDs(ctx context.Context, serverIDS []string) (groupIDs []string, err error) {
+	return groupIDs, utils.Wrap(g.DB.Model(&relation.GroupModel{}).Where("server_id in (?) ", serverIDS).Pluck("group_id", &groupIDs).Error, "")
+}

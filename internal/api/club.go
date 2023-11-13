@@ -47,6 +47,6 @@ func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
 }
 
-// func (o *ClubApi) CreateChannel(c *gin.Context) {
-// 	a2r.Call(club.ClubClient.CreateChannel, o.Client, c)
-// }
+func (o *ClubApi) GetJoinedServerGroupList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetJoinedServerGroupList, o.Client, c)
+}
