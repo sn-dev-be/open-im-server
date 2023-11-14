@@ -14,7 +14,6 @@ import (
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/OpenIMSDK/tools/errs"
-	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
@@ -75,31 +74,14 @@ func (c *clubServer) GetJoinedServerGroupList(ctx context.Context, req *pbclub.G
 	return resp, nil
 }
 
-func (c *clubServer) GetServerGroups(ctx context.Context, req *pbclub.GetServerGroupsReq) (*pbclub.GetServerGroupsResp, error) {
-	defer log.ZDebug(ctx, "return")
-	resp := &pbclub.GetServerGroupsResp{}
-	groups, err := c.ClubDatabase.FindGroup(ctx, []string{req.ServerID})
-	if err != nil {
-		return nil, err
-	}
-	//convert
-	serverGroups := []*sdkws.ServerGroupListInfo{}
-	for _, group := range groups {
-		serverGroups = append(serverGroups, convert.Db2PbServerGroupInfo(group))
-	}
-
-	resp.Groups = serverGroups
-	return resp, nil
-}
-
 func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateServerGroupReq) (*pbclub.CreateServerGroupResp, error) {
-	if req.OwnerUserID == "" {
+	if req.GroupInfo.OwnerUserID == "" {
 		return nil, errs.ErrArgs.Wrap("no group owner")
 	}
 	if req.GroupInfo.GroupType != constant.ServerGroup {
 		return nil, errs.ErrArgs.Wrap(fmt.Sprintf("group type %d not support", req.GroupInfo.GroupType))
 	}
-	if err := authverify.CheckAccessV3(ctx, req.OwnerUserID); err != nil {
+	if err := authverify.CheckAccessV3(ctx, req.GroupInfo.OwnerUserID); err != nil {
 		return nil, err
 	}
 	opUserID := mcontext.GetOpUserID(ctx)
@@ -108,7 +90,7 @@ func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 	if err := s.GenGroupID(ctx, &group.GroupID); err != nil {
 		return nil, err
 	}
-	if group.GroupType == constant.AppChannelType {
+	if group.GroupMode == constant.AppGroupMode {
 		if req.DappID == "" {
 			return nil, errs.ErrArgs.Wrap("no group dapp bind")
 		}
@@ -127,7 +109,7 @@ func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 	}
 
 	resp := &pbclub.CreateServerGroupResp{GroupInfo: &sdkws.GroupInfo{}}
-	resp.GroupInfo = convert.Db2PbGroupInfo(group, req.OwnerUserID, 0)
+	resp.GroupInfo = convert.Db2PbGroupInfo(group, req.GroupInfo.OwnerUserID, 0)
 	resp.GroupInfo.MemberCount = 0
 	return resp, nil
 }

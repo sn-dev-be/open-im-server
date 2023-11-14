@@ -41,3 +41,7 @@ func (s *GroupDappGorm) NewTx(tx any) relation.GroupDappModellInterface {
 func (s *GroupDappGorm) Create(ctx context.Context, servers []*relation.GroupDappModel) (err error) {
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
 }
+
+func (s *GroupDappGorm) TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relation.GroupDappModel, err error) {
+	return groupDapp, utils.Wrap(s.DB.Where("group_id = ?", groupID).Take(&groupDapp).Error, "")
+}

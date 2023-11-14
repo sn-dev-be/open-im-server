@@ -168,3 +168,12 @@ func Db2PbServerRequest(
 		InviterUserID: m.InviterUserID,
 	}
 }
+func DB2PbGroupDapp(m *relation.GroupDappModel) (*sdkws.GroupDappFullInfo, error) {
+	res := &sdkws.GroupDappFullInfo{
+		Id:         m.ID,
+		GroupID:    m.GroupID,
+		DappID:     m.DappID,
+		CreateTime: m.CreateTime.UnixMilli(),
+	}
+	return res, nil
+}

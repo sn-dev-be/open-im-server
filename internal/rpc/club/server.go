@@ -149,7 +149,17 @@ func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServer
 
 				for _, group := range serverGroups {
 					if category.CategoryID == group.GroupCategoryID {
-						temp = append(temp, convert.Db2PbServerGroupInfo(group))
+						pbGroupInfo := convert.Db2PbServerGroupInfo(group)
+						if group.GroupMode == constant.AppGroupMode {
+							if groupDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, group.GroupID); err != nil {
+								return nil, err
+							} else {
+								pbGroupDapp, _ := convert.DB2PbGroupDapp(groupDapp)
+								pbGroupInfo.Dapp = pbGroupDapp
+							}
+
+						}
+						temp = append(temp, pbGroupInfo)
 					}
 				}
 				resp_category, _ := convert.DB2PbCategory(category, temp)
@@ -222,9 +232,7 @@ func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.Ser
 }
 
 func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ownerUserID string) *pbclub.CreateServerGroupReq {
-	req := &pbclub.CreateServerGroupReq{
-		OwnerUserID: ownerUserID,
-	}
+	req := &pbclub.CreateServerGroupReq{}
 
 	groupInfo := &sdkws.GroupInfo{
 		GroupName:       groupName,

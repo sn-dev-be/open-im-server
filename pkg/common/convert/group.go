@@ -65,6 +65,7 @@ func Db2PbServerGroupInfo(m *relation.GroupModel) *sdkws.ServerGroupListInfo {
 		ConversationType: constant.ServerGroupChatType,
 		GroupCategoryID:  m.GroupCategoryID,
 		ServerID:         m.ServerID,
+		GroupMode:        m.GroupMode,
 	}
 }
 
@@ -165,6 +166,7 @@ func Pb2DBGroupInfo(m *sdkws.GroupInfo) *relation.GroupModel {
 		ViewMode:               m.ViewMode,
 		GroupCategoryID:        m.GroupCategoryID,
 		ServerID:               m.ServerID,
+		GroupMode:              m.GroupMode,
 	}
 }
 

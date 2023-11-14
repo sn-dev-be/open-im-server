@@ -67,6 +67,9 @@ type ClubDatabase interface {
 	TakeGroup(ctx context.Context, groupID string) (group *relationtb.GroupModel, err error)
 	CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error
 
+	//group_dapp
+	TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error)
+
 	//server_member
 	PageServerMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error)
 	GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relationtb.ServerMemberModel, err error)
@@ -146,6 +149,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		cache.NewClubCacheRedis(
 			rdb,
 			relation.NewServerDB(db),
+			relation.NewGroupDappDB(db),
 			relation.NewGroupDB(db),
 			relation.NewServerMemberDB(db),
 			relation.NewServerRequestDB(db),
@@ -225,7 +229,17 @@ func (c *clubDatabase) GetServerRoleByUserIDAndServerID(ctx context.Context, use
 }
 
 func (c *clubDatabase) CreateServerMember(ctx context.Context, serverMembers []*relationtb.ServerMemberModel) error {
-	return c.serverMemberDB.Create(ctx, serverMembers)
+	if err := c.serverMemberDB.Create(ctx, serverMembers); err != nil {
+		return err
+	}
+	for _, serverMember := range serverMembers {
+		c.cache.DelServerMembersHash(serverMember.ServerID).
+			DelServerMemberIDs(serverMember.ServerID).
+			DelServersMemberNum(serverMember.ServerID).
+			DelJoinedServerID(serverMember.UserID).
+			DelServerMembersInfo(serverMember.ServerID, serverMember.UserID).ExecDel(ctx)
+	}
+	return nil
 }
 
 func (c *clubDatabase) GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relationtb.ServerMemberModel, err error) {
@@ -330,29 +344,16 @@ func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relation
 			return group.GroupID
 		})
 
-		// for _, group := range groups {
-		// 	if group.GroupType == constant.AppChannelType {
-
-		// 	}
-
-		// }
-
-		//m := make(map[string]struct{})
-
-		// for _, groupMember := range groupMembers {
-		// 	if _, ok := m[groupMember.GroupID]; !ok {
-		// 		m[groupMember.GroupID] = struct{}{}
-		// 		cache = cache.DelGroupMemberIDs(groupMember.GroupID).DelGroupMembersHash(groupMember.GroupID).DelGroupsMemberNum(groupMember.GroupID)
-		// 	}
-		// 	cache = cache.DelJoinedGroupID(groupMember.UserID).DelGroupMembersInfo(groupMember.GroupID, groupMember.UserID)
-		// }
-
 		cache = cache.DelGroupsInfo(createGroupIDs...)
 		return nil
 	}); err != nil {
 		return err
 	}
 	return cache.ExecDel(ctx)
+}
+
+func (c *clubDatabase) TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error) {
+	return c.cache.GetGroupDappInfo(ctx, groupID)
 }
 
 // ///////////////////////////////////////serverMember////////////////////
