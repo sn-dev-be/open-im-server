@@ -82,3 +82,28 @@ func (o *ClubApi) GetUserReqServerApplicationList(c *gin.Context) {
 func (o *ClubApi) GetServerUsersReqApplicationList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerUsersReqApplicationList, o.Client, c)
 }
+
+// /serverMember
+func (o *ClubApi) GetServerMembersInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerMemberList, o.Client, c)
+}
+
+func (o *ClubApi) GetServerMemberList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerMemberList, o.Client, c)
+}
+
+func (o *ClubApi) KickServerMember(c *gin.Context) {
+	a2r.Call(club.ClubClient.KickServerMember, o.Client, c)
+}
+
+func (o *ClubApi) MuteServerMember(c *gin.Context) {
+	a2r.Call(club.ClubClient.MuteServerMember, o.Client, c)
+}
+
+func (o *ClubApi) CancelMuteServerMember(c *gin.Context) {
+	a2r.Call(club.ClubClient.CancelMuteServerMember, o.Client, c)
+}
+
+func (o *ClubApi) SetServerMemberInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetServerMemberInfo, o.Client, c)
+}

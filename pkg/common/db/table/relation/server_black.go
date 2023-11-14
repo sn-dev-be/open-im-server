@@ -22,7 +22,7 @@ import (
 const ServerBlackModelTableName = "server_blacks"
 
 type ServerBlackModel struct {
-	OwnerServerID  string    `gorm:"column:owner_server_id;primary_key;size:64"`
+	ServerID       string    `gorm:"column:server_id;primary_key;size:64"`
 	BlockUserID    string    `gorm:"column:block_user_id;primary_key;size:64"`
 	CreateTime     time.Time `gorm:"column:create_time"`
 	AddSource      int32     `gorm:"column:add_source"`
@@ -35,7 +35,6 @@ func (ServerBlackModel) TableName() string {
 }
 
 type ServerBlackModelInterface interface {
-	// 插入多条记录
 	Create(ctx context.Context, serverBlacks []*ServerBlackModel) (err error)
 	NewTx(tx any) ServerBlackModelInterface
 }

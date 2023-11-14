@@ -217,18 +217,33 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 	{
 		c := NewClubApi(*clubRpc)
 		clubGroup.POST("/create_server", c.CreateServer)
-		clubGroup.POST("/get_server_recommended_list", c.GetServerRecommendedList)
-		clubGroup.POST("/get_joined_server_list", c.GetJoinedServerList)
-		clubGroup.POST("/get_server_detail", c.GetServerDetails)
+		clubGroup.POST("/set_server_info", nil)
 		clubGroup.POST("/join_server", c.JoinServer)
 		clubGroup.POST("/quit_server", c.QuitServer)
+		clubGroup.POST("/transfer_server", nil)
+		clubGroup.POST("/get_server_recommended_list", c.GetServerRecommendedList)
+		clubGroup.POST("/get_joined_server_list", c.GetJoinedServerList)
+		clubGroup.POST("/get_server_info", c.GetServerDetails)
+		clubGroup.POST("/invite_user_to_server", nil)
+		clubGroup.POST("/dismiss_server", nil)
 
 		clubGroup.POST("/create_category", c.CreateGroupCategory)
 
-		clubGroup.POST("/create_server_group", c.CreateServerGroup)
-
 		clubGroup.POST("/get_joined_server_group_list", c.GetJoinedServerGroupList)
 		clubGroup.POST("/create_server_group", c.CreateServerGroup)
+
+		clubGroup.POST("/get_server_members_info", c.GetServerMembersInfo)
+		clubGroup.POST("/get_server_member_list", c.GetServerMemberList)
+		clubGroup.POST("/kick_server_member", c.KickServerMember)
+		clubGroup.POST("/mute_server_member", c.MuteServerMember)
+		clubGroup.POST("/cancel_mute_server_member", c.CancelMuteServerMember)
+		clubGroup.POST("/set_server_member_info", c.SetServerMemberInfo)
+
+		clubGroup.POST("/server_application_response", c.ApplicationServerResponse)
+		clubGroup.POST("/get_recv_server_applicationList", c.GetRecvServerApplicationList)
+		clubGroup.POST("/get_user_req_server_applicationList", c.GetUserReqServerApplicationList)
+		clubGroup.POST("/get_server_users_req_application_list", c.GetServerUsersReqApplicationList)
+
 	}
 	return r
 }
