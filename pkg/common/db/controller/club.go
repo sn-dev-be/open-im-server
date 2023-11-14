@@ -17,7 +17,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/dtm-labs/rockscache"
 	"github.com/redis/go-redis/v9"
@@ -25,7 +24,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OpenIMSDK/protocol/constant"
-	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/tx"
 	"github.com/OpenIMSDK/tools/utils"
 
@@ -41,6 +39,7 @@ type ClubDatabase interface {
 	PageServers(ctx context.Context, pageNumber, showNumber int32) (servers []*relationtb.ServerModel, total int64, err error)
 	////
 	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
+	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error)
 	GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error)
 	GetJoinedServerList(ctx context.Context, userID string) (servers []*relationtb.ServerModel, err error)
 
@@ -51,7 +50,10 @@ type ClubDatabase interface {
 	GetServerRoleByUserIDAndServerID(ctx context.Context, userID string, serverID string) (server *relationtb.ServerRoleModel, err error)
 
 	//server_request
-	CreateServerRequest(ctx context.Context, serverID, userID, invitedUserID string, reqMsg string, ex string, joinSource int32) error
+	CreateServerRequest(ctx context.Context, requests []*relationtb.ServerRequestModel) error
+	TakeServerRequest(ctx context.Context, serverID string, userID string) (*relationtb.ServerRequestModel, error)
+	FindServerRequests(ctx context.Context, serverID string, userIDs []string) (int64, []*relationtb.ServerRequestModel, error)
+	PageServerRequestUser(ctx context.Context, userID string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
 
 	//server_black
 
@@ -170,37 +172,6 @@ type clubDatabase struct {
 	cache cache.ClubCache
 }
 
-func (c *clubDatabase) CreateServerRequest(ctx context.Context, serverID, userID, invitedUserID string, reqMsg string, ex string, joinSource int32) error {
-	return c.tx.Transaction(func(tx any) error {
-		_, err := c.serverRequestDB.Take(ctx, serverID, userID)
-		// 有db错误
-		if err != nil && errs.Unwrap(err) != gorm.ErrRecordNotFound {
-			return err
-		}
-		// 无错误 则更新
-		if err == nil {
-			if err := c.serverRequestDB.NewTx(tx).UpdateHandler(ctx, serverID, userID, "", constant.ServerResponseNotHandle); err != nil {
-				return err
-			}
-		} else {
-			if err := c.serverRequestDB.NewTx(tx).Create(ctx, []*relationtb.ServerRequestModel{{
-				FromUserID:    userID,
-				ServerID:      serverID,
-				InviterUserID: invitedUserID,
-				HandleResult:  constant.ServerResponseNotHandle,
-				ReqMsg:        reqMsg,
-				Ex:            ex,
-				JoinSource:    joinSource,
-				CreateTime:    time.Now(),
-				HandleTime:    time.Unix(0, 0),
-			}}); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 func (c *clubDatabase) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error) {
 	return c.serverRoleDB.TakeServerRoleByType(ctx, serverID, roleType)
 }
@@ -294,6 +265,10 @@ func (c *clubDatabase) TakeServer(ctx context.Context, serverID string) (server 
 
 func (c *clubDatabase) FindServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error) {
 	return c.cache.GetServersInfo(ctx, serverIDs)
+}
+
+func (c *clubDatabase) FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error) {
+	return c.serverDB.FindNotDismissedServer(ctx, serverIDs)
 }
 
 func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error) {
@@ -597,4 +572,37 @@ func (c *clubDatabase) UpdateServerMembers(ctx context.Context, data []*relation
 		return err
 	}
 	return cache.ExecDel(ctx)
+}
+
+// /serverRequest
+func (c *clubDatabase) CreateServerRequest(ctx context.Context, requests []*relationtb.ServerRequestModel) error {
+	return c.tx.Transaction(func(tx any) error {
+		db := c.serverRequestDB.NewTx(tx)
+		for _, request := range requests {
+			if err := db.Delete(ctx, request.ServerID, request.UserID); err != nil {
+				return err
+			}
+		}
+		return db.Create(ctx, requests)
+	})
+}
+
+func (c *clubDatabase) TakeServerRequest(
+	ctx context.Context,
+	serverID string,
+	userID string,
+) (*relationtb.ServerRequestModel, error) {
+	return c.serverRequestDB.Take(ctx, serverID, userID)
+}
+
+func (c *clubDatabase) FindServerRequests(ctx context.Context, serverID string, userIDs []string) (int64, []*relationtb.ServerRequestModel, error) {
+	return c.serverRequestDB.FindServerRequests(ctx, serverID, userIDs)
+}
+
+func (c *clubDatabase) PageServerRequestUser(
+	ctx context.Context,
+	userID string,
+	pageNumber, showNumber int32,
+) (uint32, []*relationtb.ServerRequestModel, error) {
+	return c.serverRequestDB.Page(ctx, userID, pageNumber, showNumber)
 }

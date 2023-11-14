@@ -16,7 +16,6 @@ package relation
 
 import (
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -33,15 +32,27 @@ type ServerRequestGorm struct {
 }
 
 func NewServerRequestDB(db *gorm.DB) relation.ServerRequestModelInterface {
-	return &ServerRequestGorm{NewMetaDB(db, &relation.ServerRequestModel{})}
+	return &ServerRequestGorm{
+		NewMetaDB(db, &relation.ServerRequestModel{}),
+	}
 }
 
 func (s *ServerRequestGorm) NewTx(tx any) relation.ServerRequestModelInterface {
 	return &ServerRequestGorm{NewMetaDB(tx.(*gorm.DB), &relation.ServerRequestModel{})}
 }
 
-func (s *ServerRequestGorm) Create(ctx context.Context, servers []*relation.ServerRequestModel) (err error) {
-	return utils.Wrap(s.DB.Create(&servers).Error, "")
+func (s *ServerRequestGorm) Create(ctx context.Context, serverRequests []*relation.ServerRequestModel) (err error) {
+	return utils.Wrap(s.DB.Create(&serverRequests).Error, utils.GetSelfFuncName())
+}
+
+func (s *ServerRequestGorm) Delete(ctx context.Context, serverID string, userID string) (err error) {
+	return utils.Wrap(
+		s.DB.WithContext(ctx).
+			Where("server_id = ? and user_id = ? ", serverID, userID).
+			Delete(&relation.ServerRequestModel{}).
+			Error,
+		utils.GetSelfFuncName(),
+	)
 }
 
 func (s *ServerRequestGorm) UpdateHandler(
@@ -54,14 +65,39 @@ func (s *ServerRequestGorm) UpdateHandler(
 	return utils.Wrap(
 		s.DB.WithContext(ctx).
 			Model(&relation.ServerRequestModel{}).
-			Where("server_id = ? and from_user_id = ? ", serverID, userID).
+			Where("server_id = ? and user_id = ? ", serverID, userID).
 			Updates(map[string]any{
 				"handle_msg":    handledMsg,
 				"handle_result": handleResult,
-				"create_time":   time.Now(),
 			}).
 			Error,
 		utils.GetSelfFuncName(),
+	)
+}
+
+func (s *ServerRequestGorm) Take(
+	ctx context.Context,
+	serverID string,
+	userID string,
+) (serverRequest *relation.ServerRequestModel, err error) {
+	serverRequest = &relation.ServerRequestModel{}
+	return serverRequest, utils.Wrap(
+		s.DB.WithContext(ctx).Where("server_id = ? and user_id = ? ", serverID, userID).Take(serverRequest).Error,
+		utils.GetSelfFuncName(),
+	)
+}
+
+func (s *ServerRequestGorm) Page(
+	ctx context.Context,
+	userID string,
+	pageNumber, showNumber int32,
+) (total uint32, servers []*relation.ServerRequestModel, err error) {
+	return ormutil.GormSearch[relation.ServerRequestModel](
+		s.DB.WithContext(ctx).Where("user_id = ?", userID),
+		nil,
+		"",
+		pageNumber,
+		showNumber,
 	)
 }
 
@@ -77,10 +113,11 @@ func (s *ServerRequestGorm) PageServer(
 	)
 }
 
-func (s *ServerRequestGorm) Take(ctx context.Context, serverID string, UserID string) (serverRequest *relation.ServerRequestModel, err error) {
-	err = utils.Wrap(
-		s.db(ctx).Where("server_ID = ? and from_user_ID = ?", serverID, UserID).Take(&serverRequest).Error,
-		"",
-	)
-	return serverRequest, err
+func (s *ServerRequestGorm) FindServerRequests(
+	ctx context.Context,
+	serverID string,
+	userIDs []string,
+) (total int64, serverRequests []*relation.ServerRequestModel, err error) {
+	err = s.DB.WithContext(ctx).Where("server_id = ? and user_id in ?", serverID, userIDs).Find(&serverRequests).Error
+	return int64(len(serverRequests)), serverRequests, utils.Wrap(err, utils.GetSelfFuncName())
 }

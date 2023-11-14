@@ -27,6 +27,7 @@ func NewClubApi(client rpcclient.Club) ClubApi {
 	return ClubApi(client)
 }
 
+// /server
 func (o *ClubApi) CreateServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateServer, o.Client, c)
 }
@@ -43,10 +44,20 @@ func (o *ClubApi) GetServerDetails(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerDetails, o.Client, c)
 }
 
+func (o *ClubApi) JoinServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.JoinServer, o.Client, c)
+}
+
+func (o *ClubApi) QuitServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.QuitServer, o.Client, c)
+}
+
+// /groupCategory
 func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
 }
 
+// /group
 func (o *ClubApi) GetJoinedServerGroupList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetJoinedServerGroupList, o.Client, c)
 }
@@ -55,10 +66,19 @@ func (o *ClubApi) CreateServerGroup(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateServerGroup, o.Client, c)
 }
 
-func (o *ClubApi) JoinServer(c *gin.Context) {
-	a2r.Call(club.ClubClient.JoinServer, o.Client, c)
+// /serverRequest
+func (o *ClubApi) ApplicationServerResponse(c *gin.Context) {
+	a2r.Call(club.ClubClient.ServerApplicationResponse, o.Client, c)
 }
 
-func (o *ClubApi) QuitServer(c *gin.Context) {
-	a2r.Call(club.ClubClient.QuitServer, o.Client, c)
+func (o *ClubApi) GetRecvServerApplicationList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerApplicationList, o.Client, c)
+}
+
+func (o *ClubApi) GetUserReqServerApplicationList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetUserReqApplicationList, o.Client, c)
+}
+
+func (o *ClubApi) GetServerUsersReqApplicationList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerUsersReqApplicationList, o.Client, c)
 }

@@ -19,6 +19,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -45,6 +46,10 @@ func (s *ServerGorm) Create(ctx context.Context, servers []*relation.ServerModel
 func (s *ServerGorm) Take(ctx context.Context, serverID string) (server *relation.ServerModel, err error) {
 	server = &relation.ServerModel{}
 	return server, utils.Wrap(s.DB.Where("server_id = ?", serverID).Take(server).Error, "")
+}
+
+func (s *ServerGorm) FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relation.ServerModel, err error) {
+	return servers, utils.Wrap(s.DB.Where("server_id in (?) and status != ?", serverIDs, constant.ServerStatusDismissed).Find(&servers).Error, "")
 }
 
 func (s *ServerGorm) FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*relation.ServerModel, total int64, err error) {

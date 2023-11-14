@@ -22,14 +22,14 @@ import (
 const ServerRequestModelTableName = "server_requests"
 
 type ServerRequestModel struct {
-	FromUserID    string    `gorm:"column:from_user_id;primary_key;size:64"`
+	UserID        string    `gorm:"column:user_id;primary_key;size:64"`
 	ServerID      string    `gorm:"column:server_id;primary_key;size:64"`
 	HandleResult  int32     `gorm:"column:handle_result"`
-	ReqMsg        string    `gorm:"column:req_msg;size:255"`
-	CreateTime    time.Time `gorm:"column:create_time; autoCreateTime"`
-	HandlerUserID string    `gorm:"column:handler_user_id;size:64"`
-	HandleMsg     string    `gorm:"column:handle_msg;size:255"`
-	HandleTime    time.Time `gorm:"column:handle_time"`
+	ReqMsg        string    `gorm:"column:req_msg;size:1024"`
+	HandledMsg    string    `gorm:"column:handle_msg;size:1024"`
+	ReqTime       time.Time `gorm:"column:req_time"`
+	HandleUserID  string    `gorm:"column:handle_user_id;size:64"`
+	HandledTime   time.Time `gorm:"column:handle_time"`
 	JoinSource    int32     `gorm:"column:join_source"`
 	InviterUserID string    `gorm:"column:inviter_user_id;size:64"`
 	Ex            string    `gorm:"column:ex;size:1024"`
@@ -40,11 +40,17 @@ func (ServerRequestModel) TableName() string {
 }
 
 type ServerRequestModelInterface interface {
-	// 插入多条记录
-	Create(ctx context.Context, serverRequests []*ServerRequestModel) (err error)
 	NewTx(tx any) ServerRequestModelInterface
+	Create(ctx context.Context, serverRequests []*ServerRequestModel) (err error)
+	Delete(ctx context.Context, serverID string, userID string) (err error)
 	UpdateHandler(ctx context.Context, serverID, userID string, handledMsg string, handleResult int32) (err error)
 	Take(ctx context.Context, serverID, UserID string) (serverRequest *ServerRequestModel, err error)
+	FindServerRequests(ctx context.Context, serverID string, userIDs []string) (int64, []*ServerRequestModel, error)
+	Page(
+		ctx context.Context,
+		userID string,
+		pageNumber, showNumber int32,
+	) (total uint32, servers []*ServerRequestModel, err error)
 	PageServer(
 		ctx context.Context,
 		serverIDs []string,

@@ -148,3 +148,23 @@ func DB2PbCategory(m *relation.GroupCategoryModel, g []*sdkws.ServerGroupListInf
 	}
 	return res, nil
 }
+
+func Db2PbServerRequest(
+	m *relation.ServerRequestModel,
+	user *sdkws.PublicUserInfo,
+	server *sdkws.ServerInfo,
+) *sdkws.ServerRequest {
+	return &sdkws.ServerRequest{
+		UserInfo:      user,
+		ServerInfo:    server,
+		HandleResult:  m.HandleResult,
+		ReqMsg:        m.ReqMsg,
+		HandleMsg:     m.HandledMsg,
+		ReqTime:       m.ReqTime.UnixMilli(),
+		HandleUserID:  m.HandleUserID,
+		HandleTime:    m.HandledTime.UnixMilli(),
+		Ex:            m.Ex,
+		JoinSource:    m.JoinSource,
+		InviterUserID: m.InviterUserID,
+	}
+}

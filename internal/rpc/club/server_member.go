@@ -56,7 +56,7 @@ func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 			Nickname:      user.Nickname,
 			ServerRoleID:  serverRole.RoleID,
 			JoinSource:    req.JoinSource,
-			InviterUserID: req.InvitedUserID,
+			InviterUserID: req.InviterUserID,
 			JoinTime:      time.Now(),
 		}
 		err = s.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{serverMember})
@@ -67,9 +67,19 @@ func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		return &pbclub.JoinServerResp{}, nil
 	} else {
 		//保存server_request
-		if err = s.ClubDatabase.CreateServerRequest(ctx, req.ServerID, req.UserID, req.InvitedUserID, req.ReqMessage, "", req.JoinSource); err != nil {
+
+		serverRequest := relationtb.ServerRequestModel{
+			UserID:      req.InviterUserID,
+			ReqMsg:      req.ReqMessage,
+			ServerID:    req.ServerID,
+			JoinSource:  req.JoinSource,
+			ReqTime:     time.Now(),
+			HandledTime: time.Unix(0, 0),
+		}
+		if err := s.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
 			return nil, err
 		}
+
 		//给群主、管理员发送消息
 		// s.Notification.JoinGroupApplicationNotification(ctx, req)
 	}
@@ -106,10 +116,6 @@ func (s *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	}
 
 	return resp, nil
-}
-
-func (*clubServer) ServerApplicationResponse(context.Context, *pbclub.ServerApplicationResponseReq) (*pbclub.ServerApplicationResponseResp, error) {
-	panic("unimplemented")
 }
 
 func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) error {
