@@ -309,7 +309,7 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 	return resp, nil
 }
 
-func (c *clubServer) getJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
+func (c *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
 	resp := &pbclub.GetJoinedServerListResp{}
 	if err := authverify.CheckAccessV3(ctx, req.FromUserID); err != nil {
 		return nil, err

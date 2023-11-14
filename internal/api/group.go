@@ -156,7 +156,3 @@ func (o *GroupApi) UnsaveGroup(c *gin.Context) {
 func (o *GroupApi) GetSavedGroupList(c *gin.Context) {
 	a2r.Call(group.GroupClient.GetSavedGroupList, o.Client, c)
 }
-
-func (o *GroupApi) CreateServerGroup(c *gin.Context) {
-	a2r.Call(group.GroupClient.CreateServerGroup, o.Client, c)
-}

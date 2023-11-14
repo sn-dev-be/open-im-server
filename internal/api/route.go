@@ -130,8 +130,6 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		groupRouterGroup.POST("/save_group", g.SaveGroup)
 		groupRouterGroup.POST("/unsave_group", g.UnsaveGroup)
 		groupRouterGroup.POST("/get_saved_group_list", g.GetSavedGroupList)
-		groupRouterGroup.POST("/create_server_group", g.CreateServerGroup)
-
 	}
 	superGroupRouterGroup := r.Group("/super_group", ParseToken)
 	{
@@ -228,6 +226,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/create_category", c.CreateGroupCategory)
 
 		clubGroup.POST("/get_joined_server_group_list", c.GetJoinedServerGroupList)
+		clubGroup.POST("/create_server_group", c.CreateServerGroup)
 	}
 	return r
 }

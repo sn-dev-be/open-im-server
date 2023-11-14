@@ -11,7 +11,6 @@ import (
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/constant"
-	pbgroup "github.com/OpenIMSDK/protocol/group"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	pbuser "github.com/OpenIMSDK/protocol/user"
 
@@ -75,18 +74,17 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	//创建默认分组与房间
 	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
 		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "公告栏", opUserID)
-		s.Group.Client.CreateServerGroup(ctx, createServerReq)
+		s.CreateServerGroup(ctx, createServerReq)
 	}
 	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
 		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "日常聊天", opUserID)
-		s.Group.Client.CreateServerGroup(ctx, createServerReq)
+		s.CreateServerGroup(ctx, createServerReq)
 		createServerReq = s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "资讯互动", opUserID)
-		s.Group.Client.CreateServerGroup(ctx, createServerReq)
+		s.CreateServerGroup(ctx, createServerReq)
 	}
 	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
 		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "部落事务讨论", opUserID)
-		s.Group.Client.CreateServerGroup(ctx, createServerReq)
-
+		s.CreateServerGroup(ctx, createServerReq)
 	}
 
 	return &pbclub.CreateServerResp{ServerID: serverDB.ServerID}, nil
@@ -166,10 +164,6 @@ func (s *clubServer) BatchDeleteServers(ctx context.Context, req *pbclub.DeleteS
 	return nil, nil
 }
 
-func (s *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoinedServerListReq) (*pbclub.GetJoinedServerListResp, error) {
-	return nil, nil
-}
-
 func (s *clubServer) IsNotFound(err error) bool {
 	return errs.ErrRecordNotFound.Is(specialerror.ErrCode(errs.Unwrap(err)))
 }
@@ -227,8 +221,8 @@ func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.Ser
 	return nil
 }
 
-func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ownerUserID string) *pbgroup.CreateServerGroupReq {
-	req := &pbgroup.CreateServerGroupReq{
+func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ownerUserID string) *pbclub.CreateServerGroupReq {
+	req := &pbclub.CreateServerGroupReq{
 		OwnerUserID: ownerUserID,
 	}
 

@@ -62,6 +62,8 @@ type ClubDatabase interface {
 
 	// group
 	FindGroup(ctx context.Context, serverIDs []string) (groups []*relationtb.GroupModel, err error)
+	TakeGroup(ctx context.Context, groupID string) (group *relationtb.GroupModel, err error)
+	CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error
 
 	//server_member
 	PageServerMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error)
@@ -330,6 +332,52 @@ func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*rela
 func (c *clubDatabase) FindGroup(ctx context.Context, serverIDs []string) (groups []*relationtb.GroupModel, err error) {
 	groupIDs, err := c.groupDB.GetGroupIDsByServerIDs(ctx, serverIDs)
 	return c.cache.GetGroupsInfo(ctx, groupIDs)
+}
+
+func (c *clubDatabase) TakeGroup(ctx context.Context, groupID string) (group *relationtb.GroupModel, err error) {
+	return c.cache.GetGroupInfo(ctx, groupID)
+}
+
+func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error {
+	cache := c.cache.NewCache()
+	if err := c.tx.Transaction(func(tx any) error {
+		if len(groups) > 0 {
+			if err := c.groupDB.NewTx(tx).Create(ctx, groups); err != nil {
+				return err
+			}
+		}
+		if len(group_dapps) > 0 {
+			if err := c.groupDappDB.NewTx(tx).Create(ctx, group_dapps); err != nil {
+				return err
+			}
+		}
+		createGroupIDs := utils.DistinctAnyGetComparable(groups, func(group *relationtb.GroupModel) string {
+			return group.GroupID
+		})
+
+		// for _, group := range groups {
+		// 	if group.GroupType == constant.AppChannelType {
+
+		// 	}
+
+		// }
+
+		//m := make(map[string]struct{})
+
+		// for _, groupMember := range groupMembers {
+		// 	if _, ok := m[groupMember.GroupID]; !ok {
+		// 		m[groupMember.GroupID] = struct{}{}
+		// 		cache = cache.DelGroupMemberIDs(groupMember.GroupID).DelGroupMembersHash(groupMember.GroupID).DelGroupsMemberNum(groupMember.GroupID)
+		// 	}
+		// 	cache = cache.DelJoinedGroupID(groupMember.UserID).DelGroupMembersInfo(groupMember.GroupID, groupMember.UserID)
+		// }
+
+		cache = cache.DelGroupsInfo(createGroupIDs...)
+		return nil
+	}); err != nil {
+		return err
+	}
+	return cache.ExecDel(ctx)
 }
 
 // ///////////////////////////////////////serverMember////////////////////

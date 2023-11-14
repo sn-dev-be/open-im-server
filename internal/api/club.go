@@ -51,6 +51,10 @@ func (o *ClubApi) GetJoinedServerGroupList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetJoinedServerGroupList, o.Client, c)
 }
 
+func (o *ClubApi) CreateServerGroup(c *gin.Context) {
+	a2r.Call(club.ClubClient.CreateServerGroup, o.Client, c)
+}
+
 func (o *ClubApi) JoinServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.JoinServer, o.Client, c)
 }

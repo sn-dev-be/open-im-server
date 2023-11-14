@@ -2,12 +2,20 @@ package club
 
 import (
 	"context"
+	"fmt"
+	"math/big"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
+	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
+	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
@@ -82,4 +90,73 @@ func (c *clubServer) GetServerGroups(ctx context.Context, req *pbclub.GetServerG
 
 	resp.Groups = serverGroups
 	return resp, nil
+}
+
+func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateServerGroupReq) (*pbclub.CreateServerGroupResp, error) {
+	if req.OwnerUserID == "" {
+		return nil, errs.ErrArgs.Wrap("no group owner")
+	}
+	if req.GroupInfo.GroupType != constant.ServerGroup {
+		return nil, errs.ErrArgs.Wrap(fmt.Sprintf("group type %d not support", req.GroupInfo.GroupType))
+	}
+	if err := authverify.CheckAccessV3(ctx, req.OwnerUserID); err != nil {
+		return nil, err
+	}
+	opUserID := mcontext.GetOpUserID(ctx)
+	group := convert.Pb2DBGroupInfo(req.GroupInfo)
+	group.CreatorUserID = opUserID
+	if err := s.GenGroupID(ctx, &group.GroupID); err != nil {
+		return nil, err
+	}
+	if group.GroupType == constant.AppChannelType {
+		if req.DappID == "" {
+			return nil, errs.ErrArgs.Wrap("no group dapp bind")
+		}
+		group_dapp := &relationtb.GroupDappModel{
+			GroupID:    group.GroupID,
+			DappID:     req.DappID,
+			CreateTime: time.Now(),
+		}
+		if err := s.ClubDatabase.CreateServerGroup(ctx, []*relationtb.GroupModel{group}, []*relationtb.GroupDappModel{group_dapp}); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := s.ClubDatabase.CreateServerGroup(ctx, []*relationtb.GroupModel{group}, nil); err != nil {
+			return nil, err
+		}
+	}
+
+	resp := &pbclub.CreateServerGroupResp{GroupInfo: &sdkws.GroupInfo{}}
+	resp.GroupInfo = convert.Db2PbGroupInfo(group, req.OwnerUserID, 0)
+	resp.GroupInfo.MemberCount = 0
+	return resp, nil
+}
+
+func (s *clubServer) GenGroupID(ctx context.Context, groupID *string) error {
+	if *groupID != "" {
+		_, err := s.ClubDatabase.TakeGroup(ctx, *groupID)
+		if err == nil {
+			return errs.ErrGroupIDExisted.Wrap("group id existed " + *groupID)
+		} else if s.IsNotFound(err) {
+			return nil
+		} else {
+			return err
+		}
+	}
+	for i := 0; i < 10; i++ {
+		id := utils.Md5(strings.Join([]string{mcontext.GetOperationID(ctx), strconv.FormatInt(time.Now().UnixNano(), 10), strconv.Itoa(rand.Int())}, ",;,"))
+		bi := big.NewInt(0)
+		bi.SetString(id[0:8], 16)
+		id = bi.String()
+		_, err := s.ClubDatabase.TakeGroup(ctx, id)
+		if err == nil {
+			continue
+		} else if s.IsNotFound(err) {
+			*groupID = id
+			return nil
+		} else {
+			return err
+		}
+	}
+	return errs.ErrData.Wrap("group id gen error")
 }
