@@ -25,19 +25,19 @@ const (
 
 type ServerModel struct {
 	ServerID             string    `gorm:"column:server_id;primary_key;size:64"                json:"serverID"           binding:"required"`
-	ServerName           string    `gorm:"column:name;size:255"                                json:"serverName"`
+	ServerName           string    `gorm:"column:name;size:255;index"                          json:"serverName"`
 	Icon                 string    `gorm:"column:icon;size:255"                                json:"icon"`
 	Description          string    `gorm:"column:description;size:255"                         json:"description"`
 	Banner               string    `gorm:"column:banner;size:255"                              json:"banner"`
 	OwnerUserID          string    `gorm:"column:owner_user_id;size:255"                       json:"ownerUserID"`
-	MemberNumber         int32     `gorm:"column:memberNumber"                                 json:"memberNumber"`
-	ApplyMode            int32     `gorm:"column:applyMode"                                    json:"applyMode"`
-	InviteMode           int32     `gorm:"column:inviteMode"                                   json:"inviteMode"`
+	MemberNumber         int32     `gorm:"column:member_number"                                 json:"memberNumber"`
+	ApplyMode            int32     `gorm:"column:apply_mode"                                   json:"applyMode"`
+	InviteMode           int32     `gorm:"column:invite_mode"                                  json:"inviteMode"`
 	Searchable           int32     `gorm:"column:searchable"                                   json:"searchable"`
-	UserMutualAccessible int32     `gorm:"column:userMutualAccessible"                         json:"userMutualAccessible"`
+	UserMutualAccessible int32     `gorm:"column:user_mutual_accessible"                       json:"userMutualAccessible"`
 	Status               int32     `gorm:"column:status"                                       json:"status"`
-	CategoryNumber       int32     `gorm:"column:categoryNumber"                               json:"categoryNumber"`
-	ChannelNumber        int32     `gorm:"column:channelNumber"                                json:"channelNumber"`
+	CategoryNumber       int32     `gorm:"column:category_number"                              json:"categoryNumber"`
+	ChannelNumber        int32     `gorm:"column:channel_number"                               json:"channelNumber"`
 	DappID               string    `gorm:"column:dapp_id";size:64							   json:"dappID"`
 	Ex                   string    `gorm:"column:ex;size:255"                                  json:"ex"`
 	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
@@ -51,7 +51,13 @@ type ServerModelInterface interface {
 	NewTx(tx any) ServerModelInterface
 	Create(ctx context.Context, servers []*ServerModel) (err error)
 	Delete(ctx context.Context, serverID string) (err error)
+	UpdateMap(ctx context.Context, serverID string, args map[string]interface{}) (err error)
 	Take(ctx context.Context, serverID string) (server *ServerModel, err error)
+	Search(
+		ctx context.Context,
+		keyword string,
+		pageNumber, showNumber int32,
+	) (total uint32, servers []*ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*ServerModel, err error)
 	FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*ServerModel, total int64, err error)
 	GetServers(ctx context.Context, serverIDs []string) (servers []*ServerModel, err error)

@@ -24,14 +24,14 @@ const (
 )
 
 type GroupCategoryModel struct {
-	CategoryID    string    `gorm:"column:category_id;primary_key;size:64"             json:"categoryID"           binding:"required"`
-	CategoryName  string    `gorm:"column:name;size:255" json:"categoryName"`
-	ReorderWeight int32     `gorm:"column:reorder_weight" json:"reorderWeight"`
-	ViewMode      int32     `gorm:"column:view_mode" json:"viewMode"`
-	CategoryType  int32     `gorm:"column:category_type;default:1" json:"categoryType"`
-	ServerID      string    `gorm:"column:server_id;size:255" json:"serverID" binding:"required"`
-	Ex            string    `gorm:"column:ex;size:255" json:"ex"`
-	CreateTime    time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
+	CategoryID    string    `gorm:"column:category_id;primary_key;size:64"      json:"categoryID"           binding:"required"`
+	CategoryName  string    `gorm:"column:name;size:255"                                    json:"categoryName"`
+	ReorderWeight int32     `gorm:"column:reorder_weight"                                   json:"reorderWeight"`
+	ViewMode      int32     `gorm:"column:view_mode"                                        json:"viewMode"`
+	CategoryType  int32     `gorm:"column:category_type;default:1"                          json:"categoryType"`
+	ServerID      string    `gorm:"column:server_id;primary_key;size:255"                   json:"serverID" binding:"required"`
+	Ex            string    `gorm:"column:ex;size:255"                                      json:"ex"`
+	CreateTime    time.Time `gorm:"column:create_time;index:create_time;autoCreateTime"     json:"createTime"`
 }
 
 func (GroupCategoryModel) TableName() string {

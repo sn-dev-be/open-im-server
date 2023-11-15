@@ -36,7 +36,7 @@ type ServerMemberModel struct {
 	OperatorUserID string    `gorm:"column:operator_user_id;size:64"`
 	MuteEndTime    time.Time `gorm:"column:mute_end_time"                                  json:"muteEndTime"`
 	Ex             string    `gorm:"column:ex;size:255"                                    json:"ex"`
-	JoinTime       time.Time `gorm:"column:join_time;index:join_time;autoCreateTime"        json:"joinTime"`
+	JoinTime       time.Time `gorm:"column:join_time;index:join_time;autoCreateTime"       json:"joinTime"`
 }
 
 func (ServerMemberModel) TableName() string {

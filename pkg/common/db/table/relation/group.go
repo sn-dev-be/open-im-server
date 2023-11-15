@@ -44,7 +44,7 @@ type GroupModel struct {
 	SyncMode               int32     `gorm:"column:sync_mode;default:0"`
 	VisitorMode            int32     `gorm:"column:visitor_mode;default:0"`
 	ViewMode               int32     `gorm:"column:view_mode;default:0"`
-	GroupMode              int32     `gorm:"column:group_mode;default:1"						 json:"groupMode"`
+	GroupMode              int32     `gorm:"column:group_mode;default:1"                         json:"groupMode"`
 	GroupCategoryID        string    `gorm:"column:group_category_id;index;size:65"              json:"groupCategoryID"`
 	ServerID               string    `gorm:"column:server_id;index;size:64"                      json:"serverID"`
 }
