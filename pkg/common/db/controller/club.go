@@ -16,7 +16,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dtm-labs/rockscache"
 	"github.com/redis/go-redis/v9"
@@ -45,7 +44,7 @@ type ClubDatabase interface {
 
 	// serverRole
 	TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error)
-	TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error)
+	TakeServerRoleByPriority(ctx context.Context, serverID string, priority int32) (serverRole *relationtb.ServerRoleModel, err error)
 	CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error
 
 	// serverRequest
@@ -87,7 +86,7 @@ type ClubDatabase interface {
 	DeleteServerMember(ctx context.Context, serverID string, userIDs []string) error
 	MapServerMemberUserID(ctx context.Context, serverIDs []string) (map[string]*relationtb.GroupSimpleUserID, error)
 	MapServerMemberNum(ctx context.Context, serverIDs []string) (map[string]uint32, error)
-	TransferServerOwner(ctx context.Context, serverID string, oldOwnerUserID, newOwnerUserID string, roleLevel int32) error // 转让群
+	TransferServerOwner(ctx context.Context, serverID string, oldOwner, newOwner *relationtb.ServerMemberModel, roleLevel int32) error // 转让群
 	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
 	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
 }
@@ -233,9 +232,9 @@ func (c *clubDatabase) DismissServer(ctx context.Context, serverID string) error
 		if err := c.serverRoleDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
 			return err
 		}
-		if err := c.groupDappDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
-			return err
-		}
+		// if err := c.groupDappDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
+		// 	return err
+		// }
 		userIDs, err := c.cache.GetServerMemberIDs(ctx, serverID)
 		if err != nil {
 			return err
@@ -253,8 +252,8 @@ func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) 
 	return c.serverRoleDB.Take(ctx, serverRoleID)
 }
 
-func (c *clubDatabase) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error) {
-	return c.serverRoleDB.TakeServerRoleByType(ctx, serverID, roleType)
+func (c *clubDatabase) TakeServerRoleByPriority(ctx context.Context, serverID string, priority int32) (serverRole *relationtb.ServerRoleModel, err error) {
+	return c.serverRoleDB.TakeServerRoleByPriority(ctx, serverID, priority)
 }
 
 func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error {
@@ -515,23 +514,29 @@ func (c *clubDatabase) MapServerMemberNum(ctx context.Context, serverIDs []strin
 	return m, nil
 }
 
-func (c *clubDatabase) TransferServerOwner(ctx context.Context, serverID string, oldOwnerUserID, newOwnerUserID string, roleLevel int32) error {
+func (c *clubDatabase) TransferServerOwner(ctx context.Context, serverID string, oldOwner, newOwner *relationtb.ServerMemberModel, roleLevel int32) error {
 	return c.tx.Transaction(func(tx any) error {
-		rowsAffected, err := c.serverMemberDB.NewTx(tx).UpdateRoleLevel(ctx, serverID, oldOwnerUserID, roleLevel)
+		ordinaryRole, err := c.serverRoleDB.NewTx(tx).TakeServerRoleByPriority(ctx, serverID, constant.ServerOrdinaryUsers)
 		if err != nil {
 			return err
 		}
-		if rowsAffected != 1 {
-			return utils.Wrap(fmt.Errorf("oldOwnerUserID %s rowsAffected = %d", oldOwnerUserID, rowsAffected), "")
-		}
-		rowsAffected, err = c.serverMemberDB.NewTx(tx).UpdateRoleLevel(ctx, serverID, newOwnerUserID, constant.ServerOwner)
+
+		m := make(map[string]any, 2)
+		m["server_role_id"] = oldOwner.ServerRoleID
+		m["role_level"] = oldOwner.RoleLevel
+		err = c.serverMemberDB.NewTx(tx).Update(ctx, serverID, newOwner.UserID, m)
 		if err != nil {
 			return err
 		}
-		if rowsAffected != 1 {
-			return utils.Wrap(fmt.Errorf("newOwnerUserID %s rowsAffected = %d", newOwnerUserID, rowsAffected), "")
+
+		m["server_role_id"] = ordinaryRole.RoleID
+		m["role_level"] = ordinaryRole.Priority
+		err = c.serverMemberDB.NewTx(tx).Update(ctx, serverID, oldOwner.UserID, m)
+		if err != nil {
+			return err
 		}
-		return c.cache.DelServerMembersInfo(serverID, oldOwnerUserID, newOwnerUserID).DelServerMembersHash(serverID).ExecDel(ctx)
+
+		return c.cache.DelServerMembersInfo(serverID, oldOwner.UserID, newOwner.UserID).DelServerMembersHash(serverID).ExecDel(ctx)
 	})
 }
 

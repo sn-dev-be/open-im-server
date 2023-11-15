@@ -96,8 +96,8 @@ func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 	return owner.RoleID, nil
 }
 
-func (c *clubServer) getServerRoleByType(ctx context.Context, serverID string, roleType int32) (*relationtb.ServerRoleModel, error) {
-	return c.ClubDatabase.TakeServerRoleByType(ctx, serverID, roleType)
+func (c *clubServer) getServerRoleByType(ctx context.Context, serverID string, priority int32) (*relationtb.ServerRoleModel, error) {
+	return c.ClubDatabase.TakeServerRoleByPriority(ctx, serverID, priority)
 }
 
 func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.TransferServerOwnerReq) (*pbclub.TransferServerOwnerResp, error) {
@@ -127,7 +127,7 @@ func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.Transf
 			return nil, errs.ErrNoPermission.Wrap("no permission transfer group owner")
 		}
 	}
-	if err := s.ClubDatabase.TransferServerOwner(ctx, req.ServerID, req.OldOwnerUserID, req.NewOwnerUserID, constant.ServerOrdinaryUsers); err != nil {
+	if err := s.ClubDatabase.TransferServerOwner(ctx, req.ServerID, oldOwner, newOwner, constant.ServerOrdinaryUsers); err != nil {
 		return nil, err
 	}
 	//s.Notification.GroupOwnerTransferredNotification(ctx, req)

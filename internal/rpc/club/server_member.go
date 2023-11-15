@@ -58,6 +58,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 			JoinSource:    req.JoinSource,
 			InviterUserID: req.InviterUserID,
 			JoinTime:      time.Now(),
+			MuteEndTime:   time.Unix(0, 0),
 		}
 		err = c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{serverMember})
 		if err != nil {
