@@ -118,8 +118,8 @@ func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.G
 	return resp, nil
 }
 
-func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServerDetailsReq) (*pbclub.GetServerDetailsResp, error) {
-	resp := &pbclub.GetServerDetailsResp{}
+func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersInfoReq) (*pbclub.GetServersInfoResp, error) {
+	resp := &pbclub.GetServersInfoResp{}
 	loginUserID := mcontext.GetOpUserID(ctx)
 	isJoined := false
 

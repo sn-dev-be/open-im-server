@@ -173,6 +173,7 @@ rpcPort:
   openImPushPort: [ 10170 ]
   openImConversationPort: [ 10180 ]
   openImThirdPort: [ 10190 ]
+  openImClubPort: [ 10200 ]
 
 ###################### RPC Register Name Configuration ######################
 # RPC service names for registration, it's not recommended to modify these

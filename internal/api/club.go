@@ -44,8 +44,8 @@ func (o *ClubApi) GetJoinedServerList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetJoinedServerList, o.Client, c)
 }
 
-func (o *ClubApi) GetServerDetails(c *gin.Context) {
-	a2r.Call(club.ClubClient.GetServerDetails, o.Client, c)
+func (o *ClubApi) GetServersInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServersInfo, o.Client, c)
 }
 
 func (o *ClubApi) JoinServer(c *gin.Context) {

@@ -29,16 +29,14 @@ import (
 )
 
 const (
-	serverExpireTime        = time.Second * 60 * 60 * 12
-	serverInfoKey           = "SERVER_INFO:"
-	serverMemberIDsKey      = "SERVER_MEMBER_IDS:"
-	serverMembersHashKey    = "SERVER_MEMBERS_HASH2:"
-	serverMemberInfoKey     = "SERVER_MEMBER_INFO:"
-	joinedSuperServersKey   = "JOIN_SUPER_SERVERS:"
-	SuperServerMemberIDsKey = "SUPER_SERVER_MEMBER_IDS:"
-	joinedServersKey        = "JOIN_SERVERS_KEY:"
-	serverMemberNumKey      = "SERVER_MEMBER_NUM_CACHE:"
-	groupDappInfoKey        = "GROUP_DAPP_INFO:"
+	serverExpireTime     = time.Second * 60 * 60 * 12
+	serverInfoKey        = "SERVER_INFO:"
+	serverMemberIDsKey   = "SERVER_MEMBER_IDS:"
+	serverMembersHashKey = "SERVER_MEMBERS_HASH2:"
+	serverMemberInfoKey  = "SERVER_MEMBER_INFO:"
+	joinedServersKey     = "JOIN_SERVERS_KEY:"
+	serverMemberNumKey   = "SERVER_MEMBER_NUM_CACHE:"
+	groupDappInfoKey     = "GROUP_DAPP_INFO:"
 )
 
 type ClubCache interface {
