@@ -21,6 +21,7 @@ import (
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
@@ -42,7 +43,20 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	}
 
 	opUserID := mcontext.GetOpUserID(ctx)
-	serverDB := convert.Pb2DBServerInfo(req)
+	serverDB := &relation.ServerModel{
+		ServerName:           req.ServerName,
+		Icon:                 req.Icon,
+		Description:          req.Description,
+		ApplyMode:            constant.JoinServerNeedVerification,
+		InviteMode:           constant.ServerInvitedDenied,
+		Searchable:           constant.ServerSearchableDenied,
+		Status:               constant.ServerOk,
+		Banner:               req.Banner,
+		UserMutualAccessible: req.UserMutualAccessible,
+		OwnerUserID:          req.OwnerUserID,
+		CreateTime:           time.Now(),
+		Ex:                   req.Ex,
+	}
 	serverDB.OwnerUserID = opUserID
 	//这几个配置是默认写死的，后期根据需求调整
 	serverDB.CategoryNumber = 3
@@ -120,52 +134,58 @@ func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.G
 
 func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersInfoReq) (*pbclub.GetServersInfoResp, error) {
 	resp := &pbclub.GetServersInfoResp{}
-	loginUserID := mcontext.GetOpUserID(ctx)
-	isJoined := false
+	respServerList := []*pbclub.GetServerInfoResp{}
+	for _, serverID := range req.ServerIDs {
+		respServer := &pbclub.GetServerInfoResp{}
+		loginUserID := mcontext.GetOpUserID(ctx)
+		isJoined := false
 
-	if _, err := s.ClubDatabase.TakeServerMember(ctx, req.ServerID, loginUserID); err == nil {
-		isJoined = true
-	}
-	resp.Joined = isJoined
+		if _, err := s.ClubDatabase.TakeServerMember(ctx, serverID, loginUserID); err == nil {
+			isJoined = true
+		}
+		respServer.Joined = isJoined
 
-	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
-	if err != nil {
-		return nil, err
-	}
-	resp_server, err := convert.DB2PbServerInfo(server)
-	if err != nil {
-		return nil, err
-	}
-	resp.Server = resp_server
+		server, err := s.ClubDatabase.TakeServer(ctx, serverID)
+		if err != nil {
+			return nil, err
+		}
+		serverPb, err := convert.DB2PbServerInfo(server)
+		if err != nil {
+			return nil, err
+		}
+		respServer.Server = serverPb
 
-	//查询分组与房间信息
-	categories, _ := s.ClubDatabase.GetAllGroupCategoriesByServer(ctx, server.ServerID)
-	if len(categories) > 0 {
-		serverGroups, err := s.ClubDatabase.FindGroup(ctx, []string{server.ServerID})
-		if err == nil {
-			for _, category := range categories {
-				temp := []*sdkws.ServerGroupListInfo{}
+		//查询分组与房间信息
+		categories, _ := s.ClubDatabase.GetAllGroupCategoriesByServer(ctx, server.ServerID)
+		if len(categories) > 0 {
+			serverGroups, err := s.ClubDatabase.FindGroup(ctx, []string{server.ServerID})
+			if err == nil {
+				for _, category := range categories {
+					temp := []*sdkws.ServerGroupListInfo{}
 
-				for _, server := range serverGroups {
-					if category.CategoryID == server.GroupCategoryID {
-						pbGroupInfo := convert.Db2PbServerGroupInfo(server)
-						if server.GroupMode == constant.AppGroupMode {
-							if serverDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, server.GroupID); err != nil {
-								return nil, err
-							} else {
-								pbGroupDapp, _ := convert.DB2PbGroupDapp(serverDapp)
-								pbGroupInfo.Dapp = pbGroupDapp
+					for _, server := range serverGroups {
+						if category.CategoryID == server.GroupCategoryID {
+							pbGroupInfo := convert.Db2PbServerGroupInfo(server)
+							if server.GroupMode == constant.AppGroupMode {
+								if serverDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, server.GroupID); err != nil {
+									return nil, err
+								} else {
+									pbGroupDapp, _ := convert.DB2PbGroupDapp(serverDapp)
+									pbGroupInfo.Dapp = pbGroupDapp
+								}
+
 							}
-
+							temp = append(temp, pbGroupInfo)
 						}
-						temp = append(temp, pbGroupInfo)
 					}
+					respCategory, _ := convert.DB2PbCategoryList(category, temp)
+					respServer.CategoryList = append(respServer.CategoryList, respCategory)
 				}
-				resp_category, _ := convert.DB2PbCategory(category, temp)
-				resp.CategoryList = append(resp.CategoryList, resp_category)
 			}
 		}
+		respServerList = append(respServerList, respServer)
 	}
+	resp.Servers = respServerList
 	return resp, nil
 }
 

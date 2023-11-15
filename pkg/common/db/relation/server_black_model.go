@@ -19,6 +19,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -40,4 +41,56 @@ func (s *ServerBlackGorm) NewTx(tx any) relation.ServerBlackModelInterface {
 
 func (s *ServerBlackGorm) Create(ctx context.Context, servers []*relation.ServerBlackModel) (err error) {
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
+}
+
+func (b *ServerBlackGorm) Delete(ctx context.Context, blacks []*relation.ServerBlackModel) (err error) {
+	return utils.Wrap(b.db(ctx).Delete(blacks).Error, "")
+}
+
+func (s *ServerBlackGorm) UpdateByMap(
+	ctx context.Context,
+	serverID, blockUserID string,
+	args map[string]interface{},
+) (err error) {
+	return utils.Wrap(
+		s.db(ctx).Where("server_id = ? and block_user_id = ?", serverID, blockUserID).Updates(args).Error,
+		"",
+	)
+}
+
+func (s *ServerBlackGorm) Update(ctx context.Context, blacks []*relation.ServerBlackModel) (err error) {
+	return utils.Wrap(s.db(ctx).Updates(&blacks).Error, "")
+}
+
+func (s *ServerBlackGorm) Find(
+	ctx context.Context,
+	blacks []*relation.ServerBlackModel,
+) (blackList []*relation.ServerBlackModel, err error) {
+	var where [][]interface{}
+	for _, black := range blacks {
+		where = append(where, []interface{}{black.ServerID, black.BlockUserID})
+	}
+	return blackList, utils.Wrap(
+		s.db(ctx).Where("(server_id, block_user_id) in ?", where).Find(&blackList).Error,
+		"",
+	)
+}
+
+func (s *ServerBlackGorm) Take(ctx context.Context, serverID, blockUserID string) (black *relation.ServerBlackModel, err error) {
+	black = &relation.ServerBlackModel{}
+	return black, utils.Wrap(
+		s.db(ctx).Where("server_id = ? and block_user_id = ?", serverID, blockUserID).Take(black).Error,
+		"",
+	)
+}
+
+func (s *ServerBlackGorm) FindBlackUserIDs(ctx context.Context, serverID string) (blackUserIDs []string, err error) {
+	return blackUserIDs, utils.Wrap(
+		s.db(ctx).Where("server_id = ?", serverID).Pluck("block_user_id", &blackUserIDs).Error,
+		"",
+	)
+}
+
+func (s *ServerBlackGorm) FindServerBlackInfos(ctx context.Context, serverID string) (blacks []*relation.ServerBlackModel, err error) {
+	return blacks, errs.Wrap(s.db(ctx).Where("server_id = ?", serverID).Find(&blacks).Error)
 }

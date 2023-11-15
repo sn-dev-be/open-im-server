@@ -56,6 +56,10 @@ type ClubDatabase interface {
 	PageServerRequestUser(ctx context.Context, userID string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
 
 	// serverBlack
+	Create(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error)
+	Delete(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error)
+	FindServerBlacks(ctx context.Context, serverID string) (blacks []*relationtb.ServerBlackModel, err error)
+	FindBlackIDs(ctx context.Context, serverID string) (blackIDs []string, err error)
 
 	//groupCategory
 	TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error)
@@ -149,6 +153,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 			relation.NewGroupDB(db),
 			relation.NewServerMemberDB(db),
 			relation.NewServerRequestDB(db),
+			relation.NewServerBlackDB(db),
 			hashCode,
 			rcOptions,
 		),
@@ -616,4 +621,39 @@ func (c *clubDatabase) PageServerRequestUser(
 	pageNumber, showNumber int32,
 ) (uint32, []*relationtb.ServerRequestModel, error) {
 	return c.serverRequestDB.Page(ctx, userID, pageNumber, showNumber)
+}
+
+//////////////server_black/////////////////////
+
+func (c *clubDatabase) Create(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error) {
+	if err := c.serverBlackDB.Create(ctx, blacks); err != nil {
+		return err
+	}
+	return c.deleteBlackIDsCache(ctx, blacks)
+}
+
+func (c *clubDatabase) Delete(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error) {
+	if err := c.serverBlackDB.Delete(ctx, blacks); err != nil {
+		return err
+	}
+	return c.deleteBlackIDsCache(ctx, blacks)
+}
+
+func (c *clubDatabase) FindServerBlacks(
+	ctx context.Context,
+	serverID string,
+) (blacks []*relationtb.ServerBlackModel, err error) {
+	return c.serverBlackDB.FindServerBlackInfos(ctx, serverID)
+}
+
+func (c *clubDatabase) FindBlackIDs(ctx context.Context, serverID string) (blackIDs []string, err error) {
+	return c.cache.GetServerBlacksCache(ctx, serverID)
+}
+
+func (c *clubDatabase) deleteBlackIDsCache(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error) {
+	cache := c.cache.NewCache()
+	for _, black := range blacks {
+		cache = cache.DeleteBlackIDsCache(black.ServerID)
+	}
+	return cache.ExecDel(ctx)
 }

@@ -37,6 +37,7 @@ const (
 	joinedServersKey     = "JOIN_SERVERS_KEY:"
 	serverMemberNumKey   = "SERVER_MEMBER_NUM_CACHE:"
 	groupDappInfoKey     = "GROUP_DAPP_INFO:"
+	serverBlackInfoKey   = "SERVER_BLACK_INFO:"
 )
 
 type ClubCache interface {
@@ -73,6 +74,9 @@ type ClubCache interface {
 
 	GetServerMemberNum(ctx context.Context, serverID string) (memberNum int64, err error)
 	DelServersMemberNum(serverID ...string) ClubCache
+
+	DeleteBlackIDsCache(serverID ...string) ClubCache
+	GetServerBlacksCache(ctx context.Context, serverID string) (blackIDs []string, err error)
 }
 
 type ClubCacheRedis struct {
@@ -82,6 +86,7 @@ type ClubCacheRedis struct {
 	groupDB         relationtb.GroupModelInterface
 	serverMemberDB  relationtb.ServerMemberModelInterface
 	serverRequestDB relationtb.ServerRequestModelInterface
+	serverBlackDB   relationtb.ServerBlackModelInterface
 	expireTime      time.Duration
 	rcClient        *rockscache.Client
 	hashCode        func(ctx context.Context, serverID string) (uint64, error)
@@ -94,6 +99,7 @@ func NewClubCacheRedis(
 	groupDB relationtb.GroupModelInterface,
 	serverMemberDB relationtb.ServerMemberModelInterface,
 	serverRequestDB relationtb.ServerRequestModelInterface,
+	serverBlackDB relationtb.ServerBlackModelInterface,
 	hashCode func(ctx context.Context, serverID string) (uint64, error),
 	opts rockscache.Options,
 ) ClubCache {
@@ -107,6 +113,7 @@ func NewClubCacheRedis(
 		groupDB:         groupDB,
 		serverMemberDB:  serverMemberDB,
 		serverRequestDB: serverRequestDB,
+		serverBlackDB:   serverBlackDB,
 		hashCode:        hashCode,
 		metaCache:       NewMetaCacheRedis(rcClient),
 	}
@@ -119,6 +126,7 @@ func (c *ClubCacheRedis) NewCache() ClubCache {
 		serverDB:        c.serverDB,
 		serverMemberDB:  c.serverMemberDB,
 		serverRequestDB: c.serverRequestDB,
+		serverBlackDB:   c.serverBlackDB,
 		metaCache:       NewMetaCacheRedis(c.rcClient, c.metaCache.GetPreDelKeys()...),
 	}
 }
@@ -149,6 +157,10 @@ func (c *ClubCacheRedis) getServerMemberInfoKey(serverID, userID string) string 
 
 func (c *ClubCacheRedis) getServerMemberNumKey(serverID string) string {
 	return serverMemberNumKey + serverID
+}
+
+func (c *ClubCacheRedis) getServerBlackInfoKey(serverID string) string {
+	return serverBlackInfoKey + serverID
 }
 
 func (c *ClubCacheRedis) getGroupDappInfoKey(groupID string) string {
@@ -387,4 +399,22 @@ func (c *ClubCacheRedis) DelServersMemberNum(serverID ...string) ClubCache {
 	cache.AddKeys(keys...)
 
 	return cache
+}
+
+// //////server_blacks////////////
+func (c *ClubCacheRedis) DeleteBlackIDsCache(serverID ...string) ClubCache {
+	keys := make([]string, 0, len(serverID))
+	for _, serverID := range serverID {
+		keys = append(keys, c.getServerBlackInfoKey(serverID))
+	}
+	cache := c.NewCache()
+	cache.AddKeys(keys...)
+
+	return cache
+}
+
+func (c *ClubCacheRedis) GetServerBlacksCache(ctx context.Context, serverID string) (blackIDs []string, err error) {
+	return getCache(ctx, c.rcClient, c.getServerBlackInfoKey(serverID), c.expireTime, func(ctx context.Context) ([]string, error) {
+		return c.serverBlackDB.FindBlackUserIDs(ctx, serverID)
+	})
 }

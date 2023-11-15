@@ -141,7 +141,7 @@ func DB2PbServerInfo(m *relation.ServerModel) (*sdkws.ServerInfo, error) {
 	return res, nil
 }
 
-func DB2PbCategory(m *relation.GroupCategoryModel, g []*sdkws.ServerGroupListInfo) (*sdkws.GroupCategoryListInfo, error) {
+func DB2PbCategoryList(m *relation.GroupCategoryModel, g []*sdkws.ServerGroupListInfo) (*sdkws.GroupCategoryListInfo, error) {
 	res := &sdkws.GroupCategoryListInfo{
 		CategoryID:    m.CategoryID,
 		CategoryName:  m.CategoryName,
@@ -177,6 +177,17 @@ func DB2PbGroupDapp(m *relation.GroupDappModel) (*sdkws.GroupDappFullInfo, error
 		GroupID:    m.GroupID,
 		DappID:     m.DappID,
 		CreateTime: m.CreateTime.UnixMilli(),
+	}
+	return res, nil
+}
+
+func DB2PbCategory(m *relation.GroupCategoryModel) (*sdkws.GroupCategory, error) {
+	res := &sdkws.GroupCategory{
+		CategoryID:    m.CategoryID,
+		CategoryName:  m.CategoryName,
+		ReorderWeight: m.ReorderWeight,
+		CategoryType:  m.CategoryType,
+		ServerID:      m.ServerID,
 	}
 	return res, nil
 }

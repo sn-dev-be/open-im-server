@@ -37,4 +37,11 @@ func (ServerBlackModel) TableName() string {
 type ServerBlackModelInterface interface {
 	Create(ctx context.Context, serverBlacks []*ServerBlackModel) (err error)
 	NewTx(tx any) ServerBlackModelInterface
+	Delete(ctx context.Context, blacks []*ServerBlackModel) (err error)
+	UpdateByMap(ctx context.Context, serverID, blockUserID string, args map[string]interface{}) (err error)
+	Update(ctx context.Context, blacks []*ServerBlackModel) (err error)
+	Find(ctx context.Context, blacks []*ServerBlackModel) (blackList []*ServerBlackModel, err error)
+	Take(ctx context.Context, serverID, blockUserID string) (black *ServerBlackModel, err error)
+	FindServerBlackInfos(ctx context.Context, serverID string) (blacks []*ServerBlackModel, err error)
+	FindBlackUserIDs(ctx context.Context, serverID string) (blackUserIDs []string, err error)
 }
