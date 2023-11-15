@@ -24,10 +24,10 @@ const (
 )
 
 type GroupDappModel struct {
-	ID         int64     `gorm:"column:id;primary_key;AUTO_INCREMENT;UNSIGNED" json:"id"`
-	GroupID    string    `gorm:"column:group_id;size:64" json:"groupID"`
-	DappID     string    `gorm:"column:dapp_id;size:64" json:"dappID"`
-	CreateTime time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
+	ID         int64     `gorm:"column:id;primary_key;AUTO_INCREMENT;UNSIGNED"        json:"id"`
+	GroupID    string    `gorm:"column:group_id;primary_key;size:64"                  json:"groupID"`
+	DappID     string    `gorm:"column:dapp_id;primary_key;size:64"                   json:"dappID"`
+	CreateTime time.Time `gorm:"column:create_time;index:create_time;autoCreateTime"  json:"createTime"`
 }
 
 func (GroupDappModel) TableName() string {

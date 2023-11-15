@@ -25,7 +25,7 @@ const (
 
 type ServerModel struct {
 	ServerID             string    `gorm:"column:server_id;primary_key;size:64"                json:"serverID"           binding:"required"`
-	ServerName           string    `gorm:"column:name;size:255"                                json:"serverName"`
+	ServerName           string    `gorm:"column:name;size:255;index"                          json:"serverName"`
 	Icon                 string    `gorm:"column:icon;size:255"                                json:"icon"`
 	Description          string    `gorm:"column:description;size:255"                         json:"description"`
 	Banner               string    `gorm:"column:banner;size:255"                              json:"banner"`
@@ -39,7 +39,7 @@ type ServerModel struct {
 	CategoryNumber       int32     `gorm:"column:category_number"                              json:"categoryNumber"`
 	ChannelNumber        int32     `gorm:"column:channel_number"                               json:"channelNumber"`
 	Ex                   string    `gorm:"column:ex;size:255"                                  json:"ex"`
-	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime"  json:"createTime"`
+	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 }
 
 func (ServerModel) TableName() string {
