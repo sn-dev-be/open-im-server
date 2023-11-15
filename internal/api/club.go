@@ -32,6 +32,10 @@ func (o *ClubApi) CreateServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateServer, o.Client, c)
 }
 
+func (o *ClubApi) SetServerInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetServerInfo, o.Client, c)
+}
+
 func (o *ClubApi) GetServerRecommendedList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerRecommendedList, o.Client, c)
 }

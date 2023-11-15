@@ -15,41 +15,41 @@
 package club
 
 import (
+	"context"
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/protocol/sdkws"
 )
 
-// func UpdateServerInfoMap(ctx context.Context, group *sdkws.ServerInfoForSet) map[string]any {
-// 	m := make(map[string]any)
-// 	if group.ServerName != "" {
-// 		m["name"] = group.ServerName
-// 	}
-// 	if group.Notification != "" {
-// 		m["notification"] = group.Notification
-// 		m["notification_update_time"] = time.Now()
-// 		m["notification_user_id"] = mcontext.GetOpUserID(ctx)
-// 	}
-// 	if group.Introduction != "" {
-// 		m["introduction"] = group.Introduction
-// 	}
-// 	if group.FaceURL != "" {
-// 		m["face_url"] = group.FaceURL
-// 	}
-// 	if group.NeedVerification != nil {
-// 		m["need_verification"] = group.NeedVerification.Value
-// 	}
-// 	if group.LookMemberInfo != nil {
-// 		m["look_member_info"] = group.LookMemberInfo.Value
-// 	}
-// 	if group.ApplyMemberFriend != nil {
-// 		m["apply_member_friend"] = group.ApplyMemberFriend.Value
-// 	}
-// 	if group.Ex != nil {
-// 		m["ex"] = group.Ex.Value
-// 	}
-// 	return m
-// }
+func UpdateServerInfoMap(ctx context.Context, server *sdkws.ServerInfoForSet) map[string]any {
+	m := make(map[string]any)
+	if server.ServerName != "" {
+		m["name"] = server.ServerName
+	}
+	if server.Icon != "" {
+		m["iocn"] = server.Icon
+	}
+	if server.Description != "" {
+		m["description"] = server.Description
+	}
+	if server.Banner != "" {
+		m["banner"] = server.Banner
+	}
+	if server.ApplyMode != nil {
+		m["apply_mode"] = server.ApplyMode.Value
+	}
+	if server.Searchable != nil {
+		m["searchable"] = server.Searchable.Value
+	}
+	if server.UserMutualAccessible != nil {
+		m["user_mutual_accessible"] = server.UserMutualAccessible.Value
+	}
+	if server.Ex != nil {
+		m["ex"] = server.Ex.Value
+	}
+	return m
+}
 
 func UpdateServerStatusMap(status int) map[string]any {
 	return map[string]any{

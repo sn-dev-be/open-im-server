@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/tools/ormutil"
 	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -43,9 +44,19 @@ func (s *ServerGorm) Create(ctx context.Context, servers []*relation.ServerModel
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
 }
 
+func (s *ServerGorm) UpdateMap(ctx context.Context, serverID string, args map[string]interface{}) (err error) {
+	return utils.Wrap(s.DB.Where("server_id = ?", serverID).Model(&relation.ServerModel{}).Updates(args).Error, "")
+}
+
 func (s *ServerGorm) Take(ctx context.Context, serverID string) (server *relation.ServerModel, err error) {
 	server = &relation.ServerModel{}
 	return server, utils.Wrap(s.DB.Where("server_id = ?", serverID).Take(server).Error, "")
+}
+
+func (s *ServerGorm) Search(ctx context.Context, keyword string, pageNumber, showNumber int32) (total uint32, groups []*relation.ServerModel, err error) {
+	db := s.DB
+	db = db.WithContext(ctx).Where("status!=?", constant.ServerStatusDismissed)
+	return ormutil.GormSearch[relation.ServerModel](db, []string{"name"}, keyword, pageNumber, showNumber)
 }
 
 func (s *ServerGorm) FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relation.ServerModel, err error) {

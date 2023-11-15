@@ -145,14 +145,14 @@ func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServer
 			for _, category := range categories {
 				temp := []*sdkws.ServerGroupListInfo{}
 
-				for _, group := range serverGroups {
-					if category.CategoryID == group.GroupCategoryID {
-						pbGroupInfo := convert.Db2PbServerGroupInfo(group)
-						if group.GroupMode == constant.AppGroupMode {
-							if groupDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, group.GroupID); err != nil {
+				for _, server := range serverGroups {
+					if category.CategoryID == server.GroupCategoryID {
+						pbGroupInfo := convert.Db2PbServerGroupInfo(server)
+						if server.GroupMode == constant.AppGroupMode {
+							if serverDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, server.GroupID); err != nil {
 								return nil, err
 							} else {
-								pbGroupDapp, _ := convert.DB2PbGroupDapp(groupDapp)
+								pbGroupDapp, _ := convert.DB2PbGroupDapp(serverDapp)
 								pbGroupInfo.Dapp = pbGroupDapp
 							}
 
@@ -241,4 +241,65 @@ func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ow
 	}
 	req.GroupInfo = groupInfo
 	return req
+}
+
+func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInfoReq) (*pbclub.SetServerInfoResp, error) {
+	var opMember *relationtb.ServerMemberModel
+	if !authverify.IsAppManagerUid(ctx) {
+		var err error
+		opMember, err = s.TakeServerMember(ctx, req.ServerInfoForSet.ServerID, mcontext.GetOpUserID(ctx))
+		if err != nil {
+			return nil, err
+		}
+		if !(opMember.RoleLevel == constant.ServerOwner || opMember.RoleLevel == constant.ServerAdmin) {
+			return nil, errs.ErrNoPermission.Wrap("no server owner or admin")
+		}
+	}
+	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerInfoForSet.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	if server.Status == constant.ServerStatusDismissed {
+		return nil, utils.Wrap(errs.ErrDismissedAlready, "")
+	}
+	resp := &pbclub.SetServerInfoResp{}
+	// count, err := s.ClubDatabase.FindServerMemberNum(ctx, server.ServerID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// owner, err := s.TakeServerOwner(ctx, server.ServerID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	data := UpdateServerInfoMap(ctx, req.ServerInfoForSet)
+	if len(data) == 0 {
+		return resp, nil
+	}
+	if err := s.ClubDatabase.UpdateServer(ctx, server.ServerID, data); err != nil {
+		return nil, err
+	}
+	server, err = s.ClubDatabase.TakeServer(ctx, req.ServerInfoForSet.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	// tips := &sdkws.ServerInfoSetTips{
+	// 	Server:   s.serverDB2PB(server, owner.UserID, count),
+	// 	MuteTime: 0,
+	// 	OpUser:   &sdkws.ServerMemberFullInfo{},
+	// }
+	// if opMember != nil {
+	// 	tips.OpUser = s.serverMemberDB2PB(opMember, 0)
+	// }
+	// switch len(data) - num {
+	// case 0:
+	// case 1:
+	// 	if req.ServerInfoForSet.ServerName == "" {
+	// 		s.Notification.ServerInfoSetNotification(ctx, tips)
+	// 	} else {
+	// 		s.Notification.ServerInfoSetNameNotification(ctx, &sdkws.ServerInfoSetNameTips{Server: tips.Server, OpUser: tips.OpUser})
+	// 	}
+	// default:
+	// 	s.Notification.ServerInfoSetNotification(ctx, tips)
+	// }
+	return resp, nil
 }

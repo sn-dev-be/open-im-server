@@ -38,6 +38,8 @@ type ClubDatabase interface {
 	TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error)
 	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error)
+	SearchServer(ctx context.Context, keyword string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerModel, error)
+	UpdateServer(ctx context.Context, groupID string, data map[string]any) error
 	GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error)
 
 	// serverRole
@@ -194,6 +196,21 @@ func (c *clubDatabase) FindServer(ctx context.Context, serverIDs []string) (serv
 
 func (c *clubDatabase) FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error) {
 	return c.serverDB.FindNotDismissedServer(ctx, serverIDs)
+}
+
+func (c *clubDatabase) SearchServer(
+	ctx context.Context,
+	keyword string,
+	pageNumber, showNumber int32,
+) (uint32, []*relationtb.ServerModel, error) {
+	return c.serverDB.Search(ctx, keyword, pageNumber, showNumber)
+}
+
+func (c *clubDatabase) UpdateServer(ctx context.Context, groupID string, data map[string]any) error {
+	if err := c.serverDB.UpdateMap(ctx, groupID, data); err != nil {
+		return err
+	}
+	return c.cache.DelServersInfo(groupID).ExecDel(ctx)
 }
 
 func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error) {
