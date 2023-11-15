@@ -14,24 +14,13 @@ import (
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
+	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
-func (s *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.CreateGroupCategoryReq) (*pbclub.CreateGroupCategoryResp, error) {
-	serverID := req.ServerID
-	ownerUserID := req.OwnerUserID
-	opUserID := mcontext.GetOpUserID(ctx)
-	if opUserID != ownerUserID {
-		return nil, errs.ErrNoPermission
-	}
-
-	//校验当前用户是否具有分组管理权限
-	if serverRole, err := s.ClubDatabase.GetServerRoleByUserIDAndServerID(ctx, opUserID, serverID); err != nil {
-		return nil, errs.ErrNoPermission
-	} else {
-		if !serverRole.AllowManageGroupCategory() {
-			return nil, errs.ErrNoPermission
-		}
+func (c *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.CreateGroupCategoryReq) (*pbclub.CreateGroupCategoryResp, error) {
+	if err := authverify.CheckAccessV3(ctx, req.OwnerUserID); err != nil {
+		return nil, err
 	}
 
 	category := &relationtb.GroupCategoryModel{
@@ -40,20 +29,20 @@ func (s *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 		ServerID:     req.ServerID,
 		CreateTime:   time.Now(),
 	}
-	s.GenGroupCategoryID(ctx, &category.CategoryID)
+	c.GenGroupCategoryID(ctx, &category.CategoryID)
 
-	if err := s.createGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
+	if err := c.ClubDatabase.CreateGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
 		return nil, err
 	}
 	return &pbclub.CreateGroupCategoryResp{CategoryID: category.CategoryID}, nil
 }
 
-func (s *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string) error {
+func (c *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string) error {
 	if *categoryID != "" {
-		_, err := s.ClubDatabase.TakeGroupCategory(ctx, *categoryID)
+		_, err := c.ClubDatabase.TakeGroupCategory(ctx, *categoryID)
 		if err == nil {
 			return errs.ErrGroupIDExisted.Wrap("category id existed " + *categoryID)
-		} else if s.IsNotFound(err) {
+		} else if c.IsNotFound(err) {
 			return nil
 		} else {
 			return err
@@ -64,10 +53,10 @@ func (s *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string)
 		bi := big.NewInt(0)
 		bi.SetString(id[0:8], 16)
 		id = bi.String()
-		_, err := s.ClubDatabase.TakeGroupCategory(ctx, id)
+		_, err := c.ClubDatabase.TakeGroupCategory(ctx, id)
 		if err == nil {
 			continue
-		} else if s.IsNotFound(err) {
+		} else if c.IsNotFound(err) {
 			*categoryID = id
 			return nil
 		} else {
@@ -77,14 +66,7 @@ func (s *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string)
 	return errs.ErrData.Wrap("group_category id gen error")
 }
 
-func (s *clubServer) createGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
-	if err := s.ClubDatabase.CreateGroupCategory(ctx, categories); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *clubServer) createGroupCategoryByDefault(ctx context.Context, serverID, categoryName string, categoryType, reorderWeight int32) (string, error) {
+func (c *clubServer) createGroupCategoryByDefault(ctx context.Context, serverID, categoryName string, categoryType, reorderWeight int32) (string, error) {
 	category := &relationtb.GroupCategoryModel{
 		CategoryName:  categoryName,
 		ReorderWeight: reorderWeight,
@@ -94,18 +76,11 @@ func (s *clubServer) createGroupCategoryByDefault(ctx context.Context, serverID,
 		Ex:            "",
 		CreateTime:    time.Now(),
 	}
-	if err := s.GenGroupCategoryID(ctx, &category.CategoryID); err != nil {
+	if err := c.GenGroupCategoryID(ctx, &category.CategoryID); err != nil {
 		return "", err
 	}
-	if err := s.ClubDatabase.CreateGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
+	if err := c.ClubDatabase.CreateGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
 		return "", err
 	}
 	return category.CategoryID, nil
-}
-
-func (s *clubServer) CreateGroupCategoryByPb(ctx context.Context, server_roles []*relationtb.ServerRoleModel) error {
-	if err := s.ClubDatabase.CreateServerRole(ctx, server_roles); err != nil {
-		return err
-	}
-	return nil
 }

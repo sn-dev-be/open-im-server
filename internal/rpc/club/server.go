@@ -98,24 +98,22 @@ func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.G
 	if err != nil {
 		return nil, err
 	}
-	resp_servers, err := convert.DB2PbServerFullInfoList(servers)
+	respServers, err := convert.DB2PbServerFullInfoList(servers)
 	if err != nil {
 		return nil, err
 	}
 
-	//get member avatar limit 3
 	var wg sync.WaitGroup
-	for _, server := range resp_servers {
-		wg.Add(1) // 增加 WaitGroup 计数
+	for _, server := range respServers {
+		wg.Add(1)
 		go func(m *sdkws.ServerFullInfo) {
 			defer wg.Done()
 			s.genClubMembersAvatar(ctx, m)
 		}(server)
 	}
-	// 等待所有协程完成
 	wg.Wait()
 
-	resp.Servers = resp_servers
+	resp.Servers = respServers
 	return resp, nil
 }
 
@@ -124,7 +122,7 @@ func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServer
 	loginUserID := mcontext.GetOpUserID(ctx)
 	isJoined := false
 
-	if _, err := s.ClubDatabase.GetServerMemberByUserID(ctx, req.ServerID, loginUserID); err == nil {
+	if _, err := s.ClubDatabase.TakeServerMember(ctx, req.ServerID, loginUserID); err == nil {
 		isJoined = true
 	}
 	resp.Joined = isJoined
@@ -204,7 +202,7 @@ func (s *clubServer) GenServerID(ctx context.Context, serverID *string) error {
 }
 
 func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerFullInfo) error {
-	members, _, err := s.ClubDatabase.PageServerMembers(ctx, 1, 3, server.ServerID)
+	_, members, err := s.ClubDatabase.PageGetServerMember(ctx, server.ServerID, 1, 3)
 	if err == nil {
 		userIDs := []string{}
 		for _, member := range members {

@@ -74,7 +74,7 @@ func (c *clubServer) GetJoinedServerGroupList(ctx context.Context, req *pbclub.G
 	return resp, nil
 }
 
-func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateServerGroupReq) (*pbclub.CreateServerGroupResp, error) {
+func (c *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateServerGroupReq) (*pbclub.CreateServerGroupResp, error) {
 	if req.GroupInfo.OwnerUserID == "" {
 		return nil, errs.ErrArgs.Wrap("no group owner")
 	}
@@ -87,23 +87,23 @@ func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 	opUserID := mcontext.GetOpUserID(ctx)
 	group := convert.Pb2DBGroupInfo(req.GroupInfo)
 	group.CreatorUserID = opUserID
-	if err := s.GenGroupID(ctx, &group.GroupID); err != nil {
+	if err := c.GenGroupID(ctx, &group.GroupID); err != nil {
 		return nil, err
 	}
 	if group.GroupMode == constant.AppGroupMode {
 		if req.DappID == "" {
 			return nil, errs.ErrArgs.Wrap("no group dapp bind")
 		}
-		group_dapp := &relationtb.GroupDappModel{
+		groupDapp := &relationtb.GroupDappModel{
 			GroupID:    group.GroupID,
 			DappID:     req.DappID,
 			CreateTime: time.Now(),
 		}
-		if err := s.ClubDatabase.CreateServerGroup(ctx, []*relationtb.GroupModel{group}, []*relationtb.GroupDappModel{group_dapp}); err != nil {
+		if err := c.ClubDatabase.CreateServerGroup(ctx, []*relationtb.GroupModel{group}, []*relationtb.GroupDappModel{groupDapp}); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := s.ClubDatabase.CreateServerGroup(ctx, []*relationtb.GroupModel{group}, nil); err != nil {
+		if err := c.ClubDatabase.CreateServerGroup(ctx, []*relationtb.GroupModel{group}, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -114,12 +114,12 @@ func (s *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 	return resp, nil
 }
 
-func (s *clubServer) GenGroupID(ctx context.Context, groupID *string) error {
+func (c *clubServer) GenGroupID(ctx context.Context, groupID *string) error {
 	if *groupID != "" {
-		_, err := s.ClubDatabase.TakeGroup(ctx, *groupID)
+		_, err := c.ClubDatabase.TakeGroup(ctx, *groupID)
 		if err == nil {
 			return errs.ErrGroupIDExisted.Wrap("group id existed " + *groupID)
-		} else if s.IsNotFound(err) {
+		} else if c.IsNotFound(err) {
 			return nil
 		} else {
 			return err
@@ -130,10 +130,10 @@ func (s *clubServer) GenGroupID(ctx context.Context, groupID *string) error {
 		bi := big.NewInt(0)
 		bi.SetString(id[0:8], 16)
 		id = bi.String()
-		_, err := s.ClubDatabase.TakeGroup(ctx, id)
+		_, err := c.ClubDatabase.TakeGroup(ctx, id)
 		if err == nil {
 			continue
-		} else if s.IsNotFound(err) {
+		} else if c.IsNotFound(err) {
 			*groupID = id
 			return nil
 		} else {

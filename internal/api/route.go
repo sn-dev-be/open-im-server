@@ -226,6 +226,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/get_server_info", c.GetServerDetails)
 		clubGroup.POST("/invite_user_to_server", nil)
 		clubGroup.POST("/dismiss_server", nil)
+		clubGroup.POST("/search_server", nil)
 
 		clubGroup.POST("/create_category", c.CreateGroupCategory)
 		clubGroup.POST("/set_category_info", nil)

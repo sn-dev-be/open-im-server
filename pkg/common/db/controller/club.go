@@ -33,31 +33,27 @@ import (
 )
 
 type ClubDatabase interface {
-	// Server
+	// server
 	CreateServer(ctx context.Context, servers []*relationtb.ServerModel) error
 	TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error)
-	PageServers(ctx context.Context, pageNumber, showNumber int32) (servers []*relationtb.ServerModel, total int64, err error)
-	////
 	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error)
 	GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error)
-	GetJoinedServerList(ctx context.Context, userID string) (servers []*relationtb.ServerModel, err error)
 
-	//server_role
+	// serverRole
 	TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error)
 	TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error)
 	CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error
-	GetServerRoleByUserIDAndServerID(ctx context.Context, userID string, serverID string) (server *relationtb.ServerRoleModel, err error)
 
-	//server_request
+	// serverRequest
 	CreateServerRequest(ctx context.Context, requests []*relationtb.ServerRequestModel) error
 	TakeServerRequest(ctx context.Context, serverID string, userID string) (*relationtb.ServerRequestModel, error)
 	FindServerRequests(ctx context.Context, serverID string, userIDs []string) (int64, []*relationtb.ServerRequestModel, error)
 	PageServerRequestUser(ctx context.Context, userID string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
 
-	//server_black
+	// serverBlack
 
-	//group_category
+	//groupCategory
 	TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error)
 	CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error
 	GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error)
@@ -67,15 +63,12 @@ type ClubDatabase interface {
 	TakeGroup(ctx context.Context, groupID string) (group *relationtb.GroupModel, err error)
 	CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error
 
-	//group_dapp
+	//groupDapp
 	TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error)
 
-	//server_member
-	PageServerMembers(ctx context.Context, pageNumber, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error)
-	GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relationtb.ServerMemberModel, err error)
+	// serverMember
 	CreateServerMember(ctx context.Context, serverMembers []*relationtb.ServerMemberModel) error
 
-	//
 	TakeServerMember(ctx context.Context, serverID string, userID string) (groupMember *relationtb.ServerMemberModel, err error)
 	TakeServerOwner(ctx context.Context, serverID string) (*relationtb.ServerMemberModel, error)
 	FindServerMember(ctx context.Context, serverIDs []string, userIDs []string, roleLevels []int32) ([]*relationtb.ServerMemberModel, error)
@@ -94,7 +87,6 @@ type ClubDatabase interface {
 	TransferServerOwner(ctx context.Context, serverID string, oldOwnerUserID, newOwnerUserID string, roleLevel int32) error // 转让群
 	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
 	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
-	GetServerMemberByUserID(ctx context.Context, serverID, userID string) (serverMember *relationtb.ServerMemberModel, err error)
 }
 
 func NewClubDatabase(
@@ -176,88 +168,7 @@ type clubDatabase struct {
 	cache cache.ClubCache
 }
 
-func (c *clubDatabase) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error) {
-	return c.serverRoleDB.TakeServerRoleByType(ctx, serverID, roleType)
-}
-
-func (c *clubDatabase) GetJoinedServerList(ctx context.Context, userID string) (servers []*relationtb.ServerModel, err error) {
-	if joinedServers, err := c.serverMemberDB.GetJoinedServerByUserID(ctx, userID); err != nil {
-		return nil, err
-	} else {
-		serverIDs := []string{}
-		for _, serverMember := range joinedServers {
-			serverIDs = append(serverIDs, serverMember.ServerID)
-		}
-		return c.serverDB.GetServers(ctx, serverIDs)
-	}
-}
-
-func (c *clubDatabase) GetServerMemberByUserID(ctx context.Context, serverID string, userID string) (serverMember *relationtb.ServerMemberModel, err error) {
-	return c.serverMemberDB.GetServerMemberByUserID(ctx, userID, serverID)
-}
-
-func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error) {
-	if recommends, err := c.serverRecommendedDB.GetServerRecommendedList(ctx); err == nil {
-		server_recommendeds := []*relationtb.ServerModel{}
-		for _, recommend := range recommends {
-			server, err := c.serverDB.Take(ctx, recommend.ServerID)
-			if err == nil {
-				server_recommendeds = append(server_recommendeds, server)
-			}
-		}
-		return server_recommendeds, nil
-	} else {
-		return nil, err
-	}
-}
-
-func (c *clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
-	return c.groupCategoryDB.Take(ctx, groupCategoryID)
-}
-
-func (c *clubDatabase) GetServerRoleByUserIDAndServerID(ctx context.Context, userID string, serverID string) (server *relationtb.ServerRoleModel, err error) {
-	if member, err := c.serverMemberDB.GetServerMemberByUserID(ctx, userID, serverID); err != nil {
-		return nil, err
-	} else {
-		roleID := member.ServerRoleID
-		if role, err := c.serverRoleDB.Take(ctx, roleID); err != nil {
-			return nil, err
-		} else {
-			return role, nil
-		}
-	}
-}
-
-func (c *clubDatabase) CreateServerMember(ctx context.Context, serverMembers []*relationtb.ServerMemberModel) error {
-	if err := c.serverMemberDB.Create(ctx, serverMembers); err != nil {
-		return err
-	}
-	for _, serverMember := range serverMembers {
-		c.cache.DelServerMembersHash(serverMember.ServerID).
-			DelServerMemberIDs(serverMember.ServerID).
-			DelServersMemberNum(serverMember.ServerID).
-			DelJoinedServerID(serverMember.UserID).
-			DelServerMembersInfo(serverMember.ServerID, serverMember.UserID).ExecDel(ctx)
-	}
-	return nil
-}
-
-func (c *clubDatabase) GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relationtb.ServerMemberModel, err error) {
-	return c.serverMemberDB.GetServerMembers(ctx, ids, serverID)
-}
-
-func (c *clubDatabase) PageServerMembers(ctx context.Context, pageNumber int32, showNumber int32, serverID string) (members []*relationtb.ServerMemberModel, total int64, err error) {
-	return c.serverMemberDB.PageServerMembers(ctx, showNumber, pageNumber, serverID)
-}
-
-func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {
-	return c.groupCategoryDB.GetGroupCategoriesByServerID(ctx, serverID)
-}
-
-func (c *clubDatabase) PageServers(ctx context.Context, pageNumber int32, showNumber int32) (servers []*relationtb.ServerModel, total int64, err error) {
-	return c.serverDB.FindServersSplit(ctx, pageNumber, showNumber)
-}
-
+// /server
 func (c *clubDatabase) CreateServer(
 	ctx context.Context,
 	servers []*relationtb.ServerModel,
@@ -285,17 +196,33 @@ func (c *clubDatabase) FindNotDismissedServer(ctx context.Context, serverIDs []s
 	return c.serverDB.FindNotDismissedServer(ctx, serverIDs)
 }
 
+func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error) {
+	if recommends, err := c.serverRecommendedDB.GetServerRecommendedList(ctx); err == nil {
+		server_recommendeds := []*relationtb.ServerModel{}
+		for _, recommend := range recommends {
+			server, err := c.serverDB.Take(ctx, recommend.ServerID)
+			if err == nil {
+				server_recommendeds = append(server_recommendeds, server)
+			}
+		}
+		return server_recommendeds, nil
+	} else {
+		return nil, err
+	}
+}
+
+// /serverRole
 func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error) {
 	return c.serverRoleDB.Take(ctx, serverRoleID)
 }
 
-func (c *clubDatabase) TakeChannelCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
-	return c.groupCategoryDB.Take(ctx, groupCategoryID)
+func (c *clubDatabase) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relationtb.ServerRoleModel, err error) {
+	return c.serverRoleDB.TakeServerRoleByType(ctx, serverID, roleType)
 }
 
-func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
+func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error {
 	if err := c.tx.Transaction(func(tx any) error {
-		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
+		if err := c.serverRoleDB.NewTx(tx).Create(ctx, serverRoles); err != nil {
 			return err
 		}
 		return nil
@@ -305,9 +232,19 @@ func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*re
 	return nil
 }
 
-func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error {
+// groupCategory
+func (c *clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
+	return c.groupCategoryDB.Take(ctx, groupCategoryID)
+
+}
+
+func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {
+	return c.groupCategoryDB.GetGroupCategoriesByServerID(ctx, serverID)
+}
+
+func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
 	if err := c.tx.Transaction(func(tx any) error {
-		if err := c.serverRoleDB.NewTx(tx).Create(ctx, serverRoles); err != nil {
+		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
 			return err
 		}
 		return nil
@@ -356,7 +293,21 @@ func (c *clubDatabase) TakeGroupDapp(ctx context.Context, groupID string) (group
 	return c.cache.GetGroupDappInfo(ctx, groupID)
 }
 
-// ///////////////////////////////////////serverMember////////////////////
+// //serverMember
+func (c *clubDatabase) CreateServerMember(ctx context.Context, serverMembers []*relationtb.ServerMemberModel) error {
+	if err := c.serverMemberDB.Create(ctx, serverMembers); err != nil {
+		return err
+	}
+	for _, serverMember := range serverMembers {
+		c.cache.DelServerMembersHash(serverMember.ServerID).
+			DelServerMemberIDs(serverMember.ServerID).
+			DelServersMemberNum(serverMember.ServerID).
+			DelJoinedServerID(serverMember.UserID).
+			DelServerMembersInfo(serverMember.ServerID, serverMember.UserID).ExecDel(ctx)
+	}
+	return nil
+}
+
 func (c *clubDatabase) TakeServerMember(
 	ctx context.Context,
 	serverID string,

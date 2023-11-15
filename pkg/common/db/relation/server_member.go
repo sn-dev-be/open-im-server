@@ -44,38 +44,6 @@ func (s *ServerMemberGorm) Create(ctx context.Context, servers []*relation.Serve
 	return utils.Wrap(s.DB.Create(&servers).Error, "")
 }
 
-func (s *ServerMemberGorm) PageServerMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*relation.ServerMemberModel, total int64, err error) {
-	err = s.DB.Model(&relation.ServerMemberModel{}).Where("server_id = ? ", serverID).Count(&total).Error
-	if err != nil {
-		return nil, 0, utils.Wrap(err, "")
-	}
-	err = utils.Wrap(
-		s.db(ctx).
-			Where("server_id = ? ", serverID).
-			Order("join_time asc").
-			Limit(int(showNumber)).
-			Offset(int((pageNumber-1)*showNumber)).
-			Find(&members).
-			Error,
-		"",
-	)
-	return
-}
-
-func (s *ServerMemberGorm) GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*relation.ServerMemberModel, err error) {
-	query := s.db(ctx).Order("join_time asc")
-	if len(ids) > 0 {
-		query.Where("server_id = ? and id in ?", serverID, ids)
-	}
-	err = utils.Wrap(query.Find(&members).Error, "")
-	return
-}
-
-func (s *ServerMemberGorm) GetServerMemberByUserID(ctx context.Context, userID string, serverID string) (member *relation.ServerMemberModel, err error) {
-	return member, utils.Wrap(s.DB.Where("server_id = ? and user_id =?", serverID, userID).Take(&member).Error, "")
-}
-
-// /////////////
 func (g *ServerMemberGorm) Delete(ctx context.Context, serverID string, userIDs []string) (err error) {
 	return utils.Wrap(
 		g.db(ctx).Where("server_id = ? and user_id in (?)", serverID, userIDs).Delete(&relation.ServerMemberModel{}).Error,

@@ -23,13 +23,13 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
 )
 
-func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) (resp *pbclub.JoinServerResp, err error) {
+func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) (resp *pbclub.JoinServerResp, err error) {
 	defer log.ZInfo(ctx, "JoinServer.Return")
-	user, err := s.User.GetUserInfo(ctx, req.UserID)
+	user, err := c.User.GetUserInfo(ctx, req.UserID)
 	if err != nil {
 		return nil, err
 	}
-	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
+	server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,14 +37,14 @@ func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		return nil, errs.ErrDismissedAlready.Wrap()
 	}
 
-	_, err = s.ClubDatabase.GetServerMemberByUserID(ctx, req.ServerID, req.UserID)
+	_, err = c.ClubDatabase.TakeServerMember(ctx, req.ServerID, req.UserID)
 	if err == nil {
 		return nil, errs.ErrArgs.Wrap("already in server")
-	} else if !s.IsNotFound(err) && utils.Unwrap(err) != errs.ErrRecordNotFound {
+	} else if !c.IsNotFound(err) && utils.Unwrap(err) != errs.ErrRecordNotFound {
 		return nil, err
 	}
 
-	serverRole, err := s.getServerRoleByType(ctx, req.ServerID, constant.ServerRoleTypeEveryOne)
+	serverRole, err := c.getServerRoleByType(ctx, req.ServerID, constant.ServerRoleTypeEveryOne)
 	if err != nil {
 		return nil, errs.ErrRecordNotFound.Wrap("server role is not exists")
 	}
@@ -59,7 +59,7 @@ func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 			InviterUserID: req.InviterUserID,
 			JoinTime:      time.Now(),
 		}
-		err = s.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{serverMember})
+		err = c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{serverMember})
 		if err != nil {
 			return nil, err
 		}
@@ -76,17 +76,17 @@ func (s *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 			ReqTime:     time.Now(),
 			HandledTime: time.Unix(0, 0),
 		}
-		if err := s.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
+		if err := c.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
 			return nil, err
 		}
 
 		//给群主、管理员发送消息
-		// s.Notification.JoinGroupApplicationNotification(ctx, req)
+		// c.Notification.JoinGroupApplicationNotification(ctx, req)
 	}
 	return resp, nil
 }
 
-func (s *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) (*pbclub.QuitServerResp, error) {
+func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) (*pbclub.QuitServerResp, error) {
 	resp := &pbclub.QuitServerResp{}
 	if req.UserID == "" {
 		req.UserID = mcontext.GetOpUserID(ctx)
@@ -96,29 +96,29 @@ func (s *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 		}
 	}
 
-	info, err := s.TakeServerMember(ctx, req.ServerID, req.UserID)
+	info, err := c.TakeServerMember(ctx, req.ServerID, req.UserID)
 	if err != nil {
 		return nil, err
 	}
 	if info.RoleLevel == constant.ServerOwner {
 		return nil, errs.ErrNoPermission.Wrap("server owner can't quit")
 	}
-	err = s.ClubDatabase.DeleteServerMember(ctx, req.ServerID, []string{req.UserID})
+	err = c.ClubDatabase.DeleteServerMember(ctx, req.ServerID, []string{req.UserID})
 	if err != nil {
 		return nil, err
 	}
 
 	//todo 发送notification
-	//_ = s.Notification.MemberQuitNotification(ctx, s.groupMemberDB2PB(info, 0))
+	//_ = c.Notification.MemberQuitNotification(ctx, c.groupMemberDB2PB(info, 0))
 
-	if err := s.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID}); err != nil {
+	if err := c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID}); err != nil {
 		return nil, err
 	}
 
 	return resp, nil
 }
 
-func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) error {
+func (c *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) error {
 	server_member := &relationtb.ServerMemberModel{
 		ServerID:      serverID,
 		UserID:        user_id,
@@ -131,13 +131,12 @@ func (s *clubServer) createServerMember(ctx context.Context, serverID, user_id, 
 		MuteEndTime:   time.UnixMilli(0),
 		JoinTime:      time.Now(),
 	}
-	if err := s.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{server_member}); err != nil {
+	if err := c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{server_member}); err != nil {
 		return err
 	}
 	return nil
 }
 
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 func (c *clubServer) serverMemberHashCode(ctx context.Context, serverID string) (uint64, error) {
 	userIDs, err := c.ClubDatabase.FindServerMemberUserID(ctx, serverID)
 	if err != nil {
@@ -671,18 +670,18 @@ func (c *clubServer) GetServerMemberRoleLevel(ctx context.Context, req *pbclub.G
 	return resp, nil
 }
 
-func (s *clubServer) deleteMemberAndSetConversationSeq(ctx context.Context, serverID string, userIDs []string) error {
-	groups, err := s.ClubDatabase.FindGroup(ctx, []string{serverID})
+func (c *clubServer) deleteMemberAndSetConversationSeq(ctx context.Context, serverID string, userIDs []string) error {
+	groups, err := c.ClubDatabase.FindGroup(ctx, []string{serverID})
 	if err != nil {
 		return err
 	}
 	for _, group := range groups {
 		conevrsationID := msgprocessor.GetConversationIDBySessionType(constant.ServerGroupChatType, group.GroupID)
-		maxSeq, err := s.msgRpcClient.GetConversationMaxSeq(ctx, conevrsationID)
+		maxSeq, err := c.msgRpcClient.GetConversationMaxSeq(ctx, conevrsationID)
 		if err != nil {
 			return err
 		}
-		s.conversationRpcClient.SetConversationMaxSeq(ctx, userIDs, conevrsationID, maxSeq)
+		c.conversationRpcClient.SetConversationMaxSeq(ctx, userIDs, conevrsationID, maxSeq)
 	}
 	return nil
 }

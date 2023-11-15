@@ -45,9 +45,6 @@ func (ServerMemberModel) TableName() string {
 
 type ServerMemberModelInterface interface {
 	NewTx(tx any) ServerMemberModelInterface
-	PageServerMembers(ctx context.Context, showNumber, pageNumber int32, serverID string) (members []*ServerMemberModel, total int64, err error)
-	GetServerMembers(ctx context.Context, ids []uint64, serverID string) (members []*ServerMemberModel, err error)
-	GetServerMemberByUserID(ctx context.Context, userID string, serverID string) (member *ServerMemberModel, err error)
 
 	Create(ctx context.Context, serverMembers []*ServerMemberModel) (err error)
 	Delete(ctx context.Context, serverID string, userIDs []string) (err error)
