@@ -67,24 +67,6 @@ func (s *ServerGorm) FindNotDismissedServer(ctx context.Context, serverIDs []str
 	return servers, utils.Wrap(s.DB.Where("server_id in (?) and status != ?", serverIDs, constant.ServerStatusDismissed).Find(&servers).Error, "")
 }
 
-func (s *ServerGorm) FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*relation.ServerModel, total int64, err error) {
-	err = s.DB.Model(&relation.ServerModel{}).Where("searchable = 1 ").Count(&total).Error
-	if err != nil {
-		return nil, 0, utils.Wrap(err, "")
-	}
-	err = utils.Wrap(
-		s.db(ctx).
-			Where("searchable = 1 ").
-			Order("memberNumber desc").
-			Limit(int(showNumber)).
-			Offset(int((pageNumber-1)*showNumber)).
-			Find(&servers).
-			Error,
-		"",
-	)
-	return servers, total, nil
-}
-
 func (s *ServerGorm) GetServers(ctx context.Context, serverIDs []string) (servers []*relation.ServerModel, err error) {
 	return servers, utils.Wrap(s.db(ctx).Where("server_id in ?", serverIDs).Find(&servers).Error, "")
 }

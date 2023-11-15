@@ -64,6 +64,10 @@ func (o *ClubApi) DismissServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.DismissServer, o.Client, c)
 }
 
+func (o *ClubApi) SearchServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.SearchServer, o.Client, c)
+}
+
 // /groupCategory
 func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)

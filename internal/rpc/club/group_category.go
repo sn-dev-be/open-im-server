@@ -35,10 +35,7 @@ func (c *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 	if err := c.ClubDatabase.CreateGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
 		return nil, err
 	}
-	gc, err := convert.DB2PbCategory(category)
-	if err != nil {
-		return nil, err
-	}
+	gc := convert.Db2PbGroupCategory(category)
 	return &pbclub.CreateGroupCategoryResp{GroupCategory: gc}, nil
 }
 

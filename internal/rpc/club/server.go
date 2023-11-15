@@ -113,7 +113,7 @@ func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.G
 	if err != nil {
 		return nil, err
 	}
-	respServers, err := convert.DB2PbServerFullInfoList(servers)
+	respServers := utils.Batch(convert.Db2PbServerFullInfo, servers)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersI
 		if err != nil {
 			return nil, err
 		}
-		serverPb, err := convert.DB2PbServerInfo(server)
+		serverPb := convert.DB2PbServerInfo(server)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +170,7 @@ func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersI
 								if serverDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, server.GroupID); err != nil {
 									return nil, err
 								} else {
-									pbGroupDapp, _ := convert.DB2PbGroupDapp(serverDapp)
+									pbGroupDapp := convert.Db2PbGroupDapp(serverDapp)
 									pbGroupInfo.Dapp = pbGroupDapp
 								}
 
@@ -178,8 +178,11 @@ func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersI
 							temp = append(temp, pbGroupInfo)
 						}
 					}
-					respCategory, _ := convert.DB2PbCategoryList(category, temp)
-					respServer.CategoryList = append(respServer.CategoryList, respCategory)
+					groupCategory := convert.Db2PbGroupCategory(category)
+					list := sdkws.GroupCategoryListInfo{}
+					list.CategoryInfo = groupCategory
+					list.GroupList = temp
+					respServer.CategoryList = append(respServer.CategoryList, &list)
 				}
 			}
 		}
@@ -340,5 +343,16 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 	// default:
 	// 	s.Notification.ServerInfoSetNotification(ctx, tips)
 	// }
+	return resp, nil
+}
+
+func (s *clubServer) SearchServer(ctx context.Context, req *pbclub.SearchServerReq) (*pbclub.SearchServerResp, error) {
+	resp := &pbclub.SearchServerResp{}
+	total, servers, err := s.ClubDatabase.SearchServer(ctx, req.Keyword, req.Pagination.PageNumber, req.Pagination.ShowNumber)
+	if err != nil {
+		return nil, err
+	}
+	resp.Total = total
+	resp.ServerInfos = utils.Batch(convert.DB2PbServerInfo, servers)
 	return resp, nil
 }

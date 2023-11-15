@@ -1,11 +1,6 @@
 package convert
 
 import (
-	"time"
-
-	"github.com/OpenIMSDK/protocol/constant"
-
-	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
@@ -21,7 +16,8 @@ func Db2PbServerInfo(m *relation.ServerModel, ownerUserID string, memberCount ui
 		Searchable:           m.Searchable,
 		Status:               m.Status,
 		Banner:               m.Banner,
-		MemberNumber:         m.MemberNumber,
+		OwnerUserID:          ownerUserID,
+		MemberNumber:         memberCount,
 		UserMutualAccessible: m.UserMutualAccessible,
 		CategoryNumber:       m.CategoryNumber,
 		ChannelNumber:        m.ChannelNumber,
@@ -29,53 +25,50 @@ func Db2PbServerInfo(m *relation.ServerModel, ownerUserID string, memberCount ui
 	}
 }
 
-func Pb2DBServerInfo(m *pbclub.CreateServerReq) *relation.ServerModel {
-	return &relation.ServerModel{
+func DB2PbServerInfo(m *relation.ServerModel) *sdkws.ServerInfo {
+	return &sdkws.ServerInfo{
+		ServerID:             m.ServerID,
 		ServerName:           m.ServerName,
+		ChannelNumber:        m.ChannelNumber,
+		MemberNumber:         m.MemberNumber,
 		Icon:                 m.Icon,
 		Description:          m.Description,
-		ApplyMode:            constant.JoinServerNeedVerification,
-		InviteMode:           constant.ServerInvitedDenied,
-		Searchable:           constant.ServerSearchableDenied,
-		Status:               constant.ServerOk,
+		ApplyMode:            m.ApplyMode,
+		InviteMode:           m.InviteMode,
+		Searchable:           m.Searchable,
+		Status:               m.Status,
 		Banner:               m.Banner,
 		UserMutualAccessible: m.UserMutualAccessible,
+		CategoryNumber:       m.CategoryNumber,
 		OwnerUserID:          m.OwnerUserID,
-		CreateTime:           time.Now(),
+		DappID:               m.DappID,
+		CreateTime:           m.CreateTime.UnixMilli(),
 		Ex:                   m.Ex,
 	}
 }
 
-func DB2PbServerFullInfoList(servers []*relation.ServerModel) ([]*sdkws.ServerFullInfo, error) {
-	if len(servers) == 0 {
-		return nil, nil
-	}
+func Db2PbServerFullInfo(m *relation.ServerModel) *sdkws.ServerFullInfo {
 
-	//res := make([]*sdkws.ServerFullInfo, 0, len(servers))
-	res := []*sdkws.ServerFullInfo{}
-	for _, m := range servers {
-		res = append(res, &sdkws.ServerFullInfo{
-			ServerInfo: &sdkws.ServerInfo{
-				ServerID:             m.ServerID,
-				ServerName:           m.ServerName,
-				ChannelNumber:        m.ChannelNumber,
-				MemberNumber:         m.MemberNumber,
-				Icon:                 m.Icon,
-				Description:          m.Description,
-				ApplyMode:            m.ApplyMode,
-				InviteMode:           m.InviteMode,
-				Searchable:           m.Searchable,
-				Status:               m.Status,
-				Banner:               m.Banner,
-				UserMutualAccessible: m.UserMutualAccessible,
-				CategoryNumber:       m.CategoryNumber,
-				OwnerUserID:          m.OwnerUserID,
-				CreateTime:           m.CreateTime.UnixMilli(),
-				Ex:                   m.Ex,
-			},
-		})
+	return &sdkws.ServerFullInfo{
+		ServerInfo: &sdkws.ServerInfo{
+			ServerID:             m.ServerID,
+			ServerName:           m.ServerName,
+			ChannelNumber:        m.ChannelNumber,
+			MemberNumber:         m.MemberNumber,
+			Icon:                 m.Icon,
+			Description:          m.Description,
+			ApplyMode:            m.ApplyMode,
+			InviteMode:           m.InviteMode,
+			Searchable:           m.Searchable,
+			Status:               m.Status,
+			Banner:               m.Banner,
+			UserMutualAccessible: m.UserMutualAccessible,
+			CategoryNumber:       m.CategoryNumber,
+			OwnerUserID:          m.OwnerUserID,
+			CreateTime:           m.CreateTime.UnixMilli(),
+			Ex:                   m.Ex,
+		},
 	}
-	return res, nil
 }
 
 func Db2PbServerMember(m *relation.ServerMemberModel) *sdkws.ServerMemberFullInfo {
@@ -102,54 +95,16 @@ func Pb2DbServerMember(m *sdkws.UserInfo) *relation.ServerMemberModel {
 		Ex:       m.Ex,
 	}
 }
-func DB2PbServerBaseInfoList(servers []*relation.ServerModel) ([]*sdkws.ServersListInfo, error) {
-	if len(servers) == 0 {
-		return nil, nil
-	}
 
-	res := []*sdkws.ServersListInfo{}
-	for _, m := range servers {
-		res = append(res, &sdkws.ServersListInfo{
-			ServerID:   m.ServerID,
-			ServerName: m.ServerName,
-			Icon:       m.Icon,
-		})
-	}
-	return res, nil
-}
-
-func DB2PbServerInfo(m *relation.ServerModel) (*sdkws.ServerInfo, error) {
-	res := &sdkws.ServerInfo{
-		ServerID:             m.ServerID,
-		ServerName:           m.ServerName,
-		ChannelNumber:        m.ChannelNumber,
-		MemberNumber:         m.MemberNumber,
-		Icon:                 m.Icon,
-		Description:          m.Description,
-		ApplyMode:            m.ApplyMode,
-		InviteMode:           m.InviteMode,
-		Searchable:           m.Searchable,
-		Status:               m.Status,
-		Banner:               m.Banner,
-		UserMutualAccessible: m.UserMutualAccessible,
-		CategoryNumber:       m.CategoryNumber,
-		OwnerUserID:          m.OwnerUserID,
-		DappID:               m.DappID,
-		CreateTime:           m.CreateTime.UnixMilli(),
-		Ex:                   m.Ex,
-	}
-	return res, nil
-}
-
-func DB2PbCategoryList(m *relation.GroupCategoryModel, g []*sdkws.ServerGroupListInfo) (*sdkws.GroupCategoryListInfo, error) {
-	res := &sdkws.GroupCategoryListInfo{
+func Db2PbGroupCategory(m *relation.GroupCategoryModel) *sdkws.GroupCategoryInfo {
+	return &sdkws.GroupCategoryInfo{
 		CategoryID:    m.CategoryID,
 		CategoryName:  m.CategoryName,
 		ReorderWeight: m.ReorderWeight,
 		CategoryType:  m.CategoryType,
-		GroupList:     g,
+		ServerID:      m.ServerID,
+		Ex:            m.Ex,
 	}
-	return res, nil
 }
 
 func Db2PbServerRequest(
@@ -171,23 +126,12 @@ func Db2PbServerRequest(
 		InviterUserID: m.InviterUserID,
 	}
 }
-func DB2PbGroupDapp(m *relation.GroupDappModel) (*sdkws.GroupDappFullInfo, error) {
-	res := &sdkws.GroupDappFullInfo{
-		Id:         m.ID,
+
+func Db2PbGroupDapp(m *relation.GroupDappModel) *sdkws.GroupDappFullInfo {
+	return &sdkws.GroupDappFullInfo{
+		ID:         m.ID,
 		GroupID:    m.GroupID,
 		DappID:     m.DappID,
 		CreateTime: m.CreateTime.UnixMilli(),
 	}
-	return res, nil
-}
-
-func DB2PbCategory(m *relation.GroupCategoryModel) (*sdkws.GroupCategory, error) {
-	res := &sdkws.GroupCategory{
-		CategoryID:    m.CategoryID,
-		CategoryName:  m.CategoryName,
-		ReorderWeight: m.ReorderWeight,
-		CategoryType:  m.CategoryType,
-		ServerID:      m.ServerID,
-	}
-	return res, nil
 }

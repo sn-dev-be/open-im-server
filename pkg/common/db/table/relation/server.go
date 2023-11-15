@@ -30,7 +30,7 @@ type ServerModel struct {
 	Description          string    `gorm:"column:description;size:255"                         json:"description"`
 	Banner               string    `gorm:"column:banner;size:255"                              json:"banner"`
 	OwnerUserID          string    `gorm:"column:owner_user_id;size:255"                       json:"ownerUserID"`
-	MemberNumber         int32     `gorm:"column:member_number"                                json:"memberNumber"`
+	MemberNumber         uint32    `gorm:"column:member_number"                                json:"memberNumber"`
 	ApplyMode            int32     `gorm:"column:apply_mode"                                   json:"applyMode"`
 	InviteMode           int32     `gorm:"column:invite_mode"                                  json:"inviteMode"`
 	Searchable           int32     `gorm:"column:searchable"                                   json:"searchable"`
@@ -59,6 +59,5 @@ type ServerModelInterface interface {
 		pageNumber, showNumber int32,
 	) (total uint32, servers []*ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*ServerModel, err error)
-	FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*ServerModel, total int64, err error)
 	GetServers(ctx context.Context, serverIDs []string) (servers []*ServerModel, err error)
 }
