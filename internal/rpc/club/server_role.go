@@ -96,7 +96,7 @@ func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 	return owner.RoleID, nil
 }
 
-func (c *clubServer) getServerRoleByType(ctx context.Context, serverID string, priority int32) (*relationtb.ServerRoleModel, error) {
+func (c *clubServer) getServerRoleByPriority(ctx context.Context, serverID string, priority int32) (*relationtb.ServerRoleModel, error) {
 	return c.ClubDatabase.TakeServerRoleByPriority(ctx, serverID, priority)
 }
 

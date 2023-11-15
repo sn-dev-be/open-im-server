@@ -44,7 +44,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		return nil, err
 	}
 
-	serverRole, err := c.getServerRoleByType(ctx, req.ServerID, constant.ServerRoleTypeEveryOne)
+	serverRole, err := c.getServerRoleByPriority(ctx, req.ServerID, constant.ServerOrdinaryUsers)
 	if err != nil {
 		return nil, errs.ErrRecordNotFound.Wrap("server role is not exists")
 	}
