@@ -52,6 +52,14 @@ func (o *ClubApi) QuitServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.QuitServer, o.Client, c)
 }
 
+func (o *ClubApi) TransferServerOwner(c *gin.Context) {
+	a2r.Call(club.ClubClient.TransferServerOwner, o.Client, c)
+}
+
+func (o *ClubApi) DismissServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.DismissServer, o.Client, c)
+}
+
 // /groupCategory
 func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)

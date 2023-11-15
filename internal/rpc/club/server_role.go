@@ -10,9 +10,12 @@ import (
 
 	"github.com/OpenIMSDK/protocol/constant"
 
+	pbclub "github.com/OpenIMSDK/protocol/club"
+
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
+	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	"github.com/openimsdk/open-im-server/v3/pkg/permissions"
 )
@@ -52,7 +55,7 @@ func (c *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID s
 		RoleName:     "全体成员",
 		Icon:         "",
 		Type:         constant.ServerRoleTypeEveryOne,
-		Priority:     0,
+		Priority:     constant.ServerOrdinaryUsers,
 		ServerID:     serverID,
 		RoleAuth:     permissions,
 		ColorLevel:   0,
@@ -75,7 +78,7 @@ func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 		RoleName:     "部落主",
 		Icon:         "",
 		Type:         constant.ServerRoleTypeOwner,
-		Priority:     0,
+		Priority:     constant.ServerOwner,
 		ServerID:     serverID,
 		RoleAuth:     permissions,
 		ColorLevel:   0,
@@ -95,4 +98,38 @@ func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 
 func (c *clubServer) getServerRoleByType(ctx context.Context, serverID string, roleType int32) (*relationtb.ServerRoleModel, error) {
 	return c.ClubDatabase.TakeServerRoleByType(ctx, serverID, roleType)
+}
+
+func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.TransferServerOwnerReq) (*pbclub.TransferServerOwnerResp, error) {
+	resp := &pbclub.TransferServerOwnerResp{}
+	_, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	if req.OldOwnerUserID == req.NewOwnerUserID {
+		return nil, errs.ErrArgs.Wrap("OldOwnerUserID == NewOwnerUserID")
+	}
+	members, err := s.ClubDatabase.FindServerMember(ctx, []string{req.ServerID}, []string{req.OldOwnerUserID, req.NewOwnerUserID}, nil)
+	if err != nil {
+		return nil, err
+	}
+	memberMap := utils.SliceToMap(members, func(e *relationtb.ServerMemberModel) string { return e.UserID })
+	oldOwner := memberMap[req.OldOwnerUserID]
+	if oldOwner == nil {
+		return nil, errs.ErrArgs.Wrap("OldOwnerUserID not in group " + req.NewOwnerUserID)
+	}
+	newOwner := memberMap[req.NewOwnerUserID]
+	if newOwner == nil {
+		return nil, errs.ErrArgs.Wrap("NewOwnerUser not in group " + req.NewOwnerUserID)
+	}
+	if !authverify.IsAppManagerUid(ctx) {
+		if !(mcontext.GetOpUserID(ctx) == oldOwner.UserID && oldOwner.RoleLevel == constant.ServerOwner) {
+			return nil, errs.ErrNoPermission.Wrap("no permission transfer group owner")
+		}
+	}
+	if err := s.ClubDatabase.TransferServerOwner(ctx, req.ServerID, req.OldOwnerUserID, req.NewOwnerUserID, constant.ServerOrdinaryUsers); err != nil {
+		return nil, err
+	}
+	//s.Notification.GroupOwnerTransferredNotification(ctx, req)
+	return resp, nil
 }

@@ -36,6 +36,9 @@ type ClubDatabase interface {
 	// server
 	CreateServer(ctx context.Context, servers []*relationtb.ServerModel) error
 	TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error)
+	DismissServer(ctx context.Context, serverID string) error // 解散部落，并删除群成员
+
+	////
 	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error)
 	GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error)
@@ -185,7 +188,7 @@ func (c *clubDatabase) CreateServer(
 }
 
 func (c *clubDatabase) TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error) {
-	return c.serverDB.Take(ctx, serverID)
+	return c.cache.GetServerInfo(ctx, serverID)
 }
 
 func (c *clubDatabase) FindServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error) {
@@ -212,6 +215,40 @@ func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []
 }
 
 // /serverRole
+func (c *clubDatabase) DismissServer(ctx context.Context, serverID string) error {
+	cache := c.cache.NewCache()
+	if err := c.tx.Transaction(func(tx any) error {
+		if err := c.serverDB.NewTx(tx).Delete(ctx, serverID); err != nil {
+			return err
+		}
+		if err := c.serverMemberDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
+			return err
+		}
+		if err := c.groupCategoryDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
+			return err
+		}
+		if err := c.groupDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
+			return err
+		}
+		if err := c.serverRoleDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
+			return err
+		}
+		if err := c.groupDappDB.NewTx(tx).DeleteServer(ctx, []string{serverID}); err != nil {
+			return err
+		}
+		userIDs, err := c.cache.GetServerMemberIDs(ctx, serverID)
+		if err != nil {
+			return err
+		}
+		cache = cache.DelJoinedServerID(userIDs...).DelServerMemberIDs(serverID).DelServersMemberNum(serverID).DelServerMembersHash(serverID)
+		cache = cache.DelServersInfo(serverID)
+		return nil
+	}); err != nil {
+		return err
+	}
+	return cache.ExecDel(ctx)
+}
+
 func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error) {
 	return c.serverRoleDB.Take(ctx, serverRoleID)
 }

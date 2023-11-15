@@ -45,3 +45,7 @@ func (s *GroupDappGorm) Create(ctx context.Context, servers []*relation.GroupDap
 func (s *GroupDappGorm) TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relation.GroupDappModel, err error) {
 	return groupDapp, utils.Wrap(s.DB.Where("group_id = ?", groupID).Take(&groupDapp).Error, "")
 }
+
+func (s *GroupDappGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
+	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.GroupDappModel{}).Error, "")
+}

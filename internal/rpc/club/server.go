@@ -15,6 +15,7 @@ import (
 	pbuser "github.com/OpenIMSDK/protocol/user"
 
 	"github.com/OpenIMSDK/tools/errs"
+	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/mw/specialerror"
 	"github.com/OpenIMSDK/tools/utils"
@@ -66,7 +67,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	}
 
 	//部落主进部落
-	err = s.createServerMember(ctx, serverDB.ServerID, opUserID, "", roleID, opUserID, "", 0, 0)
+	err = s.createServerMember(ctx, serverDB.ServerID, opUserID, "", roleID, opUserID, "", constant.ServerOwner, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +169,24 @@ func (s *clubServer) GetServerDetails(ctx context.Context, req *pbclub.GetServer
 	return resp, nil
 }
 
+func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServerReq) (*pbclub.DismissServerResp, error) {
+	defer log.ZInfo(ctx, "DismissServer.return")
+	resp := &pbclub.DismissServerResp{}
+	owner, err := s.ClubDatabase.TakeServerOwner(ctx, req.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	if !authverify.IsAppManagerUid(ctx) {
+		if owner.UserID != mcontext.GetOpUserID(ctx) {
+			return nil, errs.ErrNoPermission.Wrap("not group owner")
+		}
+	}
+	if err := s.ClubDatabase.DismissServer(ctx, req.ServerID); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (s *clubServer) IsNotFound(err error) bool {
 	return errs.ErrRecordNotFound.Is(specialerror.ErrCode(errs.Unwrap(err)))
 }
@@ -202,7 +221,7 @@ func (s *clubServer) GenServerID(ctx context.Context, serverID *string) error {
 }
 
 func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerFullInfo) error {
-	_, members, err := s.ClubDatabase.PageGetServerMember(ctx, server.ServerID, 1, 3)
+	_, members, err := s.ClubDatabase.PageGetServerMember(ctx, server.ServerInfo.ServerID, 1, 3)
 	if err == nil {
 		userIDs := []string{}
 		for _, member := range members {

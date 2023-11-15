@@ -24,7 +24,7 @@ const (
 )
 
 type GroupCategoryModel struct {
-	CategoryID    string    `gorm:"column:category_id;primary_key;primary_key;size:64"             json:"categoryID"           binding:"required"`
+	CategoryID    string    `gorm:"column:category_id;primary_key;size:64"             json:"categoryID"           binding:"required"`
 	CategoryName  string    `gorm:"column:name;size:255" json:"categoryName"`
 	ReorderWeight int32     `gorm:"column:reorder_weight" json:"reorderWeight"`
 	ViewMode      int32     `gorm:"column:view_mode" json:"viewMode"`
@@ -43,4 +43,5 @@ type GroupCategoryModelInterface interface {
 	Create(ctx context.Context, groupCategories []*GroupCategoryModel) (err error)
 	Take(ctx context.Context, groupCategoryID string) (GroupCategory *GroupCategoryModel, err error)
 	GetGroupCategoriesByServerID(ctx context.Context, serverID string) (categories []*GroupCategoryModel, err error)
+	DeleteServer(ctx context.Context, serverIDs []string) error
 }

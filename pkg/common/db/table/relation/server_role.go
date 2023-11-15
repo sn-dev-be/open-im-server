@@ -46,4 +46,5 @@ type ServerRoleModelInterface interface {
 	Create(ctx context.Context, serverRoles []*ServerRoleModel) (err error)
 	Take(ctx context.Context, serverRoleID string) (serverRole *ServerRoleModel, err error)
 	TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *ServerRoleModel, err error)
+	DeleteServer(ctx context.Context, serverIDs []string) error
 }

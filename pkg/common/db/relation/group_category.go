@@ -50,3 +50,7 @@ func (s *GroupCategoryGorm) Take(ctx context.Context, groupCategoryID string) (g
 	groupCategory = &relation.GroupCategoryModel{}
 	return groupCategory, utils.Wrap(s.DB.Where("category_id = ?", groupCategoryID).Take(groupCategory).Error, "")
 }
+
+func (s *GroupCategoryGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
+	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.GroupCategoryModel{}).Error, "")
+}

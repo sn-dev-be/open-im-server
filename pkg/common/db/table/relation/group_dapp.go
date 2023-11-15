@@ -38,4 +38,5 @@ type GroupDappModellInterface interface {
 	NewTx(tx any) GroupDappModellInterface
 	Create(ctx context.Context, groups []*GroupDappModel) (err error)
 	TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *GroupDappModel, err error)
+	DeleteServer(ctx context.Context, serverIDs []string) error
 }

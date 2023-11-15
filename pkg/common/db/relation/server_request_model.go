@@ -121,3 +121,7 @@ func (s *ServerRequestGorm) FindServerRequests(
 	err = s.DB.WithContext(ctx).Where("server_id = ? and user_id in ?", serverID, userIDs).Find(&serverRequests).Error
 	return int64(len(serverRequests)), serverRequests, utils.Wrap(err, utils.GetSelfFuncName())
 }
+
+func (s *ServerRequestGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
+	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.ServerRequestModel{}).Error, "")
+}

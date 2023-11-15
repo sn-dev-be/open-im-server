@@ -50,3 +50,7 @@ func (s *ServerRoleGorm) Take(ctx context.Context, serverRoleID string) (serverR
 func (s *ServerRoleGorm) TakeServerRoleByType(ctx context.Context, serverID string, roleType int32) (serverRole *relation.ServerRoleModel, err error) {
 	return serverRole, utils.Wrap(s.DB.Where("server_id = ? and type = ?", serverID, roleType).Take(&serverRole).Error, "")
 }
+
+func (s *ServerRoleGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
+	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.ServerRoleModel{}).Error, "")
+}

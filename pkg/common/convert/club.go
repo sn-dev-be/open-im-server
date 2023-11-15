@@ -55,22 +55,24 @@ func DB2PbServerFullInfoList(servers []*relation.ServerModel) ([]*sdkws.ServerFu
 	res := []*sdkws.ServerFullInfo{}
 	for _, m := range servers {
 		res = append(res, &sdkws.ServerFullInfo{
-			ServerID:             m.ServerID,
-			ServerName:           m.ServerName,
-			ChannelNumber:        m.ChannelNumber,
-			MemberNumber:         m.MemberNumber,
-			Icon:                 m.Icon,
-			Description:          m.Description,
-			ApplyMode:            m.ApplyMode,
-			InviteMode:           m.InviteMode,
-			Searchable:           m.Searchable,
-			Status:               m.Status,
-			Banner:               m.Banner,
-			UserMutualAccessible: m.UserMutualAccessible,
-			CategoryNumber:       m.CategoryNumber,
-			OwnerUserID:          m.OwnerUserID,
-			CreateTime:           m.CreateTime.Format("2006-01-02 15:04:05"),
-			Ex:                   m.Ex,
+			ServerInfo: &sdkws.ServerInfo{
+				ServerID:             m.ServerID,
+				ServerName:           m.ServerName,
+				ChannelNumber:        m.ChannelNumber,
+				MemberNumber:         m.MemberNumber,
+				Icon:                 m.Icon,
+				Description:          m.Description,
+				ApplyMode:            m.ApplyMode,
+				InviteMode:           m.InviteMode,
+				Searchable:           m.Searchable,
+				Status:               m.Status,
+				Banner:               m.Banner,
+				UserMutualAccessible: m.UserMutualAccessible,
+				CategoryNumber:       m.CategoryNumber,
+				OwnerUserID:          m.OwnerUserID,
+				CreateTime:           m.CreateTime.UnixMilli(),
+				Ex:                   m.Ex,
+			},
 		})
 	}
 	return res, nil
@@ -116,8 +118,8 @@ func DB2PbServerBaseInfoList(servers []*relation.ServerModel) ([]*sdkws.ServersL
 	return res, nil
 }
 
-func DB2PbServerInfo(m *relation.ServerModel) (*sdkws.ServerFullInfo, error) {
-	res := &sdkws.ServerFullInfo{
+func DB2PbServerInfo(m *relation.ServerModel) (*sdkws.ServerInfo, error) {
+	res := &sdkws.ServerInfo{
 		ServerID:             m.ServerID,
 		ServerName:           m.ServerName,
 		ChannelNumber:        m.ChannelNumber,
@@ -132,7 +134,8 @@ func DB2PbServerInfo(m *relation.ServerModel) (*sdkws.ServerFullInfo, error) {
 		UserMutualAccessible: m.UserMutualAccessible,
 		CategoryNumber:       m.CategoryNumber,
 		OwnerUserID:          m.OwnerUserID,
-		CreateTime:           m.CreateTime.Format("2006-01-02 15:04:05"),
+		DappID:               m.DappID,
+		CreateTime:           m.CreateTime.UnixMilli(),
 		Ex:                   m.Ex,
 	}
 	return res, nil

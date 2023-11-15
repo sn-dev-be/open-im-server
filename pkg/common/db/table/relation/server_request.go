@@ -56,4 +56,5 @@ type ServerRequestModelInterface interface {
 		serverIDs []string,
 		pageNumber, showNumber int32,
 	) (total uint32, servers []*ServerRequestModel, err error)
+	DeleteServer(ctx context.Context, serverIDs []string) error
 }

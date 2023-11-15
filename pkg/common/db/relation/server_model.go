@@ -31,6 +31,10 @@ type ServerGorm struct {
 	*MetaDB
 }
 
+func (s *ServerGorm) Delete(ctx context.Context, serverID string) (err error) {
+	return utils.Wrap(s.DB.Where("server_id = ?", serverID).Delete(&relation.ServerModel{}).Error, "")
+}
+
 func NewServerDB(db *gorm.DB) relation.ServerModelInterface {
 	return &ServerGorm{NewMetaDB(db, &relation.ServerModel{})}
 }

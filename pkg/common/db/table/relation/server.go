@@ -38,6 +38,7 @@ type ServerModel struct {
 	Status               int32     `gorm:"column:status"                                       json:"status"`
 	CategoryNumber       int32     `gorm:"column:categoryNumber"                               json:"categoryNumber"`
 	ChannelNumber        int32     `gorm:"column:channelNumber"                                json:"channelNumber"`
+	DappID               string    `gorm:"column:dapp_id";size:64							   json:"dappID"`
 	Ex                   string    `gorm:"column:ex;size:255"                                  json:"ex"`
 	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 }
@@ -49,6 +50,7 @@ func (ServerModel) TableName() string {
 type ServerModelInterface interface {
 	NewTx(tx any) ServerModelInterface
 	Create(ctx context.Context, servers []*ServerModel) (err error)
+	Delete(ctx context.Context, serverID string) (err error)
 	Take(ctx context.Context, serverID string) (server *ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*ServerModel, err error)
 	FindServersSplit(ctx context.Context, pageNumber, showNumber int32) (servers []*ServerModel, total int64, err error)
