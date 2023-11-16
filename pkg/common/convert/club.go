@@ -135,3 +135,15 @@ func Db2PbGroupDapp(m *relation.GroupDappModel) *sdkws.GroupDappFullInfo {
 		CreateTime: m.CreateTime.UnixMilli(),
 	}
 }
+
+func DB2PbServerBlack(m *relation.ServerBlackModel) *sdkws.ServerBlackFullInfo {
+	res := &sdkws.ServerBlackFullInfo{
+		ServerID:       m.ServerID,
+		BlockUserID:    m.BlockUserID,
+		AddSource:      m.AddSource,
+		OperatorUserID: m.OperatorUserID,
+		Ex:             m.Ex,
+		CreateTime:     m.CreateTime.UnixMilli(),
+	}
+	return res
+}

@@ -48,6 +48,9 @@ func UpdateServerInfoMap(ctx context.Context, server *sdkws.ServerInfoForSet) ma
 	if server.Ex != nil {
 		m["ex"] = server.Ex.Value
 	}
+	if server.DappID != nil {
+		m["dapp_id"] = server.DappID.Value
+	}
 	return m
 }
 

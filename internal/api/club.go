@@ -123,3 +123,16 @@ func (o *ClubApi) CancelMuteServerMember(c *gin.Context) {
 func (o *ClubApi) SetServerMemberInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.SetServerMemberInfo, o.Client, c)
 }
+
+// /groupCategory
+func (o *ClubApi) GetServerBlackList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerBlackList, o.Client, c)
+}
+
+func (o *ClubApi) BanServerMember(c *gin.Context) {
+	a2r.Call(club.ClubClient.BanServerMember, o.Client, c)
+}
+
+func (o *ClubApi) CancelBanServerMember(c *gin.Context) {
+	a2r.Call(club.ClubClient.CancelBanServerMember, o.Client, c)
+}

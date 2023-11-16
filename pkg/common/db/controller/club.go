@@ -55,9 +55,9 @@ type ClubDatabase interface {
 	PageServerRequestUser(ctx context.Context, userID string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
 
 	// serverBlack
-	Create(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error)
-	Delete(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error)
-	FindServerBlacks(ctx context.Context, serverID string) (blacks []*relationtb.ServerBlackModel, err error)
+	CreateServerBlack(ctx context.Context, blacks []*relationtb.ServerBlackModel, kickMembers []string, serverID string) (err error)
+	DeleteServerBlack(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error)
+	FindServerBlacks(ctx context.Context, serverID string, showNumber, pageNumber int32) (blacks []*relationtb.ServerBlackModel, total int64, err error)
 	FindBlackIDs(ctx context.Context, serverID string) (blackIDs []string, err error)
 
 	//groupCategory
@@ -637,14 +637,23 @@ func (c *clubDatabase) PageServerRequestUser(
 
 //////////////server_black/////////////////////
 
-func (c *clubDatabase) Create(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error) {
-	if err := c.serverBlackDB.Create(ctx, blacks); err != nil {
-		return err
-	}
-	return c.deleteBlackIDsCache(ctx, blacks)
+func (c *clubDatabase) CreateServerBlack(ctx context.Context, blacks []*relationtb.ServerBlackModel, kickMembers []string, serverID string) (err error) {
+	return c.tx.Transaction(func(tx any) error {
+		if len(kickMembers) > 0 {
+			if err := c.serverMemberDB.NewTx(tx).Delete(ctx, serverID, kickMembers); err != nil {
+				return err
+			}
+			c.cache.DelServerMemberIDs(serverID).DelServerMembersHash(serverID).DelServerMembersInfo(serverID, kickMembers...).DelServersMemberNum(serverID).DelServersInfo(serverID).ExecDel(ctx)
+		}
+
+		if err := c.serverBlackDB.NewTx(tx).Create(ctx, blacks); err != nil {
+			return err
+		}
+		return c.deleteBlackIDsCache(ctx, blacks)
+	})
 }
 
-func (c *clubDatabase) Delete(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error) {
+func (c *clubDatabase) DeleteServerBlack(ctx context.Context, blacks []*relationtb.ServerBlackModel) (err error) {
 	if err := c.serverBlackDB.Delete(ctx, blacks); err != nil {
 		return err
 	}
@@ -654,8 +663,10 @@ func (c *clubDatabase) Delete(ctx context.Context, blacks []*relationtb.ServerBl
 func (c *clubDatabase) FindServerBlacks(
 	ctx context.Context,
 	serverID string,
-) (blacks []*relationtb.ServerBlackModel, err error) {
-	return c.serverBlackDB.FindServerBlackInfos(ctx, serverID)
+	showNumber int32,
+	pageNumber int32,
+) (blacks []*relationtb.ServerBlackModel, total int64, err error) {
+	return c.serverBlackDB.FindServerBlackInfos(ctx, serverID, showNumber, pageNumber)
 }
 
 func (c *clubDatabase) FindBlackIDs(ctx context.Context, serverID string) (blackIDs []string, err error) {

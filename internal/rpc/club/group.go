@@ -74,6 +74,21 @@ func (c *clubServer) GetJoinedServerGroupList(ctx context.Context, req *pbclub.G
 	return resp, nil
 }
 
+// SetGroupCategoryOrder implements club.ClubServer.
+func (*clubServer) SetGroupCategoryOrder(context.Context, *pbclub.SetGroupCategoryOrderReq) (*pbclub.SetGroupCategoryOrderResp, error) {
+	panic("unimplemented")
+}
+
+// SetServerGroupInfo implements club.ClubServer.
+func (*clubServer) SetServerGroupInfo(context.Context, *pbclub.SetServerGroupInfoReq) (*pbclub.SetServerGroupInfoResp, error) {
+	panic("unimplemented")
+}
+
+// SetServerGroupOrder implements club.ClubServer.
+func (*clubServer) SetServerGroupOrder(context.Context, *pbclub.SetServerGroupOrderReq) (*pbclub.SetServerGroupOrderResp, error) {
+	panic("unimplemented")
+}
+
 func (c *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateServerGroupReq) (*pbclub.CreateServerGroupResp, error) {
 	if req.GroupInfo.OwnerUserID == "" {
 		return nil, errs.ErrArgs.Wrap("no group owner")

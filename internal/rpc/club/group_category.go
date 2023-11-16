@@ -25,10 +25,11 @@ func (c *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 	}
 
 	category := &relationtb.GroupCategoryModel{
-		CategoryName: req.CategoryName,
-		CategoryType: constant.CustomCategoryType,
-		ServerID:     req.ServerID,
-		CreateTime:   time.Now(),
+		CategoryName:  req.CategoryName,
+		CategoryType:  constant.CustomCategoryType,
+		ServerID:      req.ServerID,
+		ReorderWeight: 1,
+		CreateTime:    time.Now(),
 	}
 	c.GenGroupCategoryID(ctx, &category.CategoryID)
 
@@ -37,6 +38,21 @@ func (c *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 	}
 	gc := convert.Db2PbGroupCategory(category)
 	return &pbclub.CreateGroupCategoryResp{GroupCategory: gc}, nil
+}
+
+// DeleteGroupCategory implements club.ClubServer.
+func (*clubServer) DeleteGroupCategory(context.Context, *pbclub.DeleteGroupCategoryReq) (*pbclub.DeleteGroupCategoryResp, error) {
+	panic("unimplemented")
+}
+
+// DeleteServerGroup implements club.ClubServer.
+func (*clubServer) DeleteServerGroup(context.Context, *pbclub.DeleteServerGroupReq) (*pbclub.DeleteServerGroupResp, error) {
+	panic("unimplemented")
+}
+
+// SetGroupCategoryInfo implements club.ClubServer.
+func (*clubServer) SetGroupCategoryInfo(context.Context, *pbclub.SetGroupCategoryInfoReq) (*pbclub.SetGroupCategoryInfoResp, error) {
+	panic("unimplemented")
 }
 
 func (c *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string) error {

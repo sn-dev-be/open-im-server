@@ -37,6 +37,12 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		return nil, errs.ErrDismissedAlready.Wrap()
 	}
 
+	//check black list
+	blackIDs, err := c.ClubDatabase.FindBlackIDs(ctx, req.ServerID)
+	if len(blackIDs) > 0 && utils.Contain(req.UserID, blackIDs...) {
+		return nil, errs.ErrBlockedByPeer.Wrap("you have been blocked")
+	}
+
 	_, err = c.ClubDatabase.TakeServerMember(ctx, req.ServerID, req.UserID)
 	if err == nil {
 		return nil, errs.ErrArgs.Wrap("already in server")

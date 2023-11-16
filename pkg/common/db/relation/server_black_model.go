@@ -19,7 +19,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -91,6 +90,23 @@ func (s *ServerBlackGorm) FindBlackUserIDs(ctx context.Context, serverID string)
 	)
 }
 
-func (s *ServerBlackGorm) FindServerBlackInfos(ctx context.Context, serverID string) (blacks []*relation.ServerBlackModel, err error) {
-	return blacks, errs.Wrap(s.db(ctx).Where("server_id = ?", serverID).Find(&blacks).Error)
+func (s *ServerBlackGorm) FindServerBlackInfos(ctx context.Context, serverID string, showNumber, pageNumber int32) (blacks []*relation.ServerBlackModel, total int64, err error) {
+	err = s.db(ctx).Where("server_id = ?", serverID).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	err = utils.Wrap(
+		s.db(ctx).
+			Where("server_id = ? ", serverID).
+			Limit(int(showNumber)).
+			Offset(int((pageNumber-1)*showNumber)).
+			Find(&blacks).
+			Error,
+		"",
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	return
 }
