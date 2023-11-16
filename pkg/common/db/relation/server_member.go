@@ -195,6 +195,7 @@ func (g *ServerMemberGorm) FindUserManagedServerID(ctx context.Context, userID s
 		"",
 	)
 }
-func (s *ServerMemberGorm) GetJoinedServerByUserID(ctx context.Context, userID string) (members []*relation.ServerMemberModel, err error) {
-	return members, utils.Wrap(s.DB.Where("user_id =?", userID).Take(&members).Error, "")
+
+func (g *ServerMemberGorm) FindManageRoleUser(ctx context.Context, serverID string, roleIDs []string) (serverMembers []*relation.ServerMemberModel, err error) {
+	return serverMembers, utils.Wrap(g.db(ctx).Where("server_id = ? and server_role_id in (?)", serverID, roleIDs).Find(&serverMembers).Error, "")
 }

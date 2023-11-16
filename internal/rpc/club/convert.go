@@ -34,7 +34,7 @@ func (s *clubServer) serverDB2PB(server *relation.ServerModel, ownerUserID strin
 		MemberNumber:         server.MemberNumber,
 		UserMutualAccessible: server.UserMutualAccessible,
 		CategoryNumber:       server.CategoryNumber,
-		ChannelNumber:        server.ChannelNumber,
+		GroupNumber:          server.GroupNumber,
 		OwnerUserID:          ownerUserID,
 		CreateTime:           server.CreateTime.UnixMilli(),
 	}

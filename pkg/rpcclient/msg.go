@@ -95,6 +95,8 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.RedPacketClaimedByUserNotification: {IsSendMsg: true, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.RedPacketClaimedNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.RedPacketExpiredNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+		// server
+		constant.JoinServerApplicationNotification: config.Config.Notification.JoinServerApplication,
 	}
 }
 
@@ -140,6 +142,8 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ConversationPrivateChatNotification: constant.SingleChatType,
 		// delete
 		constant.DeleteMsgsNotification: constant.SingleChatType,
+		// server
+		constant.JoinServerApplicationNotification: constant.SingleChatType,
 	}
 }
 

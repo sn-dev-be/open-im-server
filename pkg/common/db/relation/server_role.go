@@ -17,6 +17,7 @@ package relation
 import (
 	"context"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/OpenIMSDK/tools/utils"
@@ -53,4 +54,13 @@ func (s *ServerRoleGorm) TakeServerRoleByPriority(ctx context.Context, serverID 
 
 func (s *ServerRoleGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
 	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.ServerRoleModel{}).Error, "")
+}
+
+func (s *ServerRoleGorm) FindRoleID(ctx context.Context, serverID, roleKey string) (roleIDs []string, err error) {
+	return roleIDs, utils.Wrap(
+		s.db(ctx).
+			Where("server_id = ?", serverID).
+			Where(datatypes.JSONQuery("permissions").Equals(true, roleKey)).
+			Pluck("id", &roleIDs).Error, "",
+	)
 }

@@ -29,7 +29,7 @@ type ServerMemberModel struct {
 	UserID         string    `gorm:"column:user_id;primary_key;size:64"                    json:"userID"`
 	Nickname       string    `gorm:"column:nickname;index;size:64"                         json:"nickname"`
 	FaceURL        string    `gorm:"column:user_server_face_url;size:255"`
-	ServerRoleID   string    `gorm:"column:server_role_id;size:64"                         json:"serverRoleID"`
+	ServerRoleID   string    `gorm:"column:server_role_id;primary_key;size:64"             json:"serverRoleID"`
 	RoleLevel      int32     `gorm:"column:role_level"                                     json:"roleLevel"`
 	JoinSource     int32     `gorm:"column:join_source"                                    json:"joinSource"`
 	InviterUserID  string    `gorm:"column:inviter_user_id;size:64"                        json:"inviterUserID"`
@@ -74,5 +74,5 @@ type ServerMemberModelInterface interface {
 	TakeServerMemberNum(ctx context.Context, serverID string) (count int64, err error)
 	FindUsersJoinedServerID(ctx context.Context, userIDs []string) (map[string][]string, error)
 	FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error)
-	GetJoinedServerByUserID(ctx context.Context, userID string) (member []*ServerMemberModel, err error)
+	FindManageRoleUser(ctx context.Context, serverID string, roleIDs []string) (serverMembers []*ServerMemberModel, err error)
 }

@@ -37,7 +37,6 @@ type ClubDatabase interface {
 	TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error)
 	DismissServer(ctx context.Context, serverID string) error // 解散部落，并删除群成员
 
-	////
 	FindServer(ctx context.Context, serverIDs []string) (groups []*relationtb.ServerModel, err error)
 	FindNotDismissedServer(ctx context.Context, serverIDs []string) (servers []*relationtb.ServerModel, err error)
 	SearchServer(ctx context.Context, keyword string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerModel, error)
@@ -84,6 +83,7 @@ type ClubDatabase interface {
 	FindServerMemberNum(ctx context.Context, serverID string) (uint32, error)
 	FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error)
 	PageServerRequest(ctx context.Context, serverIDs []string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
+	FindServerMemberByRole(ctx context.Context, serverID, role string) ([]*relationtb.ServerMemberModel, error)
 
 	PageGetJoinServer(ctx context.Context, userID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
 	PageGetServerMember(ctx context.Context, serverID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
@@ -588,6 +588,18 @@ func (c *clubDatabase) UpdateServerMembers(ctx context.Context, data []*relation
 		return err
 	}
 	return cache.ExecDel(ctx)
+}
+
+func (c *clubDatabase) FindServerMemberByRole(ctx context.Context, serverID, role string) ([]*relationtb.ServerMemberModel, error) {
+	roleIDs, err := c.serverRoleDB.FindRoleID(ctx, serverID, role)
+	if err != nil {
+		return nil, err
+	}
+	serverMembers, err := c.serverMemberDB.FindManageRoleUser(ctx, serverID, roleIDs)
+	if err != nil {
+		return nil, err
+	}
+	return serverMembers, nil
 }
 
 // /serverRequest

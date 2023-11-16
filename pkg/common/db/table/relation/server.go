@@ -37,7 +37,7 @@ type ServerModel struct {
 	UserMutualAccessible int32     `gorm:"column:user_mutual_accessible"                       json:"userMutualAccessible"`
 	Status               int32     `gorm:"column:status"                                       json:"status"`
 	CategoryNumber       int32     `gorm:"column:category_number"                              json:"categoryNumber"`
-	ChannelNumber        int32     `gorm:"column:channel_number"                               json:"channelNumber"`
+	GroupNumber          int32     `gorm:"column:group_number"                                 json:"groupNumber"`
 	DappID               string    `gorm:"column:dapp_id";size:64"                             json:"dappID"`
 	Ex                   string    `gorm:"column:ex;size:255"                                  json:"ex"`
 	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`

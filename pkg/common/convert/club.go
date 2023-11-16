@@ -20,7 +20,7 @@ func Db2PbServerInfo(m *relation.ServerModel, ownerUserID string, memberCount ui
 		MemberNumber:         memberCount,
 		UserMutualAccessible: m.UserMutualAccessible,
 		CategoryNumber:       m.CategoryNumber,
-		ChannelNumber:        m.ChannelNumber,
+		GroupNumber:          m.GroupNumber,
 		CreateTime:           m.CreateTime.UnixMilli(),
 	}
 }
@@ -29,7 +29,7 @@ func DB2PbServerInfo(m *relation.ServerModel) *sdkws.ServerInfo {
 	return &sdkws.ServerInfo{
 		ServerID:             m.ServerID,
 		ServerName:           m.ServerName,
-		ChannelNumber:        m.ChannelNumber,
+		GroupNumber:          m.GroupNumber,
 		MemberNumber:         m.MemberNumber,
 		Icon:                 m.Icon,
 		Description:          m.Description,
@@ -53,7 +53,7 @@ func Db2PbServerFullInfo(m *relation.ServerModel) *sdkws.ServerFullInfo {
 		ServerInfo: &sdkws.ServerInfo{
 			ServerID:             m.ServerID,
 			ServerName:           m.ServerName,
-			ChannelNumber:        m.ChannelNumber,
+			GroupNumber:          m.GroupNumber,
 			MemberNumber:         m.MemberNumber,
 			Icon:                 m.Icon,
 			Description:          m.Description,

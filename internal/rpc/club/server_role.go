@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"gorm.io/datatypes"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
 
@@ -57,7 +58,7 @@ func (c *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID s
 		Type:         constant.ServerRoleTypeEveryOne,
 		Priority:     constant.ServerOrdinaryUsers,
 		ServerID:     serverID,
-		RoleAuth:     permissions,
+		Permissions:  datatypes.JSON(permissions),
 		ColorLevel:   0,
 		MemberNumber: 1,
 		Ex:           "",
@@ -80,7 +81,7 @@ func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 		Type:         constant.ServerRoleTypeOwner,
 		Priority:     constant.ServerOwner,
 		ServerID:     serverID,
-		RoleAuth:     permissions,
+		Permissions:  datatypes.JSON(permissions),
 		ColorLevel:   0,
 		MemberNumber: 1,
 		Ex:           "",

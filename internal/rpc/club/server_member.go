@@ -67,8 +67,6 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		//todo 是否需要发送notification
 		return &pbclub.JoinServerResp{}, nil
 	} else {
-		//保存server_request
-
 		serverRequest := relationtb.ServerRequestModel{
 			UserID:      req.InviterUserID,
 			ReqMsg:      req.ReqMessage,
@@ -80,9 +78,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		if err := c.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
 			return nil, err
 		}
-
-		//给群主、管理员发送消息
-		// c.Notification.JoinGroupApplicationNotification(ctx, req)
+		c.Notification.JoinServerApplicationNotification(ctx, req)
 	}
 	return resp, nil
 }

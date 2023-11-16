@@ -60,7 +60,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	serverDB.OwnerUserID = opUserID
 	//这几个配置是默认写死的，后期根据需求调整
 	serverDB.CategoryNumber = 3
-	serverDB.ChannelNumber = 4
+	serverDB.GroupNumber = 4
 	serverDB.MemberNumber = 1
 
 	if err := s.GenServerID(ctx, &serverDB.ServerID); err != nil {
