@@ -558,7 +558,14 @@ func (c *clubDatabase) TransferServerOwner(ctx context.Context, serverID string,
 			return err
 		}
 
-		return c.cache.DelServerMembersInfo(serverID, oldOwner.UserID, newOwner.UserID).DelServerMembersHash(serverID).ExecDel(ctx)
+		sm := make(map[string]any, 1)
+		sm["owner_user_id"] = newOwner.UserID
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, sm)
+		if err != nil {
+			return err
+		}
+
+		return c.cache.DelServersInfo(serverID).DelJoinedServerID(oldOwner.UserID, newOwner.UserID).DelServerMemberIDs(serverID).DelServerMembersInfo(serverID, oldOwner.UserID, newOwner.UserID).DelServerMembersHash(serverID).ExecDel(ctx)
 	})
 }
 

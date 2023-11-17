@@ -114,9 +114,9 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	//todo 发送notification
 	//_ = c.Notification.MemberQuitNotification(ctx, c.groupMemberDB2PB(info, 0))
 
-	if err := c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID}); err != nil {
-		return nil, err
-	}
+	go func() {
+		c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID})
+	}()
 
 	return resp, nil
 }

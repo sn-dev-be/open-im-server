@@ -156,7 +156,7 @@ func (g *ServerMemberGorm) FindJoinUserID(
 }
 
 func (g *ServerMemberGorm) FindMemberUserID(ctx context.Context, serverID string) (userIDs []string, err error) {
-	return userIDs, utils.Wrap(g.db(ctx).Where("server_id = ?", serverID).Pluck("user_id", &userIDs).Error, "")
+	return userIDs, utils.Wrap(g.db(ctx).Where("server_id = ?", serverID).Order("role_level desc").Pluck("user_id", &userIDs).Error, "")
 }
 
 func (g *ServerMemberGorm) FindUserJoinedServerID(ctx context.Context, userID string) (serverIDs []string, err error) {
