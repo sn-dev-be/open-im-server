@@ -330,7 +330,9 @@ type notification struct {
 	SignalingHungUp        NotificationConf `yaml:"signalingHungUp"`
 	SignalingClosed        NotificationConf `yaml:"signalingClosed"`
 	//////////////////////server///////////////////////
-	JoinServerApplication NotificationConf `yaml:"joinServerApplication"`
+	JoinServerApplication     NotificationConf `yaml:"joinServerApplication"`
+	ServerApplicationAccepted NotificationConf `yaml:"serverApplicationAccepted"`
+	ServerApplicationRejected NotificationConf `yaml:"serverApplicationRejected"`
 }
 
 func (c *configStruct) GetServiceNames() []string {
