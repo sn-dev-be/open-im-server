@@ -2,6 +2,7 @@ package club
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -354,5 +355,36 @@ func (s *clubServer) SearchServer(ctx context.Context, req *pbclub.SearchServerR
 	}
 	resp.Total = total
 	resp.ServerInfos = utils.Batch(convert.DB2PbServerInfo, servers)
+	return resp, nil
+}
+
+func (s *clubServer) GetServerAbstractInfo(ctx context.Context, req *pbclub.GetServerAbstractInfoReq) (*pbclub.GetServerAbstractInfoResp, error) {
+	resp := &pbclub.GetServerAbstractInfoResp{}
+	if len(req.ServerIDs) == 0 {
+		return nil, errs.ErrArgs.Wrap("serverIDs empty")
+	}
+	if utils.Duplicate(req.ServerIDs) {
+		return nil, errs.ErrArgs.Wrap("serverIDs duplicate")
+	}
+	servers, err := s.ClubDatabase.FindServer(ctx, req.ServerIDs)
+	if err != nil {
+		return nil, err
+	}
+	if ids := utils.Single(req.ServerIDs, utils.Slice(servers, func(server *relationtb.ServerModel) string {
+		return server.ServerID
+	})); len(ids) > 0 {
+		return nil, errs.ErrGroupIDNotFound.Wrap("not found server " + strings.Join(ids, ","))
+	}
+	serverUserMap, err := s.ClubDatabase.MapServerMemberUserID(ctx, req.ServerIDs)
+	if err != nil {
+		return nil, err
+	}
+	if ids := utils.Single(req.ServerIDs, utils.Keys(serverUserMap)); len(ids) > 0 {
+		return nil, errs.ErrGroupIDNotFound.Wrap(fmt.Sprintf("server %s not found member", strings.Join(ids, ",")))
+	}
+	resp.ServerAbstractInfos = utils.Slice(servers, func(server *relationtb.ServerModel) *pbclub.ServerAbstractInfo {
+		users := serverUserMap[server.ServerID]
+		return convert.Db2PbServerAbstractInfo(server.ServerID, users.MemberNum, users.Hash)
+	})
 	return resp, nil
 }

@@ -113,6 +113,16 @@ func (p Permissions) CanTweetReply() bool {
 	return p.HasPermission(TweetReply)
 }
 
+func (p Permissions) OwnedPermissionsCount() uint32 {
+	var count uint32 = 0
+	for _, val := range p {
+		if val == true {
+			count++
+		}
+	}
+	return count
+}
+
 func (p Permissions) ToJSON() (string, error) {
 	bytes, err := json.Marshal(p)
 	if err != nil {

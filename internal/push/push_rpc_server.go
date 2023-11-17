@@ -45,6 +45,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	database := controller.NewPushDatabase(cacheModel)
 	groupRpcClient := rpcclient.NewGroupRpcClient(client)
 	conversationRpcClient := rpcclient.NewConversationRpcClient(client)
+	clubRpcClient := rpcclient.NewClubRpcClient(client)
 	msgRpcClient := rpcclient.NewMessageRpcClient(client)
 	pusher := NewPusher(
 		client,
@@ -52,6 +53,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		database,
 		localcache.NewGroupLocalCache(&groupRpcClient),
 		localcache.NewConversationLocalCache(&conversationRpcClient),
+		localcache.NewServerLocalCache(&clubRpcClient, &groupRpcClient),
 		&conversationRpcClient,
 		&groupRpcClient,
 		&msgRpcClient,

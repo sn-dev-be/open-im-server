@@ -1,6 +1,7 @@
 package convert
 
 import (
+	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
@@ -68,6 +69,18 @@ func Db2PbServerFullInfo(m *relation.ServerModel) *sdkws.ServerFullInfo {
 			CreateTime:           m.CreateTime.UnixMilli(),
 			Ex:                   m.Ex,
 		},
+	}
+}
+
+func Db2PbServerAbstractInfo(
+	serverID string,
+	serverMemberNumber uint32,
+	serverMemberListHash uint64,
+) *pbclub.ServerAbstractInfo {
+	return &pbclub.ServerAbstractInfo{
+		ServerID:             serverID,
+		ServerMemberNumber:   serverMemberNumber,
+		ServerMemberListHash: serverMemberListHash,
 	}
 }
 
