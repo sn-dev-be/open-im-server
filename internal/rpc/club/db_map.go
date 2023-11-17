@@ -28,7 +28,7 @@ func UpdateServerInfoMap(ctx context.Context, server *sdkws.ServerInfoForSet) ma
 		m["name"] = server.ServerName
 	}
 	if server.Icon != "" {
-		m["iocn"] = server.Icon
+		m["icon"] = server.Icon
 	}
 	if server.Description != "" {
 		m["description"] = server.Description
