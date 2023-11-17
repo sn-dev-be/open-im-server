@@ -75,7 +75,7 @@ func (c *ConversationRpcClient) GroupChatFirstCreateConversation(ctx context.Con
 }
 
 func (c *ConversationRpcClient) ServerGroupChatFirstCreateConversation(ctx context.Context, groupID string, userIDs []string) error {
-	_, err := c.Client.CreateGroupChatConversations(ctx, &pbconversation.CreateGroupChatConversationsReq{UserIDs: userIDs, GroupID: groupID})
+	_, err := c.Client.CreateServerGroupChatConversations(ctx, &pbconversation.CreateGroupChatConversationsReq{UserIDs: userIDs, GroupID: groupID})
 	return err
 }
 

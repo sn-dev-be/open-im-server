@@ -283,7 +283,7 @@ func (c *conversationServer) CreateGroupChatConversations(ctx context.Context, r
 }
 
 func (c *conversationServer) CreateServerGroupChatConversations(ctx context.Context, req *pbconversation.CreateGroupChatConversationsReq) (*pbconversation.CreateGroupChatConversationsResp, error) {
-	err := c.conversationDatabase.CreateGroupChatConversation(ctx, req.GroupID, req.UserIDs)
+	err := c.conversationDatabase.CreateServerGroupChatConversation(ctx, req.GroupID, req.UserIDs)
 	if err != nil {
 		return nil, err
 	}
