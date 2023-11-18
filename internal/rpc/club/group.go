@@ -75,7 +75,10 @@ func (c *clubServer) GetJoinedServerGroupList(ctx context.Context, req *pbclub.G
 }
 
 func (c *clubServer) SetServerGroupInfo(ctx context.Context, req *pbclub.SetServerGroupInfoReq) (*pbclub.SetServerGroupInfoResp, error) {
-	//todo 校验权限
+
+	if !c.checkManageGroup(ctx, req.GroupInfo.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	//var opMember *relationtb.ServerMemberModel
 	if !authverify.IsAppManagerUid(ctx) {
@@ -158,7 +161,10 @@ func (c *clubServer) SetServerGroupInfo(ctx context.Context, req *pbclub.SetServ
 }
 
 func (c *clubServer) SetServerGroupOrder(ctx context.Context, req *pbclub.SetServerGroupOrderReq) (*pbclub.SetServerGroupOrderResp, error) {
-	//todo 校验权限
+	if !c.checkManageGroup(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+
 	resp := &pbclub.SetServerGroupOrderResp{}
 
 	groups, err := c.ClubDatabase.FindGroup(ctx, []string{req.ServerID})
@@ -187,7 +193,9 @@ func (c *clubServer) SetServerGroupOrder(ctx context.Context, req *pbclub.SetSer
 }
 
 func (c *clubServer) DeleteServerGroup(ctx context.Context, req *pbclub.DeleteServerGroupReq) (*pbclub.DeleteServerGroupResp, error) {
-	//todo 校验权限
+	if !c.checkManageGroup(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	resp := &pbclub.DeleteServerGroupResp{}
 	if len(req.GroupIDs) == 0 {
@@ -212,6 +220,10 @@ func (c *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 	if err := authverify.CheckAccessV3(ctx, req.GroupInfo.OwnerUserID); err != nil {
 		return nil, err
 	}
+	if !c.checkManageGroup(ctx, req.GroupInfo.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+
 	opUserID := mcontext.GetOpUserID(ctx)
 	group := convert.Pb2DBGroupInfo(req.GroupInfo)
 	group.CreatorUserID = opUserID

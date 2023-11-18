@@ -24,6 +24,10 @@ func (c *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 		return nil, err
 	}
 
+	if !c.checkManageGroup(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+
 	category := &relationtb.GroupCategoryModel{
 		CategoryName:  req.CategoryName,
 		CategoryType:  constant.CustomCategoryType,
@@ -45,7 +49,9 @@ func (c *clubServer) DeleteGroupCategory(ctx context.Context, req *pbclub.Delete
 		return nil, errs.ErrArgs.Wrap("categoryID is empty")
 	}
 
-	//todo 校验当前登录用户权限
+	if !c.checkManageGroup(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	resp := &pbclub.DeleteGroupCategoryResp{}
 	groupCategorys, err := c.ClubDatabase.FindGroupCategory(ctx, req.CategoryIDs)
@@ -75,7 +81,9 @@ func (c *clubServer) SetGroupCategoryOrder(ctx context.Context, req *pbclub.SetG
 		return nil, errs.ErrArgs.Wrap("categoryID is empty")
 	}
 
-	//todo 校验当前登录用户权限
+	if !c.checkManageGroup(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	resp := &pbclub.SetGroupCategoryOrderResp{}
 	groupCategorys, err := c.ClubDatabase.FindGroupCategory(ctx, req.CategoryIDs)
@@ -100,7 +108,9 @@ func (c *clubServer) SetGroupCategoryOrder(ctx context.Context, req *pbclub.SetG
 
 func (c *clubServer) SetGroupCategoryInfo(ctx context.Context, req *pbclub.SetGroupCategoryInfoReq) (*pbclub.SetGroupCategoryInfoResp, error) {
 
-	//todo 校验当前登录用户权限
+	if !c.checkManageGroup(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	groupCategory, err := c.ClubDatabase.TakeGroupCategory(ctx, req.CategoryID)
 	if err != nil {

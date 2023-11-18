@@ -30,10 +30,6 @@ type GroupCategoryGorm struct {
 	*MetaDB
 }
 
-func (s *GroupCategoryGorm) GetGroupCategoriesByServerID(ctx context.Context, serverID string) (categories []*relation.GroupCategoryModel, err error) {
-	return categories, utils.Wrap(s.DB.Where("server_id = ?", serverID).Order("reorder_weight asc").Find(&categories).Error, "")
-}
-
 func NewGroupCategoryDB(db *gorm.DB) relation.GroupCategoryModelInterface {
 	return &GroupCategoryGorm{NewMetaDB(db, &relation.GroupCategoryModel{})}
 }
@@ -67,6 +63,10 @@ func (s *GroupCategoryGorm) Find(ctx context.Context, groupCategoryIDs []string)
 	return categories, utils.Wrap(s.DB.Where("category_id in ?", groupCategoryIDs).Find(&categories).Error, "")
 }
 
-func (s *GroupCategoryGorm) FindGroupCategoryByType(ctx context.Context, serverID string, categoryType int32) (categories []*relation.GroupCategoryModel, err error) {
-	return categories, utils.Wrap(s.DB.Where("server_id = ? and category_type = ?", serverID, categoryType).Find(&categories).Error, "")
+func (s *GroupCategoryGorm) FindGroupCategoryIDsByType(ctx context.Context, serverID string, categoryType int32) (categoryID []string, err error) {
+	return categoryID, utils.Wrap(s.DB.Model(&relation.GroupCategoryModel{}).Where("server_id = ? and category_type = ?", serverID, categoryType).Order("reorder_weight asc").Pluck("category_id", &categoryID).Error, "")
+}
+
+func (s *GroupCategoryGorm) FindGroupCategoryIDsByServerID(ctx context.Context, serverID string) (categoryID []string, err error) {
+	return categoryID, utils.Wrap(s.DB.Model(&relation.GroupCategoryModel{}).Where("server_id = ?", serverID).Order("reorder_weight asc").Pluck("category_id", &categoryID).Error, "")
 }

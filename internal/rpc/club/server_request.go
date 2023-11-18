@@ -14,7 +14,6 @@ import (
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 
-	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
@@ -24,15 +23,10 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 	if !utils.Contain(req.HandleResult, constant.ServerResponseAgree, constant.ServerResponseRefuse) {
 		return nil, errs.ErrArgs.Wrap("HandleResult unknown")
 	}
-	if !authverify.IsAppManagerUid(ctx) {
-		serverMember, err := c.ClubDatabase.TakeServerMember(ctx, req.ServerID, mcontext.GetOpUserID(ctx))
-		if err != nil {
-			return nil, err
-		}
-		if !(serverMember.RoleLevel == constant.ServerOwner || serverMember.RoleLevel == constant.ServerAdmin) {
-			return nil, errs.ErrNoPermission.Wrap("no server owner or admin")
-		}
+	if !c.checkManageServer(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
 	}
+
 	serverRequest, err := c.ClubDatabase.TakeServerRequest(ctx, req.ServerID, req.FromUserID)
 	if err != nil {
 		return nil, err

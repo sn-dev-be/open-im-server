@@ -158,6 +158,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 			relation.NewServerDB(db),
 			relation.NewGroupDappDB(db),
 			relation.NewGroupDB(db),
+			relation.NewGroupCategoryDB(db),
 			relation.NewServerMemberDB(db),
 			relation.NewServerRequestDB(db),
 			relation.NewServerBlackDB(db),
@@ -308,7 +309,11 @@ func (c *clubDatabase) FindGroupCategory(ctx context.Context, groupCategoryIDs [
 }
 
 func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {
-	return c.groupCategoryDB.GetGroupCategoriesByServerID(ctx, serverID)
+	categoryIDs, err := c.groupCategoryDB.FindGroupCategoryIDsByServerID(ctx, serverID)
+	if err != nil {
+		return nil, err
+	}
+	return c.cache.GetGroupCategoriesInfo(ctx, categoryIDs)
 }
 
 func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
@@ -316,7 +321,8 @@ func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*re
 		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
 			return err
 		}
-		return nil
+		categoryIDs := utils.Slice(categories, func(e *relationtb.GroupCategoryModel) string { return e.CategoryID })
+		return c.cache.DelGroupCategoriesInfo(categoryIDs...).ExecDel(ctx)
 	}); err != nil {
 		return err
 	}
@@ -324,17 +330,21 @@ func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*re
 }
 
 func (c *clubDatabase) UpdateGroupCategory(ctx context.Context, serverID, categoryID string, data map[string]any) error {
-	return c.groupCategoryDB.UpdateMap(ctx, serverID, categoryID, data)
-}
-
-func (c *clubDatabase) DeleteGroupCategorys(ctx context.Context, serverID string, categoryIDs []string) error {
-	categories, err := c.groupCategoryDB.FindGroupCategoryByType(ctx, serverID, constant.DefaultCategoryType)
+	err := c.groupCategoryDB.UpdateMap(ctx, serverID, categoryID, data)
 	if err != nil {
 		return err
 	}
-	defaultCategoryType := categories[0]
+	return c.cache.DelGroupCategoriesInfo(categoryID).ExecDel(ctx)
+}
+
+func (c *clubDatabase) DeleteGroupCategorys(ctx context.Context, serverID string, categoryIDs []string) error {
+	categories, err := c.groupCategoryDB.FindGroupCategoryIDsByType(ctx, serverID, constant.DefaultCategoryType)
+	if err != nil {
+		return err
+	}
+	defaultCategoryID := categories[0]
 	data := make(map[string]any)
-	data["group_category_id"] = defaultCategoryType.CategoryID
+	data["group_category_id"] = defaultCategoryID
 
 	if err := c.tx.Transaction(func(tx any) error {
 		//categoryIDs := utils.Slice(categories, func(e *relationtb.GroupCategoryModel) string { return e.CategoryID })
@@ -358,7 +368,7 @@ func (c *clubDatabase) DeleteGroupCategorys(ctx context.Context, serverID string
 		if err != nil {
 			return err
 		}
-		return nil
+		return c.cache.DelGroupCategoriesInfo(categoryIDs...).ExecDel(ctx)
 	}); err != nil {
 		return err
 	}

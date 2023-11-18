@@ -48,7 +48,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		ServerName:           req.ServerName,
 		Icon:                 req.Icon,
 		Description:          req.Description,
-		ApplyMode:            constant.JoinServerNeedVerification,
+		ApplyMode:            constant.JoinServerDirectly, //开发测试阶段直接进，生产环境记得改成审核
 		InviteMode:           constant.ServerInvitedDenied,
 		Searchable:           constant.ServerSearchableDenied,
 		Status:               constant.ServerOk,

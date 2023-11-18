@@ -103,7 +103,7 @@ func (c *clubServer) getServerRoleByPriority(ctx context.Context, serverID strin
 
 func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.TransferServerOwnerReq) (*pbclub.TransferServerOwnerResp, error) {
 	resp := &pbclub.TransferServerOwnerResp{}
-	_, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
+	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.Transf
 		return nil, errs.ErrArgs.Wrap("NewOwnerUser not in group " + req.NewOwnerUserID)
 	}
 	if !authverify.IsAppManagerUid(ctx) {
-		if !(mcontext.GetOpUserID(ctx) == oldOwner.UserID && oldOwner.RoleLevel == constant.ServerOwner) {
+		if !(mcontext.GetOpUserID(ctx) == oldOwner.UserID && oldOwner.UserID == server.OwnerUserID) {
 			return nil, errs.ErrNoPermission.Wrap("no permission transfer group owner")
 		}
 	}

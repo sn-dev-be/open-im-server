@@ -220,6 +220,11 @@ func (c *clubServer) GetServerMembersInfo(ctx context.Context, req *pbclub.GetSe
 }
 
 func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServerMemberReq) (*pbclub.KickServerMemberResp, error) {
+
+	if !c.checkManageMember(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+
 	resp := &pbclub.KickServerMemberResp{}
 	server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
 	if err != nil {
@@ -393,6 +398,11 @@ func (c *clubServer) GetServerMembersCMS(ctx context.Context, req *pbclub.GetSer
 }
 
 func (c *clubServer) MuteServerMember(ctx context.Context, req *pbclub.MuteServerMemberReq) (*pbclub.MuteServerMemberResp, error) {
+
+	if !c.checkManageMember(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+
 	resp := &pbclub.MuteServerMemberResp{}
 	//if err := tokenverify.CheckAccessV3(ctx, req.UserID); err != nil {
 	//	return nil, err
@@ -428,6 +438,11 @@ func (c *clubServer) MuteServerMember(ctx context.Context, req *pbclub.MuteServe
 }
 
 func (c *clubServer) CancelMuteServerMember(ctx context.Context, req *pbclub.CancelMuteServerMemberReq) (*pbclub.CancelMuteServerMemberResp, error) {
+
+	if !c.checkManageMember(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+
 	resp := &pbclub.CancelMuteServerMemberResp{}
 	//member, err := c.ClubDatabase.TakeServerMember(ctx, req.ServerID, req.UserID)
 	//if err != nil {
