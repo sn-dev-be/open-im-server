@@ -68,6 +68,14 @@ func (o *ClubApi) SearchServer(c *gin.Context) {
 	a2r.Call(club.ClubClient.SearchServer, o.Client, c)
 }
 
+func (o *ClubApi) MuteServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.MuteServer, o.Client, c)
+}
+
+func (o *ClubApi) CancelMuteServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.CancelMuteServer, o.Client, c)
+}
+
 // /groupCategory
 func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
@@ -97,6 +105,14 @@ func (o *ClubApi) GetUserReqServerApplicationList(c *gin.Context) {
 
 func (o *ClubApi) GetServerUsersReqApplicationList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerUsersReqApplicationList, o.Client, c)
+}
+
+func (o *ClubApi) MuteServerGroup(c *gin.Context) {
+	a2r.Call(club.ClubClient.MuteServerGroup, o.Client, c)
+}
+
+func (o *ClubApi) CancelMuteServerGroup(c *gin.Context) {
+	a2r.Call(club.ClubClient.CancelMuteServerGroup, o.Client, c)
 }
 
 // /serverMember

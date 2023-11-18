@@ -82,3 +82,9 @@ func UpdateServerMemberMap(req *pbclub.SetServerMemberInfo) map[string]any {
 	}
 	return m
 }
+
+func UpdateGroupStatusMap(status int) map[string]any {
+	return map[string]any{
+		"status": status,
+	}
+}

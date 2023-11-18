@@ -154,6 +154,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 			relation.NewServerMemberDB(db),
 			relation.NewServerRequestDB(db),
 			relation.NewServerBlackDB(db),
+			relation.NewServerRoleDB(db),
 			hashCode,
 			rcOptions,
 		),
@@ -271,7 +272,7 @@ func (c *clubDatabase) DismissServer(ctx context.Context, serverID string) error
 }
 
 func (c *clubDatabase) TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error) {
-	return c.serverRoleDB.Take(ctx, serverRoleID)
+	return c.cache.GetServerRoleInfo(ctx, serverRoleID)
 }
 
 func (c *clubDatabase) TakeServerRoleByPriority(ctx context.Context, serverID string, priority int32) (serverRole *relationtb.ServerRoleModel, err error) {
