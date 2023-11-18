@@ -270,3 +270,27 @@ func (c *clubServer) GenGroupID(ctx context.Context, groupID *string) error {
 	}
 	return errs.ErrData.Wrap("group id gen error")
 }
+
+func (c *clubServer) MuteServerGroup(ctx context.Context, req *pbclub.MuteServerGroupReq) (*pbclub.MuteServerGroupResp, error) {
+	resp := &pbclub.MuteServerGroupResp{}
+	if !c.checkManageServer(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+	if err := c.GroupDatabase.UpdateGroup(ctx, req.GroupID, UpdateGroupStatusMap(constant.GroupStatusMuted)); err != nil {
+		return nil, err
+	}
+	// c.Notification.GroupMutedNotification(ctx, req.GroupID)
+	return resp, nil
+}
+
+func (c *clubServer) CancelMuteServerGroup(ctx context.Context, req *pbclub.CancelMuteServerGroupReq) (*pbclub.CancelMuteServerGroupResp, error) {
+	resp := &pbclub.CancelMuteServerGroupResp{}
+	if !c.checkManageServer(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+	if err := c.GroupDatabase.UpdateGroup(ctx, req.GroupID, UpdateGroupStatusMap(constant.GroupOk)); err != nil {
+		return nil, err
+	}
+	// c.Notification.GroupCancelMutedNotification(ctx, req.GroupID)
+	return resp, nil
+}

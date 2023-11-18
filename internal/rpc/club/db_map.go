@@ -126,3 +126,9 @@ func UpdateGroupInfoMap(ctx context.Context, req *pbclub.SetServerGroupInfoReq) 
 	}
 	return m
 }
+
+func UpdateGroupStatusMap(status int) map[string]any {
+	return map[string]any{
+		"status": status,
+	}
+}

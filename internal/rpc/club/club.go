@@ -17,6 +17,7 @@ package club
 import (
 	"context"
 
+	"github.com/openimsdk/open-im-server/v3/pkg/permissions"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient/notification"
 
@@ -25,6 +26,7 @@ import (
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/discoveryregistry"
+	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/cache"
@@ -71,6 +73,8 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	var cs clubServer
 	database := controller.InitClubDatabase(db, rdb, mongo.GetDatabase(), cs.serverMemberHashCode)
 	cs.ClubDatabase = database
+	cs.GroupDatabase = controller.InitGroupDatabase(db, rdb, mongo.GetDatabase(), nil)
+
 	cs.User = userRpcClient
 	cs.Notification = notification.NewClubNotificationSender(database, &msgRpcClient, &userRpcClient, func(ctx context.Context, userIDs []string) ([]notification.CommonUser, error) {
 		users, err := userRpcClient.GetUsersInfo(ctx, userIDs)
@@ -88,6 +92,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 
 type clubServer struct {
 	ClubDatabase          controller.ClubDatabase
+	GroupDatabase         controller.GroupDatabase
 	User                  rpcclient.UserRpcClient
 	Group                 rpcclient.GroupRpcClient
 	Notification          *notification.ClubNotificationSender
@@ -106,4 +111,41 @@ func (c *clubServer) GetPublicUserInfoMap(ctx context.Context, userIDs []string,
 	return utils.SliceToMapAny(users, func(e *sdkws.PublicUserInfo) (string, *sdkws.PublicUserInfo) {
 		return e.UserID, e
 	}), nil
+}
+
+func (c *clubServer) getOpUserServerPermission(ctx context.Context, serverID string) (*permissions.Permissions, error) {
+	opUserID := mcontext.GetOpUserID(ctx)
+	ServerMember, err := c.ClubDatabase.TakeServerMember(ctx, serverID, opUserID)
+	if err != nil {
+		return nil, err
+	}
+	serverRole, err := c.ClubDatabase.TakeServerRole(ctx, ServerMember.ServerRoleID)
+	if err != nil {
+		return nil, err
+	}
+	permissions, err := permissions.PermissionsFromJSON(string(serverRole.Permissions))
+	if err != nil {
+		return nil, err
+	}
+	return &permissions, nil
+}
+
+func (c *clubServer) checkPermissions(ctx context.Context, serverID string, role string) bool {
+	permission, err := c.getOpUserServerPermission(ctx, serverID)
+	if err != nil {
+		return false
+	}
+	return permission.HasPermission(role)
+}
+
+func (c *clubServer) checkManageServer(ctx context.Context, serverID string) bool {
+	return c.checkPermissions(ctx, serverID, permissions.ManageServer)
+}
+
+func (c *clubServer) checkManageMember(ctx context.Context, serverID string) bool {
+	return c.checkPermissions(ctx, serverID, permissions.ManageMember)
+}
+
+func (c *clubServer) checkManageGroup(ctx context.Context, serverID string) bool {
+	return c.checkPermissions(ctx, serverID, permissions.ManageGroup)
 }

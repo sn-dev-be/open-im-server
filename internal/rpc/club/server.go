@@ -388,3 +388,27 @@ func (s *clubServer) GetServerAbstractInfo(ctx context.Context, req *pbclub.GetS
 	})
 	return resp, nil
 }
+
+func (s *clubServer) MuteServer(ctx context.Context, req *pbclub.MuteServerReq) (*pbclub.MuteServerResp, error) {
+	resp := &pbclub.MuteServerResp{}
+	if !s.checkManageServer(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+	if err := s.ClubDatabase.UpdateServer(ctx, req.ServerID, UpdateServerStatusMap(constant.ServerStatusMuted)); err != nil {
+		return nil, err
+	}
+	// s.Notification.ServerMutedNotification(ctx, req.ServerID)
+	return resp, nil
+}
+
+func (s *clubServer) CancelMuteServer(ctx context.Context, req *pbclub.CancelMuteServerReq) (*pbclub.CancelMuteServerResp, error) {
+	resp := &pbclub.CancelMuteServerResp{}
+	if !s.checkManageServer(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
+	if err := s.ClubDatabase.UpdateServer(ctx, req.ServerID, UpdateServerStatusMap(constant.ServerOk)); err != nil {
+		return nil, err
+	}
+	// s.Notification.ServerCancelMutedNotification(ctx, req.ServerID)
+	return resp, nil
+}
