@@ -321,8 +321,22 @@ func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*re
 		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
 			return err
 		}
+
+		serverID := categories[0].ServerID
+		sm, err := c.cache.GetServerInfo(ctx, serverID)
+		if err != nil {
+			return err
+		}
+		sm.CategoryNumber += uint32(len(categories))
+		data := make(map[string]any)
+		data["category_number"] = sm.CategoryNumber
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
+		if err != nil {
+			return err
+		}
+
 		categoryIDs := utils.Slice(categories, func(e *relationtb.GroupCategoryModel) string { return e.CategoryID })
-		return c.cache.DelGroupCategoriesInfo(categoryIDs...).ExecDel(ctx)
+		return c.cache.DelGroupCategoriesInfo(categoryIDs...).DelServersInfo(serverID).ExecDel(ctx)
 	}); err != nil {
 		return err
 	}
@@ -368,7 +382,21 @@ func (c *clubDatabase) DeleteGroupCategorys(ctx context.Context, serverID string
 		if err != nil {
 			return err
 		}
-		return c.cache.DelGroupCategoriesInfo(categoryIDs...).ExecDel(ctx)
+
+		//更新server中的category_number
+		sm, err := c.cache.GetServerInfo(ctx, serverID)
+		if err != nil {
+			return err
+		}
+		sm.CategoryNumber -= uint32(len(categoryIDs))
+		data := make(map[string]any)
+		data["category_number"] = sm.CategoryNumber
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
+		if err != nil {
+			return err
+		}
+
+		return c.cache.DelServersInfo(serverID).DelGroupCategoriesInfo(categoryIDs...).ExecDel(ctx)
 	}); err != nil {
 		return err
 	}
@@ -402,7 +430,21 @@ func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relation
 			return group.GroupID
 		})
 
-		cache = cache.DelGroupsInfo(createGroupIDs...)
+		serverIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.ServerID })
+		//维护servers group_number
+		sm, err := c.cache.GetServerInfo(ctx, serverIDs[0])
+		if err != nil {
+			return err
+		}
+
+		data := make(map[string]any)
+		data["group_number"] = sm.GroupNumber + uint32(len(groups))
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverIDs[0], data)
+		if err != nil {
+			return err
+		}
+
+		cache = cache.DelServersInfo(serverIDs[0]).DelGroupsInfo(createGroupIDs...)
 		return nil
 	}); err != nil {
 		return err
@@ -424,14 +466,31 @@ func (c *clubDatabase) DeleteServerGroup(ctx context.Context, serverID string, g
 				return err
 			}
 			dbGroupIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.GroupID })
+
+			deleteGroupNum := 0
 			for _, groupID := range groupIDs {
 				if utils.Contain(groupID, dbGroupIDs...) {
 					if err := c.groupDB.NewTx(tx).UpdateStatus(ctx, groupID, constant.GroupStatusDismissed); err != nil {
 						return err
 					}
+					deleteGroupNum++
 					cache = cache.DelGroupsInfo(groupID)
 				}
 			}
+
+			//维护servers group_number
+			sm, err := c.cache.GetServerInfo(ctx, serverID)
+			if err != nil {
+				return err
+			}
+
+			data := make(map[string]any)
+			data["group_number"] = sm.GroupNumber - uint32(deleteGroupNum)
+			err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
+			if err != nil {
+				return err
+			}
+			cache = cache.DelServersInfo(serverID)
 		}
 		return nil
 	}); err != nil {
