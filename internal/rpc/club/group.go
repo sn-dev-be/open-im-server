@@ -181,3 +181,16 @@ func (c *clubServer) CancelMuteServerGroup(ctx context.Context, req *pbclub.Canc
 	// c.Notification.GroupCancelMutedNotification(ctx, req.GroupID)
 	return resp, nil
 }
+
+func (c *clubServer) GetServerGroupMemberUserIDs(ctx context.Context, req *pbclub.GetServerGroupMemberUserIDsReq) (resp *pbclub.GetServerGroupMemberUserIDsResp, err error) {
+	resp = &pbclub.GetServerGroupMemberUserIDsResp{}
+	group, err := c.ClubDatabase.TakeGroup(ctx, req.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	resp.UserIDs, err = c.ClubDatabase.FindServerMemberUserID(ctx, group.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

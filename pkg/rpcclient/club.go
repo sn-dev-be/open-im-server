@@ -147,3 +147,13 @@ func (c *ClubRpcClient) GetServerMemberCache(
 	}
 	return resp.Member, nil
 }
+
+func (c *ClubRpcClient) GetServerGroupMemberIDs(ctx context.Context, groupID string) ([]string, error) {
+	resp, err := c.Client.GetServerGroupMemberUserIDs(ctx, &club.GetServerGroupMemberUserIDsReq{
+		GroupID: groupID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.UserIDs, nil
+}
