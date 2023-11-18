@@ -276,7 +276,7 @@ func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ow
 		Status:          constant.GroupOk,
 		CreatorUserID:   ownerUserID,
 		GroupType:       constant.ServerGroup,
-		ConditionType:   0,
+		ConditionType:   1,
 		Condition:       "",
 		GroupCategoryID: categoryID,
 		ServerID:        serverID,

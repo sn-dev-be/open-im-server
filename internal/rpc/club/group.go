@@ -74,19 +74,132 @@ func (c *clubServer) GetJoinedServerGroupList(ctx context.Context, req *pbclub.G
 	return resp, nil
 }
 
-// SetGroupCategoryOrder implements club.ClubServer.
-func (*clubServer) SetGroupCategoryOrder(context.Context, *pbclub.SetGroupCategoryOrderReq) (*pbclub.SetGroupCategoryOrderResp, error) {
-	panic("unimplemented")
+func (c *clubServer) SetServerGroupInfo(ctx context.Context, req *pbclub.SetServerGroupInfoReq) (*pbclub.SetServerGroupInfoResp, error) {
+	//todo 校验权限
+
+	//var opMember *relationtb.ServerMemberModel
+	if !authverify.IsAppManagerUid(ctx) {
+		var err error
+		_, err = c.TakeServerMember(ctx, req.GroupInfo.ServerID, mcontext.GetOpUserID(ctx))
+		if err != nil {
+			return nil, err
+		}
+	}
+	group, err := c.ClubDatabase.TakeGroup(ctx, req.GroupInfo.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	if group.Status == constant.GroupStatusDismissed {
+		return nil, utils.Wrap(errs.ErrDismissedAlready, "")
+	}
+	resp := &pbclub.SetServerGroupInfoResp{}
+
+	data := UpdateGroupInfoMap(ctx, req)
+	if len(data) == 0 {
+		return resp, nil
+	}
+	if err := c.ClubDatabase.UpdateServerGroup(ctx, group.GroupID, data); err != nil {
+		return nil, err
+	}
+	group, err = c.ClubDatabase.TakeGroup(ctx, req.GroupInfo.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	if req.DappID != "" && req.GroupInfo.GroupMode == constant.AppGroupMode {
+		gdm, err := c.ClubDatabase.TakeGroupDapp(ctx, req.GroupInfo.GroupID)
+		if err != nil {
+			return nil, err
+		}
+		resp.Dapp = convert.Db2PbGroupDapp(gdm)
+	}
+	// tips := &sdkws.GroupInfoSetTips{
+	// 	Group:    s.groupDB2PB(group, owner.UserID, count),
+	// 	MuteTime: 0,
+	// 	OpUser:   &sdkws.GroupMemberFullInfo{},
+	// }
+	// if opMember != nil {
+	// 	tips.OpUser = s.groupMemberDB2PB(opMember, 0)
+	// }
+	// var num int
+	// if req.GroupInfoForSet.Notification != "" {
+	// 	go func() {
+	// 		nctx := mcontext.NewCtx("@@@" + mcontext.GetOperationID(ctx))
+	// 		conversation := &pbconversation.ConversationReq{
+	// 			ConversationID:   msgprocessor.GetConversationIDBySessionType(constant.SuperGroupChatType, req.GroupInfoForSet.GroupID),
+	// 			ConversationType: constant.SuperGroupChatType,
+	// 			GroupID:          req.GroupInfoForSet.GroupID,
+	// 		}
+	// 		resp, err := s.GetGroupMemberUserIDs(nctx, &pbgroup.GetGroupMemberUserIDsReq{GroupID: req.GroupInfoForSet.GroupID})
+	// 		if err != nil {
+	// 			log.ZWarn(ctx, "GetGroupMemberIDs", err)
+	// 			return
+	// 		}
+	// 		conversation.GroupAtType = &wrapperspb.Int32Value{Value: constant.GroupNotification}
+	// 		if err := s.conversationRpcClient.SetConversations(nctx, resp.UserIDs, conversation); err != nil {
+	// 			log.ZWarn(ctx, "SetConversations", err, resp.UserIDs, conversation)
+	// 		}
+	// 	}()
+	// 	num++
+	// 	s.Notification.GroupInfoSetAnnouncementNotification(ctx, &sdkws.GroupInfoSetAnnouncementTips{Group: tips.Group, OpUser: tips.OpUser})
+	// }
+	// switch len(data) - num {
+	// case 0:
+	// case 1:
+	// 	if req.GroupInfoForSet.GroupName == "" {
+	// 		s.Notification.GroupInfoSetNotification(ctx, tips)
+	// 	} else {
+	// 		s.Notification.GroupInfoSetNameNotification(ctx, &sdkws.GroupInfoSetNameTips{Group: tips.Group, OpUser: tips.OpUser})
+	// 	}
+	// default:
+	// 	s.Notification.GroupInfoSetNotification(ctx, tips)
+	// }
+	resp.GroupInfo = convert.Db2PbGroupInfo(group, group.CreatorUserID, 0)
+	return resp, nil
 }
 
-// SetServerGroupInfo implements club.ClubServer.
-func (*clubServer) SetServerGroupInfo(context.Context, *pbclub.SetServerGroupInfoReq) (*pbclub.SetServerGroupInfoResp, error) {
-	panic("unimplemented")
+func (c *clubServer) SetServerGroupOrder(ctx context.Context, req *pbclub.SetServerGroupOrderReq) (*pbclub.SetServerGroupOrderResp, error) {
+	//todo 校验权限
+	resp := &pbclub.SetServerGroupOrderResp{}
+
+	groups, err := c.ClubDatabase.FindGroup(ctx, []string{req.ServerID})
+	if err != nil {
+		return nil, err
+	}
+
+	DbGroupIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.GroupID })
+	for _, category := range req.CategoryList {
+		for i, group := range category.GroupList {
+			if utils.Contain(group.GroupID, DbGroupIDs...) {
+				data := make(map[string]any)
+				if group.GroupName != "" {
+					data["name"] = group.GroupName
+				}
+				data["reorder_weight"] = i
+				data["group_category_id"] = category.CategoryInfo.CategoryID
+				err := c.ClubDatabase.UpdateServerGroup(ctx, group.GroupID, data)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	return resp, nil
 }
 
-// SetServerGroupOrder implements club.ClubServer.
-func (*clubServer) SetServerGroupOrder(context.Context, *pbclub.SetServerGroupOrderReq) (*pbclub.SetServerGroupOrderResp, error) {
-	panic("unimplemented")
+func (c *clubServer) DeleteServerGroup(ctx context.Context, req *pbclub.DeleteServerGroupReq) (*pbclub.DeleteServerGroupResp, error) {
+	//todo 校验权限
+
+	resp := &pbclub.DeleteServerGroupResp{}
+	if len(req.GroupIDs) == 0 {
+		return nil, errs.ErrArgs.Wrap("groupIDs is empty")
+	}
+
+	err := c.ClubDatabase.DeleteServerGroup(ctx, req.ServerID, req.GroupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (c *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateServerGroupReq) (*pbclub.CreateServerGroupResp, error) {

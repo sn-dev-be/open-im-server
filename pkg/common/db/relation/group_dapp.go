@@ -49,3 +49,11 @@ func (s *GroupDappGorm) TakeGroupDapp(ctx context.Context, groupID string) (grou
 func (s *GroupDappGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
 	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.GroupDappModel{}).Error, "")
 }
+
+func (s *GroupDappGorm) UpdateByMap(ctx context.Context, groupID string, args map[string]interface{}) (err error) {
+	return utils.Wrap(s.DB.Where("group_id = ?", groupID).Model(&relation.GroupDappModel{}).Updates(args).Error, "")
+}
+
+func (s *GroupDappGorm) DeleteByGroup(ctx context.Context, groupIDs []string) error {
+	return utils.Wrap(s.db(ctx).Where("group_id in (?)", groupIDs).Delete(&relation.GroupDappModel{}).Error, "")
+}

@@ -20,6 +20,7 @@ import (
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/sdkws"
+	"github.com/OpenIMSDK/tools/mcontext"
 )
 
 func UpdateServerInfoMap(ctx context.Context, server *sdkws.ServerInfoForSet) map[string]any {
@@ -79,6 +80,49 @@ func UpdateServerMemberMap(req *pbclub.SetServerMemberInfo) map[string]any {
 	}
 	if req.Ex != nil {
 		m["ex"] = req.Ex.Value
+	}
+	return m
+}
+
+func UpdateGroupCategoryInfoMap(ctx context.Context, categoryName string, reorder_weight int32) map[string]any {
+	m := make(map[string]any)
+	if categoryName != "" {
+		m["name"] = categoryName
+	}
+	if reorder_weight != 0 {
+		m["reorder_weight"] = reorder_weight
+	}
+	return m
+}
+
+func UpdateGroupInfoMap(ctx context.Context, req *pbclub.SetServerGroupInfoReq) map[string]any {
+	m := make(map[string]any)
+	group := req.GroupInfo
+	if group.GroupName != "" {
+		m["name"] = group.GroupName
+	}
+	if group.Notification != "" {
+		m["notification"] = group.Notification
+		m["notification_update_time"] = time.Now()
+		m["notification_user_id"] = mcontext.GetOpUserID(ctx)
+	}
+	if group.Introduction != "" {
+		m["introduction"] = group.Introduction
+	}
+	if group.FaceURL != "" {
+		m["face_url"] = group.FaceURL
+	}
+	if group.ConditionType != 0 {
+		m["condition_type"] = group.ConditionType
+	}
+	if group.Condition != "" {
+		m["condition"] = group.Condition
+	}
+	if group.GroupMode != 0 {
+		m["group_mode"] = group.GroupMode
+	}
+	if req.DappID != "" {
+		m["dapp_id"] = req.DappID
 	}
 	return m
 }

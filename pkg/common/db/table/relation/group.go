@@ -47,6 +47,7 @@ type GroupModel struct {
 	GroupMode              int32     `gorm:"column:group_mode;default:1"                         json:"groupMode"`
 	GroupCategoryID        string    `gorm:"column:group_category_id;index;size:65"              json:"groupCategoryID"`
 	ServerID               string    `gorm:"column:server_id;index;size:64"                      json:"serverID"`
+	ReorderWeight          int32     `gorm:"column:reorder_weight;default:0"                                   json:"reorderWeight"`
 }
 
 func (GroupModel) TableName() string {
@@ -75,4 +76,6 @@ type GroupModelInterface interface {
 	GetGroupIDsByServerIDs(ctx context.Context, serverIDS []string) (groupIDs []string, err error)
 	//删除部落所属群
 	DeleteServer(ctx context.Context, serverIDs []string) error
+	//根据categoryID获取群id列表
+	GetGroupIDsByCategoryID(ctx context.Context, categoryID string) (groupIDs []string, err error)
 }

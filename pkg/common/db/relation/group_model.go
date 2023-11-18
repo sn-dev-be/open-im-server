@@ -106,7 +106,11 @@ func (g *GroupGorm) FindNotDismissedGroup(ctx context.Context, groupIDs []string
 }
 
 func (g *GroupGorm) GetGroupIDsByServerIDs(ctx context.Context, serverIDS []string) (groupIDs []string, err error) {
-	return groupIDs, utils.Wrap(g.DB.Model(&relation.GroupModel{}).Where("server_id in (?) ", serverIDS).Pluck("group_id", &groupIDs).Error, "")
+	return groupIDs, utils.Wrap(g.DB.Model(&relation.GroupModel{}).Where("server_id in (?) and status != ? ", serverIDS, constant.GroupStatusDismissed).Pluck("group_id", &groupIDs).Error, "")
+}
+
+func (g *GroupGorm) GetGroupIDsByCategoryID(ctx context.Context, categoryID string) (groupIDs []string, err error) {
+	return groupIDs, utils.Wrap(g.DB.Model(&relation.GroupModel{}).Where("group_category_id = ? and status != ?", categoryID, constant.GroupStatusDismissed).Pluck("group_id", &groupIDs).Error, "")
 }
 
 func (g *GroupGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {

@@ -51,6 +51,22 @@ func (s *GroupCategoryGorm) Take(ctx context.Context, groupCategoryID string) (g
 	return groupCategory, utils.Wrap(s.DB.Where("category_id = ?", groupCategoryID).Take(groupCategory).Error, "")
 }
 
+func (s *GroupCategoryGorm) Delete(ctx context.Context, categoryIDs []string) error {
+	return utils.Wrap(s.db(ctx).Where("category_id in (?)", categoryIDs).Delete(&relation.GroupCategoryModel{}).Error, "")
+}
+
 func (s *GroupCategoryGorm) DeleteServer(ctx context.Context, serverIDs []string) (err error) {
 	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.GroupCategoryModel{}).Error, "")
+}
+
+func (s *GroupCategoryGorm) UpdateMap(ctx context.Context, serverID string, categoryID string, args map[string]interface{}) (err error) {
+	return utils.Wrap(s.DB.Where("server_id = ? and category_id = ?", serverID, categoryID).Model(&relation.GroupCategoryModel{}).Updates(args).Error, "")
+}
+
+func (s *GroupCategoryGorm) Find(ctx context.Context, groupCategoryIDs []string) (categories []*relation.GroupCategoryModel, err error) {
+	return categories, utils.Wrap(s.DB.Where("category_id in ?", groupCategoryIDs).Find(&categories).Error, "")
+}
+
+func (s *GroupCategoryGorm) FindGroupCategoryByType(ctx context.Context, serverID string, categoryType int32) (categories []*relation.GroupCategoryModel, err error) {
+	return categories, utils.Wrap(s.DB.Where("server_id = ? and category_type = ?", serverID, categoryType).Find(&categories).Error, "")
 }

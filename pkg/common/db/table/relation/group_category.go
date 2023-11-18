@@ -41,7 +41,11 @@ func (GroupCategoryModel) TableName() string {
 type GroupCategoryModelInterface interface {
 	NewTx(tx any) GroupCategoryModelInterface
 	Create(ctx context.Context, groupCategories []*GroupCategoryModel) (err error)
-	Take(ctx context.Context, groupCategoryID string) (GroupCategory *GroupCategoryModel, err error)
+	Take(ctx context.Context, groupCategoryID string) (groupCategory *GroupCategoryModel, err error)
+	Delete(ctx context.Context, categoryIDs []string) error
+	Find(ctx context.Context, groupCategoryIDs []string) (categories []*GroupCategoryModel, err error)
+	FindGroupCategoryByType(ctx context.Context, serverID string, categoryType int32) (categories []*GroupCategoryModel, err error)
 	GetGroupCategoriesByServerID(ctx context.Context, serverID string) (categories []*GroupCategoryModel, err error)
 	DeleteServer(ctx context.Context, serverIDs []string) error
+	UpdateMap(ctx context.Context, serverID string, categoryID string, args map[string]interface{}) (err error)
 }
