@@ -16,6 +16,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/dtm-labs/rockscache"
 	"github.com/redis/go-redis/v9"
@@ -23,6 +24,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/tx"
 	"github.com/OpenIMSDK/tools/utils"
 
@@ -62,13 +64,18 @@ type ClubDatabase interface {
 
 	//groupCategory
 	TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error)
+	FindGroupCategory(ctx context.Context, groupCategoryIDs []string) (groupCategorys []*relationtb.GroupCategoryModel, err error)
 	CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error
 	GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error)
+	UpdateGroupCategory(ctx context.Context, serverID, categoryID string, data map[string]any) error
+	DeleteGroupCategorys(ctx context.Context, serverID string, categoryIDs []string) error
 
 	// group
 	FindGroup(ctx context.Context, serverIDs []string) (groups []*relationtb.GroupModel, err error)
 	TakeGroup(ctx context.Context, groupID string) (group *relationtb.GroupModel, err error)
 	CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error
+	DeleteServerGroup(ctx context.Context, serverID string, groupIDs []string) error
+	UpdateServerGroup(ctx context.Context, groupID string, data map[string]any) error
 
 	//groupDapp
 	TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error)
@@ -151,6 +158,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 			relation.NewServerDB(db),
 			relation.NewGroupDappDB(db),
 			relation.NewGroupDB(db),
+			relation.NewGroupCategoryDB(db),
 			relation.NewServerMemberDB(db),
 			relation.NewServerRequestDB(db),
 			relation.NewServerBlackDB(db),
@@ -294,11 +302,18 @@ func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*rela
 // groupCategory
 func (c *clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID string) (groupCategory *relationtb.GroupCategoryModel, err error) {
 	return c.groupCategoryDB.Take(ctx, groupCategoryID)
+}
 
+func (c *clubDatabase) FindGroupCategory(ctx context.Context, groupCategoryIDs []string) (groupCategorys []*relationtb.GroupCategoryModel, err error) {
+	return c.groupCategoryDB.Find(ctx, groupCategoryIDs)
 }
 
 func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {
-	return c.groupCategoryDB.GetGroupCategoriesByServerID(ctx, serverID)
+	categoryIDs, err := c.groupCategoryDB.FindGroupCategoryIDsByServerID(ctx, serverID)
+	if err != nil {
+		return nil, err
+	}
+	return c.cache.GetGroupCategoriesInfo(ctx, categoryIDs)
 }
 
 func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
@@ -306,7 +321,82 @@ func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*re
 		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
 			return err
 		}
-		return nil
+
+		serverID := categories[0].ServerID
+		sm, err := c.cache.GetServerInfo(ctx, serverID)
+		if err != nil {
+			return err
+		}
+		sm.CategoryNumber += uint32(len(categories))
+		data := make(map[string]any)
+		data["category_number"] = sm.CategoryNumber
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
+		if err != nil {
+			return err
+		}
+
+		categoryIDs := utils.Slice(categories, func(e *relationtb.GroupCategoryModel) string { return e.CategoryID })
+		return c.cache.DelGroupCategoriesInfo(categoryIDs...).DelServersInfo(serverID).ExecDel(ctx)
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *clubDatabase) UpdateGroupCategory(ctx context.Context, serverID, categoryID string, data map[string]any) error {
+	err := c.groupCategoryDB.UpdateMap(ctx, serverID, categoryID, data)
+	if err != nil {
+		return err
+	}
+	return c.cache.DelGroupCategoriesInfo(categoryID).ExecDel(ctx)
+}
+
+func (c *clubDatabase) DeleteGroupCategorys(ctx context.Context, serverID string, categoryIDs []string) error {
+	categories, err := c.groupCategoryDB.FindGroupCategoryIDsByType(ctx, serverID, constant.DefaultCategoryType)
+	if err != nil {
+		return err
+	}
+	defaultCategoryID := categories[0]
+	data := make(map[string]any)
+	data["group_category_id"] = defaultCategoryID
+
+	if err := c.tx.Transaction(func(tx any) error {
+		//categoryIDs := utils.Slice(categories, func(e *relationtb.GroupCategoryModel) string { return e.CategoryID })
+		for _, categoryID := range categoryIDs {
+
+			//将分组下房间移入默认分组
+			groupIDs, err := c.groupDB.GetGroupIDsByCategoryID(ctx, categoryID)
+			if err != nil && !errs.ErrRecordNotFound.Is(err) {
+				return err
+			}
+			for _, groupID := range groupIDs {
+				err := c.groupDB.NewTx(tx).UpdateMap(ctx, groupID, data)
+				if err != nil {
+					return err
+				}
+			}
+			c.cache.DelGroupsInfo(groupIDs...).ExecDel(ctx)
+		}
+		//批量删除分组
+		err := c.groupCategoryDB.NewTx(tx).Delete(ctx, categoryIDs)
+		if err != nil {
+			return err
+		}
+
+		//更新server中的category_number
+		sm, err := c.cache.GetServerInfo(ctx, serverID)
+		if err != nil {
+			return err
+		}
+		sm.CategoryNumber -= uint32(len(categoryIDs))
+		data := make(map[string]any)
+		data["category_number"] = sm.CategoryNumber
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
+		if err != nil {
+			return err
+		}
+
+		return c.cache.DelServersInfo(serverID).DelGroupCategoriesInfo(categoryIDs...).ExecDel(ctx)
 	}); err != nil {
 		return err
 	}
@@ -340,7 +430,21 @@ func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relation
 			return group.GroupID
 		})
 
-		cache = cache.DelGroupsInfo(createGroupIDs...)
+		serverIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.ServerID })
+		//维护servers group_number
+		sm, err := c.cache.GetServerInfo(ctx, serverIDs[0])
+		if err != nil {
+			return err
+		}
+
+		data := make(map[string]any)
+		data["group_number"] = sm.GroupNumber + uint32(len(groups))
+		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverIDs[0], data)
+		if err != nil {
+			return err
+		}
+
+		cache = cache.DelServersInfo(serverIDs[0]).DelGroupsInfo(createGroupIDs...)
 		return nil
 	}); err != nil {
 		return err
@@ -350,6 +454,94 @@ func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relation
 
 func (c *clubDatabase) TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error) {
 	return c.cache.GetGroupDappInfo(ctx, groupID)
+}
+
+func (c *clubDatabase) DeleteServerGroup(ctx context.Context, serverID string, groupIDs []string) error {
+	cache := c.cache.NewCache()
+	if err := c.tx.Transaction(func(tx any) error {
+		if len(groupIDs) > 0 {
+
+			groups, err := c.FindGroup(ctx, []string{serverID})
+			if err != nil {
+				return err
+			}
+			dbGroupIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.GroupID })
+
+			deleteGroupNum := 0
+			for _, groupID := range groupIDs {
+				if utils.Contain(groupID, dbGroupIDs...) {
+					if err := c.groupDB.NewTx(tx).UpdateStatus(ctx, groupID, constant.GroupStatusDismissed); err != nil {
+						return err
+					}
+					deleteGroupNum++
+					cache = cache.DelGroupsInfo(groupID)
+				}
+			}
+
+			//维护servers group_number
+			sm, err := c.cache.GetServerInfo(ctx, serverID)
+			if err != nil {
+				return err
+			}
+
+			data := make(map[string]any)
+			data["group_number"] = sm.GroupNumber - uint32(deleteGroupNum)
+			err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
+			if err != nil {
+				return err
+			}
+			cache = cache.DelServersInfo(serverID)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return cache.ExecDel(ctx)
+}
+
+func (c *clubDatabase) UpdateServerGroup(ctx context.Context, groupID string, data map[string]any) error {
+	return c.tx.Transaction(func(tx any) error {
+		dappID := ""
+		groupMode := int32(0)
+		if data["dapp_id"] != nil && data["group_mode"] != nil {
+			dappID, _ = data["dapp_id"].(string)
+			v, ok := data["group_mode"].(int32)
+			if ok {
+				groupMode = int32(v)
+			}
+		}
+		if dappID != "" && groupMode == constant.AppGroupMode {
+			_, err := c.groupDappDB.TakeGroupDapp(ctx, groupID)
+			if err != nil && errs.Unwrap(err) != gorm.ErrRecordNotFound {
+				return err
+			}
+			if err == nil {
+				m := make(map[string]any)
+				m["dapp_id"] = data["dapp_id"]
+				err = c.groupDappDB.UpdateByMap(ctx, groupID, m)
+			} else {
+				m := &relationtb.GroupDappModel{
+					GroupID:    groupID,
+					DappID:     dappID,
+					CreateTime: time.Now(),
+				}
+				err = c.groupDappDB.Create(ctx, []*relationtb.GroupDappModel{m})
+			}
+			if err != nil {
+				return err
+			}
+		} else {
+			err := c.groupDappDB.NewTx(tx).DeleteByGroup(ctx, []string{groupID})
+			if err != nil {
+				return err
+			}
+		}
+		delete(data, "dapp_id")
+		if err := c.groupDB.NewTx(tx).UpdateMap(ctx, groupID, data); err != nil {
+			return err
+		}
+		return c.cache.DelGroupsInfo(groupID).ExecDel(ctx)
+	})
 }
 
 // //serverMember

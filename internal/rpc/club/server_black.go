@@ -14,10 +14,9 @@ import (
 
 func (c *clubServer) BanServerMember(ctx context.Context, req *pbclub.BanServerMemberReq) (*pbclub.BanServerMemberResp, error) {
 
-	//todo 校验权限
-	// if !permissions.PermissionsFromJSON().CanManageMember() {
-	// 	return nil, errs.ErrNoPermission
-	// }
+	if !c.checkManageMember(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	serverMember, err := c.ClubDatabase.FindServerMember(ctx, []string{req.ServerID}, req.BlockUserIDs, nil)
 	if err != nil && !errs.ErrRecordNotFound.Is(err) {
@@ -48,7 +47,10 @@ func (c *clubServer) BanServerMember(ctx context.Context, req *pbclub.BanServerM
 }
 
 func (c *clubServer) CancelBanServerMember(ctx context.Context, req *pbclub.CancelBanServerMemberReq) (*pbclub.CancelBanServerMemberResp, error) {
-	//todo 校验权限
+
+	if !c.checkManageMember(ctx, req.ServerID) {
+		return nil, errs.ErrNoPermission
+	}
 
 	blacks := []*relationtb.ServerBlackModel{}
 	for _, blockUserID := range req.BlockUserIDs {

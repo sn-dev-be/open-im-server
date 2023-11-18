@@ -81,6 +81,18 @@ func (o *ClubApi) CreateGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateGroupCategory, o.Client, c)
 }
 
+func (o *ClubApi) SetGroupCategoryInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetGroupCategoryInfo, o.Client, c)
+}
+
+func (o *ClubApi) SetGroupCategoryOrder(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetGroupCategoryOrder, o.Client, c)
+}
+
+func (o *ClubApi) DeleteGroupCategory(c *gin.Context) {
+	a2r.Call(club.ClubClient.DeleteGroupCategory, o.Client, c)
+}
+
 // /group
 func (o *ClubApi) GetJoinedServerGroupList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetJoinedServerGroupList, o.Client, c)
@@ -88,6 +100,18 @@ func (o *ClubApi) GetJoinedServerGroupList(c *gin.Context) {
 
 func (o *ClubApi) CreateServerGroup(c *gin.Context) {
 	a2r.Call(club.ClubClient.CreateServerGroup, o.Client, c)
+}
+
+func (o *ClubApi) SetServerGroupInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetServerGroupInfo, o.Client, c)
+}
+
+func (o *ClubApi) SetServerGroupOrder(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetServerGroupOrder, o.Client, c)
+}
+
+func (o *ClubApi) DeleteServerGroup(c *gin.Context) {
+	a2r.Call(club.ClubClient.DeleteServerGroup, o.Client, c)
 }
 
 // /serverRequest

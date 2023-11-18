@@ -52,6 +52,10 @@ type ClubCache interface {
 	GetGroupInfo(ctx context.Context, groupID string) (group *relationtb.GroupModel, err error)
 	DelGroupsInfo(groupIDs ...string) ClubCache
 
+	GetGroupCategoriesInfo(ctx context.Context, categoryIDs []string) (categories []*relationtb.GroupCategoryModel, err error)
+	GetGroupCategoryInfo(ctx context.Context, categoryID string) (category *relationtb.GroupCategoryModel, err error)
+	DelGroupCategoriesInfo(categoryIDs ...string) ClubCache
+
 	GetGroupDappInfo(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error)
 
 	GetServerMembersHash(ctx context.Context, serverID string) (hashCode uint64, err error)
@@ -88,6 +92,7 @@ type ClubCacheRedis struct {
 	serverDB        relationtb.ServerModelInterface
 	groupDappDB     relationtb.GroupDappModellInterface
 	groupDB         relationtb.GroupModelInterface
+	groupCategoryDB relationtb.GroupCategoryModelInterface
 	serverMemberDB  relationtb.ServerMemberModelInterface
 	serverRequestDB relationtb.ServerRequestModelInterface
 	serverBlackDB   relationtb.ServerBlackModelInterface
@@ -102,6 +107,7 @@ func NewClubCacheRedis(
 	serverDB relationtb.ServerModelInterface,
 	groupDappDB relationtb.GroupDappModellInterface,
 	groupDB relationtb.GroupModelInterface,
+	groupCategoryDB relationtb.GroupCategoryModelInterface,
 	serverMemberDB relationtb.ServerMemberModelInterface,
 	serverRequestDB relationtb.ServerRequestModelInterface,
 	serverBlackDB relationtb.ServerBlackModelInterface,
@@ -117,6 +123,7 @@ func NewClubCacheRedis(
 		serverDB:        serverDB,
 		groupDappDB:     groupDappDB,
 		groupDB:         groupDB,
+		groupCategoryDB: groupCategoryDB,
 		serverMemberDB:  serverMemberDB,
 		serverRequestDB: serverRequestDB,
 		serverBlackDB:   serverBlackDB,
@@ -140,6 +147,10 @@ func (c *ClubCacheRedis) NewCache() ClubCache {
 
 func (c *ClubCacheRedis) getServerInfoKey(serverID string) string {
 	return serverInfoKey + serverID
+}
+
+func (c *ClubCacheRedis) getGroupCategoryInfoKey(categoryID string) string {
+	return groupCategoryKey + categoryID
 }
 
 func (c *ClubCacheRedis) getGroupInfoKey(groupID string) string {
@@ -219,6 +230,31 @@ func (c *ClubCacheRedis) DelServersInfo(serverIDs ...string) ClubCache {
 	keys := make([]string, 0, len(serverIDs))
 	for _, serverID := range serverIDs {
 		keys = append(keys, c.getServerInfoKey(serverID))
+	}
+	newClubCache.AddKeys(keys...)
+
+	return newClubCache
+}
+
+// /group_category
+// / group_category
+func (c *ClubCacheRedis) GetGroupCategoriesInfo(ctx context.Context, categoryIDs []string) (categories []*relationtb.GroupCategoryModel, err error) {
+	return batchGetCache2(ctx, c.rcClient, c.expireTime, categoryIDs, func(categoryID string) string {
+		return c.getGroupCategoryInfoKey(categoryID)
+	}, func(ctx context.Context, categoryID string) (*relationtb.GroupCategoryModel, error) {
+		return c.groupCategoryDB.Take(ctx, categoryID)
+	})
+}
+func (c *ClubCacheRedis) GetGroupCategoryInfo(ctx context.Context, categoryID string) (category *relationtb.GroupCategoryModel, err error) {
+	return getCache(ctx, c.rcClient, c.getGroupCategoryInfoKey(categoryID), c.expireTime, func(ctx context.Context) (*relationtb.GroupCategoryModel, error) {
+		return c.groupCategoryDB.Take(ctx, categoryID)
+	})
+}
+func (c *ClubCacheRedis) DelGroupCategoriesInfo(categoryIDs ...string) ClubCache {
+	newClubCache := c.NewCache()
+	keys := make([]string, 0, len(categoryIDs))
+	for _, categoryID := range categoryIDs {
+		keys = append(keys, c.getGroupCategoryInfoKey(categoryID))
 	}
 	newClubCache.AddKeys(keys...)
 
