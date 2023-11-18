@@ -77,14 +77,14 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 		if err := c.conversationRpcClient.ServerGroupChatFirstCreateConversation(ctx, req.ServerID, []string{req.FromUserID}); err != nil {
 			return nil, err
 		}
-		// c.Notification.ServerApplicationAcceptedNotification(ctx, req)
+		c.Notification.ServerApplicationAcceptedNotification(ctx, req)
 		if member == nil {
 			log.ZDebug(ctx, "ServerApplicationResponse", "member is nil")
 		} else {
 			// c.Notification.MemberEnterNotification(ctx, req.ServerID, req.FromUserID)
 		}
 	case constant.ServerResponseRefuse:
-		// c.Notification.ServerApplicationRejectedNotification(ctx, req)
+		c.Notification.ServerApplicationRejectedNotification(ctx, req)
 	}
 	return &pbclub.ServerApplicationResponseResp{}, nil
 }

@@ -49,6 +49,7 @@ type Pusher struct {
 	discov                 discoveryregistry.SvcDiscoveryRegistry
 	offlinePusher          offlinepush.OfflinePusher
 	groupLocalCache        *localcache.GroupLocalCache
+	serverLocalCache       *localcache.ServerLocalCache
 	conversationLocalCache *localcache.ConversationLocalCache
 	msgRpcClient           *rpcclient.MessageRpcClient
 	conversationRpcClient  *rpcclient.ConversationRpcClient
@@ -59,7 +60,7 @@ type Pusher struct {
 var errNoOfflinePusher = errors.New("no offlinePusher is configured")
 
 func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offlinepush.OfflinePusher, database controller.PushDatabase,
-	groupLocalCache *localcache.GroupLocalCache, conversationLocalCache *localcache.ConversationLocalCache,
+	groupLocalCache *localcache.GroupLocalCache, conversationLocalCache *localcache.ConversationLocalCache, serverLocalCache *localcache.ServerLocalCache,
 	conversationRpcClient *rpcclient.ConversationRpcClient, groupRpcClient *rpcclient.GroupRpcClient, msgRpcClient *rpcclient.MessageRpcClient,
 ) *Pusher {
 	return &Pusher{
@@ -67,6 +68,7 @@ func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offl
 		database:               database,
 		offlinePusher:          offlinePusher,
 		groupLocalCache:        groupLocalCache,
+		serverLocalCache:       serverLocalCache,
 		conversationLocalCache: conversationLocalCache,
 		msgRpcClient:           msgRpcClient,
 		conversationRpcClient:  conversationRpcClient,
@@ -267,7 +269,7 @@ func (p *Pusher) Push2ServerGroup(ctx context.Context, groupID string, msg *sdkw
 	// 	return err
 	// }
 	if len(pushToUserIDs) == 0 {
-		pushToUserIDs, err = p.groupLocalCache.GetGroupMemberIDs(ctx, groupID)
+		pushToUserIDs, err = p.serverLocalCache.GetServerMemberIDs(ctx, groupID)
 		if err != nil {
 			return err
 		}

@@ -417,4 +417,22 @@ joinServerApplication:
     desc: "joinGroupApplication desc"
     ext: "joinGroupApplication ext"
 
+serverApplicationAccepted:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverApplicationAccepted title"
+    desc: "serverApplicationAccepted desc"
+    ext: "serverApplicationAccepted ext"
 
+serverApplicationRejected:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: " title"
+    desc: " desc"
+    ext: " ext"
