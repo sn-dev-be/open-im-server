@@ -66,6 +66,8 @@ func Db2PbServerGroupInfo(m *relation.GroupModel) *sdkws.ServerGroupListInfo {
 		GroupCategoryID:  m.GroupCategoryID,
 		ServerID:         m.ServerID,
 		GroupMode:        m.GroupMode,
+		Condition:        m.Condition,
+		ConditionType:    m.ConditionType,
 	}
 }
 
