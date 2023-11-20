@@ -97,6 +97,7 @@ func Db2PbServerMember(m *relation.ServerMemberModel) *sdkws.ServerMemberFullInf
 		Ex:             m.Ex,
 		MuteEndTime:    m.MuteEndTime.UnixMilli(),
 		InviterUserID:  m.InviterUserID,
+		ServerRoleID:   m.ServerRoleID,
 	}
 }
 
