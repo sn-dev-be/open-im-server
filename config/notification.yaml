@@ -408,7 +408,7 @@ signalingClosed:
 
 # server
 joinServerApplication:
-  isSendMsg: false
+  isSendMsg: true
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
@@ -418,7 +418,7 @@ joinServerApplication:
     ext: "joinGroupApplication ext"
 
 serverApplicationAccepted:
-  isSendMsg: false
+  isSendMsg: true
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
@@ -428,7 +428,7 @@ serverApplicationAccepted:
     ext: "serverApplicationAccepted ext"
 
 serverApplicationRejected:
-  isSendMsg: false
+  isSendMsg: true
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
