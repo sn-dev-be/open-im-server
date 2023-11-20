@@ -26,6 +26,7 @@ import (
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/controller"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	"github.com/openimsdk/open-im-server/v3/pkg/permissions"
@@ -172,6 +173,13 @@ func (c *ClubNotificationSender) fillOpUser(ctx context.Context, opUser **sdkws.
 	return nil
 }
 
+func (c *ClubNotificationSender) getNotificationAdminUserID() string {
+	if len(config.Config.Manager.UserID) < 6 {
+		panic("wrong manage user id config")
+	}
+	return config.Config.Manager.UserID[5]
+}
+
 func (c *ClubNotificationSender) getServerManageRoleUserID(ctx context.Context, serverID string) ([]string, error) {
 	members, err := c.db.FindServerMemberByRole(ctx, serverID, permissions.ManageMember)
 	if err != nil {
@@ -203,7 +211,7 @@ func (c *ClubNotificationSender) JoinServerApplicationNotification(ctx context.C
 	userIDs = append(userIDs, req.InviterUserID, mcontext.GetOpUserID(ctx))
 	tips := &sdkws.JoinServerApplicationTips{Server: server, Applicant: user, ReqMsg: req.ReqMessage}
 	for _, userID := range utils.Distinct(userIDs) {
-		err = c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.JoinServerApplicationNotification, tips)
+		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.JoinServerApplicationNotification, tips)
 		if err != nil {
 			log.ZError(ctx, "JoinServerApplicationNotification failed", err, "server", req.ServerID, "userID", userID)
 		}
@@ -231,7 +239,7 @@ func (c *ClubNotificationSender) ServerApplicationAcceptedNotification(ctx conte
 		return err
 	}
 	for _, userID := range append(userIDs, mcontext.GetOpUserID(ctx)) {
-		err = c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerApplicationAcceptedNotification, tips)
+		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.ServerApplicationAcceptedNotification, tips)
 		if err != nil {
 			log.ZError(ctx, "failed", err)
 		}
@@ -259,7 +267,7 @@ func (c *ClubNotificationSender) ServerApplicationRejectedNotification(ctx conte
 		return err
 	}
 	for _, userID := range append(userIDs, mcontext.GetOpUserID(ctx)) {
-		err = c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerApplicationRejectedNotification, tips)
+		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.ServerApplicationRejectedNotification, tips)
 		if err != nil {
 			log.ZError(ctx, "failed", err)
 		}
