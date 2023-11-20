@@ -224,7 +224,6 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/get_server_recommended_list", c.GetServerRecommendedList)
 		clubGroup.POST("/get_joined_server_list", c.GetJoinedServerList)
 		clubGroup.POST("/get_servers_info", c.GetServersInfo)
-		clubGroup.POST("/invite_user_to_server", nil)
 		clubGroup.POST("/dismiss_server", c.DismissServer)
 		clubGroup.POST("/search_server", c.SearchServer)
 		clubGroup.POST("/mute_server", c.MuteServer)
@@ -235,7 +234,8 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/delete_category", c.DeleteGroupCategory)
 		clubGroup.POST("/set_category_order", c.SetGroupCategoryOrder)
 
-		clubGroup.POST("/get_server_role_list", nil)
+		clubGroup.POST("/get_server_role_list", c.GetServerRoleList)
+		clubGroup.POST("/get_server_roles_info", c.GetServerRolesInfo)
 		clubGroup.POST("/create_server_role", nil)
 		clubGroup.POST("/set_server_role_info", nil)
 		clubGroup.POST("/delete_server_role", nil)
@@ -245,6 +245,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/cancel_ban_server_member", c.CancelBanServerMember)
 
 		clubGroup.POST("/get_joined_server_group_list", c.GetJoinedServerGroupList)
+		clubGroup.POST("/get_server_groups_info", c.GetServerGroupsInfo)
 		clubGroup.POST("/create_server_group", c.CreateServerGroup)
 		clubGroup.POST("/set_server_group_info", c.SetServerGroupInfo)
 		clubGroup.POST("/set_server_group_order", c.SetServerGroupOrder)

@@ -14,9 +14,11 @@ import (
 	pbclub "github.com/OpenIMSDK/protocol/club"
 
 	"github.com/OpenIMSDK/tools/errs"
+	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	"github.com/openimsdk/open-im-server/v3/pkg/permissions"
 )
@@ -101,16 +103,16 @@ func (c *clubServer) getServerRoleByPriority(ctx context.Context, serverID strin
 	return c.ClubDatabase.TakeServerRoleByPriority(ctx, serverID, priority)
 }
 
-func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.TransferServerOwnerReq) (*pbclub.TransferServerOwnerResp, error) {
+func (c *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.TransferServerOwnerReq) (*pbclub.TransferServerOwnerResp, error) {
 	resp := &pbclub.TransferServerOwnerResp{}
-	server, err := s.ClubDatabase.TakeServer(ctx, req.ServerID)
+	server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
 	if err != nil {
 		return nil, err
 	}
 	if req.OldOwnerUserID == req.NewOwnerUserID {
 		return nil, errs.ErrArgs.Wrap("OldOwnerUserID == NewOwnerUserID")
 	}
-	members, err := s.ClubDatabase.FindServerMember(ctx, []string{req.ServerID}, []string{req.OldOwnerUserID, req.NewOwnerUserID}, nil)
+	members, err := c.ClubDatabase.FindServerMember(ctx, []string{req.ServerID}, []string{req.OldOwnerUserID, req.NewOwnerUserID}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -128,9 +130,33 @@ func (s *clubServer) TransferServerOwner(ctx context.Context, req *pbclub.Transf
 			return nil, errs.ErrNoPermission.Wrap("no permission transfer group owner")
 		}
 	}
-	if err := s.ClubDatabase.TransferServerOwner(ctx, req.ServerID, oldOwner, newOwner, constant.ServerOrdinaryUsers); err != nil {
+	if err := c.ClubDatabase.TransferServerOwner(ctx, req.ServerID, oldOwner, newOwner, constant.ServerOrdinaryUsers); err != nil {
 		return nil, err
 	}
 	//s.Notification.GroupOwnerTransferredNotification(ctx, req)
+	return resp, nil
+}
+
+func (c *clubServer) GetServerRoleList(ctx context.Context, req *pbclub.GetServerRoleListReq) (*pbclub.GetServerRoleListResp, error) {
+	resp := &pbclub.GetServerRoleListResp{}
+	total, roles, err := c.ClubDatabase.PageGetServerRole(ctx, req.ServerID, req.Pagination.PageNumber, req.Pagination.ShowNumber)
+	log.ZDebug(ctx, "GetServerRoleList", "total", total, "roles", roles, "length", len(roles))
+	if err != nil {
+		return nil, err
+	}
+	resp.Total = total
+	resp.Roles = utils.Batch(convert.Db2PbServerRole, roles)
+	log.ZDebug(ctx, "GetServerRoleList", "resp", resp, "length", len(resp.Roles))
+
+	return resp, nil
+}
+
+func (c *clubServer) GetServerRolesInfo(ctx context.Context, req *pbclub.GetServerRolesInfoReq) (*pbclub.GetServerRolesInfoResp, error) {
+	resp := &pbclub.GetServerRolesInfoResp{}
+	roles, err := c.ClubDatabase.FindServerRole(ctx, req.RoleIDs)
+	if err != nil {
+		return nil, err
+	}
+	resp.Roles = utils.Batch(convert.Db2PbServerRole, roles)
 	return resp, nil
 }

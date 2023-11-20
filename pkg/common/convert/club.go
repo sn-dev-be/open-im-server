@@ -160,3 +160,17 @@ func DB2PbServerBlack(m *relation.ServerBlackModel) *sdkws.ServerBlackFullInfo {
 	}
 	return res
 }
+
+func Db2PbServerRole(m *relation.ServerRoleModel) *sdkws.ServerRole {
+	return &sdkws.ServerRole{
+		RoleID:      m.RoleID,
+		ServerID:    m.ServerID,
+		RoleName:    m.RoleName,
+		Icon:        m.Icon,
+		Priority:    m.Priority,
+		ColorLevel:  m.ColorLevel,
+		Ex:          m.Ex,
+		CreateTime:  m.CreateTime.UnixMilli(),
+		Permissions: m.Permissions.String(),
+	}
+}

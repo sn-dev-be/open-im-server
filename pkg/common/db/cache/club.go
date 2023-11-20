@@ -38,6 +38,7 @@ const (
 	serverMemberNumKey   = "SERVER_MEMBER_NUM_CACHE:"
 	groupDappInfoKey     = "GROUP_DAPP_INFO:"
 	serverBlackInfoKey   = "SERVER_BLACK_INFO:"
+	serverRoleIDsKey     = "SERVER_ROLE_IDS:"
 	serverRoleInfoKey    = "SERVER_ROLE_INFO:"
 )
 
@@ -83,7 +84,11 @@ type ClubCache interface {
 	DeleteBlackIDsCache(serverID ...string) ClubCache
 	GetServerBlacksCache(ctx context.Context, serverID string) (blackIDs []string, err error)
 
+	GetServerRoleIDs(ctx context.Context, serverID string) (serverRoleIDs []string, err error)
+	DelServerRoleIDs(serverID string) ClubCache
+
 	GetServerRoleInfo(ctx context.Context, roleID string) (serverRole *relationtb.ServerRoleModel, err error)
+	GetServerRolesInfo(ctx context.Context, roleIDs []string) (serverRoles []*relationtb.ServerRoleModel, err error)
 	DelServerRolesInfo(roleID ...string) ClubCache
 }
 
@@ -183,6 +188,10 @@ func (c *ClubCacheRedis) getServerBlackInfoKey(serverID string) string {
 
 func (c *ClubCacheRedis) getGroupDappInfoKey(groupID string) string {
 	return groupDappInfoKey + groupID
+}
+
+func (c *ClubCacheRedis) getServerRoleIDsKey(serverID string) string {
+	return serverRoleIDsKey + serverID
 }
 
 func (c *ClubCacheRedis) getServerRoleInfoKey(roleID string) string {
@@ -482,4 +491,25 @@ func (c *ClubCacheRedis) DelServerRolesInfo(roleIDs ...string) ClubCache {
 	cache.AddKeys(keys...)
 
 	return cache
+}
+
+func (c *ClubCacheRedis) GetServerRoleIDs(ctx context.Context, serverID string) (serverRoleIDs []string, err error) {
+	return getCache(ctx, c.rcClient, c.getServerRoleIDsKey(serverID), c.expireTime, func(ctx context.Context) ([]string, error) {
+		return c.serverRoleDB.FindRoleID(ctx, serverID)
+	})
+}
+
+func (c *ClubCacheRedis) DelServerRoleIDs(serverID string) ClubCache {
+	cache := c.NewCache()
+	cache.AddKeys(c.getServerRoleIDsKey(serverID))
+
+	return cache
+}
+
+func (c *ClubCacheRedis) GetServerRolesInfo(ctx context.Context, roleIDs []string) ([]*relationtb.ServerRoleModel, error) {
+	return batchGetCache2(ctx, c.rcClient, c.expireTime, roleIDs, func(roleID string) string {
+		return c.getServerRoleInfoKey(roleID)
+	}, func(ctx context.Context, roleID string) (*relationtb.ServerRoleModel, error) {
+		return c.serverRoleDB.Take(ctx, roleID)
+	})
 }

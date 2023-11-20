@@ -28,6 +28,7 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/controller"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
+	"github.com/openimsdk/open-im-server/v3/pkg/permissions"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 )
 
@@ -172,7 +173,7 @@ func (c *ClubNotificationSender) fillOpUser(ctx context.Context, opUser **sdkws.
 }
 
 func (c *ClubNotificationSender) getServerManageRoleUserID(ctx context.Context, serverID string) ([]string, error) {
-	members, err := c.db.FindServerMemberByRole(ctx, serverID, "managerMember")
+	members, err := c.db.FindServerMemberByRole(ctx, serverID, permissions.ManageMember)
 	if err != nil {
 		return nil, err
 	}

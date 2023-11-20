@@ -56,11 +56,15 @@ func (s *ServerRoleGorm) DeleteServer(ctx context.Context, serverIDs []string) (
 	return utils.Wrap(s.db(ctx).Where("server_id in (?)", serverIDs).Delete(&relation.ServerRoleModel{}).Error, "")
 }
 
-func (s *ServerRoleGorm) FindRoleID(ctx context.Context, serverID, roleKey string) (roleIDs []string, err error) {
+func (s *ServerRoleGorm) FindDesignationRoleID(ctx context.Context, serverID, roleKey string) (roleIDs []string, err error) {
 	return roleIDs, utils.Wrap(
 		s.db(ctx).
 			Where("server_id = ?", serverID).
 			Where(datatypes.JSONQuery("permissions").Equals(true, roleKey)).
 			Pluck("id", &roleIDs).Error, "",
 	)
+}
+
+func (s *ServerRoleGorm) FindRoleID(ctx context.Context, serverID string) (roleIDs []string, err error) {
+	return roleIDs, utils.Wrap(s.db(ctx).Where("server_id = ?", serverID).Pluck("id", &roleIDs).Error, "")
 }

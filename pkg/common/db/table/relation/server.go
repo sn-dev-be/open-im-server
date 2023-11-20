@@ -29,6 +29,7 @@ type ServerModel struct {
 	Icon                 string    `gorm:"column:icon;size:255"                                json:"icon"`
 	Description          string    `gorm:"column:description;size:255"                         json:"description"`
 	Banner               string    `gorm:"column:banner;size:255"                              json:"banner"`
+	CreatorUserID        string    `gorm:"column:creator_user_id;size:64"`
 	OwnerUserID          string    `gorm:"column:owner_user_id;size:255"                       json:"ownerUserID"`
 	MemberNumber         uint32    `gorm:"column:member_number"                                json:"memberNumber"`
 	ApplyMode            int32     `gorm:"column:apply_mode"                                   json:"applyMode"`

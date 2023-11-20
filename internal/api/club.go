@@ -114,6 +114,10 @@ func (o *ClubApi) DeleteServerGroup(c *gin.Context) {
 	a2r.Call(club.ClubClient.DeleteServerGroup, o.Client, c)
 }
 
+func (o *ClubApi) GetServerGroupsInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerGroupsInfo, o.Client, c)
+}
+
 // /serverRequest
 func (o *ClubApi) ApplicationServerResponse(c *gin.Context) {
 	a2r.Call(club.ClubClient.ServerApplicationResponse, o.Client, c)
@@ -175,4 +179,13 @@ func (o *ClubApi) BanServerMember(c *gin.Context) {
 
 func (o *ClubApi) CancelBanServerMember(c *gin.Context) {
 	a2r.Call(club.ClubClient.CancelBanServerMember, o.Client, c)
+}
+
+// /serverRole
+func (o *ClubApi) GetServerRoleList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerRoleList, o.Client, c)
+}
+
+func (o *ClubApi) GetServerRolesInfo(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerRolesInfo, o.Client, c)
 }

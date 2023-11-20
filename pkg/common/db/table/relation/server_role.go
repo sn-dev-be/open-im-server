@@ -50,5 +50,6 @@ type ServerRoleModelInterface interface {
 	TakeServerRoleByPriority(ctx context.Context, serverID string, priority int32) (serverRole *ServerRoleModel, err error)
 	DeleteServer(ctx context.Context, serverIDs []string) error
 
-	FindRoleID(ctx context.Context, serverID, roleKey string) (serverRoleIDs []string, err error)
+	FindRoleID(ctx context.Context, serverID string) (serverRoleIDs []string, err error)
+	FindDesignationRoleID(ctx context.Context, serverID, roleKey string) (serverRoleIDs []string, err error)
 }

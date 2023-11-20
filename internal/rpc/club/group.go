@@ -319,3 +319,25 @@ func (c *clubServer) GetServerGroupMemberUserIDs(ctx context.Context, req *pbclu
 	}
 	return resp, nil
 }
+
+func (c *clubServer) GetServerGroupsInfo(ctx context.Context, req *pbclub.GetServerGroupsInfoReq) (*pbclub.GetServerGroupsInfoResp, error) {
+	resp := &pbclub.GetServerGroupsInfoResp{}
+	if len(req.GroupIDs) == 0 {
+		return nil, errs.ErrArgs.Wrap("groupID is empty")
+	}
+	groups, err := c.GroupDatabase.FindGroup(ctx, req.GroupIDs)
+	if err != nil {
+		return nil, err
+	}
+	ServerIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string {
+		return e.ServerID
+	})
+	serverMemberNumMap, err := c.ClubDatabase.MapServerMemberNum(ctx, ServerIDs)
+	if err != nil {
+		return nil, err
+	}
+	resp.GroupInfos = utils.Slice(groups, func(e *relationtb.GroupModel) *sdkws.GroupInfo {
+		return convert.Db2PbGroupInfo(e, e.CreatorUserID, serverMemberNumMap[e.ServerID])
+	})
+	return resp, nil
+}

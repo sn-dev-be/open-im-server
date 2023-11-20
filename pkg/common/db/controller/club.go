@@ -49,6 +49,8 @@ type ClubDatabase interface {
 	TakeServerRole(ctx context.Context, serverRoleID string) (serverRole *relationtb.ServerRoleModel, err error)
 	TakeServerRoleByPriority(ctx context.Context, serverID string, priority int32) (serverRole *relationtb.ServerRoleModel, err error)
 	CreateServerRole(ctx context.Context, serverRoles []*relationtb.ServerRoleModel) error
+	PageGetServerRole(ctx context.Context, serverID string, pageNumber, showNumber int32) (total uint32, totalServerRoles []*relationtb.ServerRoleModel, err error)
+	FindServerRole(ctx context.Context, roleIDs []string) (serverRoles []*relationtb.ServerRoleModel, err error)
 
 	// serverRequest
 	CreateServerRequest(ctx context.Context, requests []*relationtb.ServerRequestModel) error
@@ -297,6 +299,31 @@ func (c *clubDatabase) CreateServerRole(ctx context.Context, serverRoles []*rela
 		return err
 	}
 	return nil
+}
+
+func (c *clubDatabase) PageGetServerRole(
+	ctx context.Context,
+	serverID string,
+	pageNumber, showNumber int32,
+) (total uint32, totalServerRoles []*relationtb.ServerRoleModel, err error) {
+	serverRoleIDs, err := c.cache.GetServerRoleIDs(ctx, serverID)
+	if err != nil {
+		return 0, nil, err
+	}
+	pageIDs := utils.Paginate(serverRoleIDs, int(pageNumber), int(showNumber))
+	if len(pageIDs) == 0 {
+		return uint32(len(serverRoleIDs)), nil, nil
+	}
+	roles, err := c.cache.GetServerRolesInfo(ctx, pageIDs)
+	if err != nil {
+		return 0, nil, err
+	}
+	return uint32(len(serverRoleIDs)), roles, nil
+}
+
+func (c *clubDatabase) FindServerRole(ctx context.Context, roleIDs []string) (serverRoles []*relationtb.ServerRoleModel, err error) {
+	serverRoles, err = c.cache.GetServerRolesInfo(ctx, roleIDs)
+	return serverRoles, err
 }
 
 // groupCategory
@@ -791,7 +818,7 @@ func (c *clubDatabase) UpdateServerMembers(ctx context.Context, data []*relation
 }
 
 func (c *clubDatabase) FindServerMemberByRole(ctx context.Context, serverID, role string) ([]*relationtb.ServerMemberModel, error) {
-	roleIDs, err := c.serverRoleDB.FindRoleID(ctx, serverID, role)
+	roleIDs, err := c.serverRoleDB.FindDesignationRoleID(ctx, serverID, role)
 	if err != nil {
 		return nil, err
 	}
