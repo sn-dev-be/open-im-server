@@ -86,7 +86,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		}
 		c.Notification.JoinServerApplicationNotification(ctx, req)
 	}
-	return resp, nil
+	return &pbclub.JoinServerResp{}, nil
 }
 
 func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) (*pbclub.QuitServerResp, error) {
