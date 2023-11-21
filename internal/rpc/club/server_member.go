@@ -25,7 +25,7 @@ import (
 
 func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) (resp *pbclub.JoinServerResp, err error) {
 	defer log.ZInfo(ctx, "JoinServer.Return")
-	user, err := c.User.GetUserInfo(ctx, req.UserID)
+	user, err := c.User.GetUserInfo(ctx, req.InviterUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +39,11 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 
 	//check black list
 	blackIDs, err := c.ClubDatabase.FindBlackIDs(ctx, req.ServerID)
-	if len(blackIDs) > 0 && utils.Contain(req.UserID, blackIDs...) {
+	if len(blackIDs) > 0 && utils.Contain(req.InviterUserID, blackIDs...) {
 		return nil, errs.ErrBlockedByPeer.Wrap("you have been blocked")
 	}
 
-	_, err = c.ClubDatabase.TakeServerMember(ctx, req.ServerID, req.UserID)
+	_, err = c.ClubDatabase.TakeServerMember(ctx, req.ServerID, req.InviterUserID)
 	if err == nil {
 		return nil, errs.ErrArgs.Wrap("already in server")
 	} else if !c.IsNotFound(err) && utils.Unwrap(err) != errs.ErrRecordNotFound {
@@ -55,38 +55,38 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		return nil, errs.ErrRecordNotFound.Wrap("server role is not exists")
 	}
 
+	log.ZInfo(ctx, "JoinServer.serverInfo", "server", server, "eq", server.ApplyMode == constant.JoinServerDirectly)
+	resp = &pbclub.JoinServerResp{}
 	if server.ApplyMode == constant.JoinServerDirectly {
 		serverMember := &relationtb.ServerMemberModel{
-			ServerID:      req.ServerID,
-			UserID:        req.UserID,
-			Nickname:      user.Nickname,
-			ServerRoleID:  serverRole.RoleID,
-			JoinSource:    req.JoinSource,
-			InviterUserID: req.InviterUserID,
-			JoinTime:      time.Now(),
-			MuteEndTime:   time.Unix(0, 0),
+			ServerID:       server.ServerID,
+			UserID:         user.UserID,
+			Nickname:       user.Nickname,
+			ServerRoleID:   serverRole.RoleID,
+			OperatorUserID: mcontext.GetOpUserID(ctx),
+			JoinSource:     req.JoinSource,
+			InviterUserID:  req.InviterUserID,
+			JoinTime:       time.Now(),
+			MuteEndTime:    time.UnixMilli(0),
 		}
 		err = c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{serverMember})
 		if err != nil {
 			return nil, err
 		}
-		//todo 是否需要发送notification
-		return &pbclub.JoinServerResp{}, nil
-	} else {
-		serverRequest := relationtb.ServerRequestModel{
-			UserID:      req.InviterUserID,
-			ReqMsg:      req.ReqMessage,
-			ServerID:    req.ServerID,
-			JoinSource:  req.JoinSource,
-			ReqTime:     time.Now(),
-			HandledTime: time.Unix(0, 0),
-		}
-		if err := c.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
-			return nil, err
-		}
-		c.Notification.JoinServerApplicationNotification(ctx, req)
 	}
-	return &pbclub.JoinServerResp{}, nil
+	serverRequest := relationtb.ServerRequestModel{
+		UserID:      req.InviterUserID,
+		ReqMsg:      req.ReqMessage,
+		ServerID:    req.ServerID,
+		JoinSource:  req.JoinSource,
+		ReqTime:     time.Now(),
+		HandledTime: time.UnixMilli(0),
+	}
+	if err := c.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
+		return nil, err
+	}
+	c.Notification.JoinServerApplicationNotification(ctx, req)
+	return resp, nil
 }
 
 func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) (*pbclub.QuitServerResp, error) {
