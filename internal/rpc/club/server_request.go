@@ -41,14 +41,20 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 	} else if !c.IsNotFound(err) {
 		return nil, err
 	}
-	if _, err := c.User.GetPublicUserInfo(ctx, req.FromUserID); err != nil {
+	user, err := c.User.GetPublicUserInfo(ctx, req.FromUserID)
+	if err != nil {
 		return nil, err
+	}
+	serverRole, err := c.getServerRoleByPriority(ctx, req.ServerID, constant.ServerOrdinaryUsers)
+	if err != nil {
+		return nil, errs.ErrRecordNotFound.Wrap("server role is not exists")
 	}
 	var member *relationtb.ServerMemberModel
 	if (!inServer) && req.HandleResult == constant.ServerResponseAgree {
 		member = &relationtb.ServerMemberModel{
 			ServerID:       req.ServerID,
 			UserID:         req.FromUserID,
+			ServerRoleID:   serverRole.RoleID,
 			Nickname:       "",
 			FaceURL:        "",
 			RoleLevel:      constant.ServerOrdinaryUsers,
@@ -81,7 +87,7 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 	case constant.ServerResponseRefuse:
 		c.Notification.ServerApplicationRejectedNotification(ctx, req)
 	}
-	if err := c.modifyServerApplicationStatus(ctx, req); err != nil {
+	if err := c.modifyServerApplicationStatus(ctx, req, user, serverRequest); err != nil {
 		return nil, err
 	}
 	return &pbclub.ServerApplicationResponseResp{}, nil
@@ -236,26 +242,26 @@ func (c *clubServer) GetServerUsersReqApplicationList(ctx context.Context, req *
 	return resp, nil
 }
 
-func (c *clubServer) modifyServerApplicationStatus(ctx context.Context, req *pbclub.ServerApplicationResponseReq) error {
-	userID := mcontext.GetOpUserID(ctx)
+func (c *clubServer) modifyServerApplicationStatus(
+	ctx context.Context,
+	req *pbclub.ServerApplicationResponseReq,
+	user *sdkws.PublicUserInfo,
+	serverRequest *relationtb.ServerRequestModel,
+) error {
 	server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
-	if err != nil {
-		return err
-	}
-	user, err := c.User.GetPublicUserInfo(ctx, req.FromUserID)
 	if err != nil {
 		return err
 	}
 	tips := &sdkws.JoinServerApplicationTips{
 		Server:       convert.DB2PbServerInfo(server),
 		Applicant:    user,
-		ReqMsg:       "",
+		ReqMsg:       serverRequest.ReqMsg,
 		HandleResult: req.HandleResult,
 	}
 	modifyReq := pbmsg.ModifyMsgReq{
 		ConversationID: req.ConversationID,
 		Seq:            req.Seq,
-		UserID:         userID,
+		UserID:         user.UserID,
 		ModifyType:     constant.MsgModifyServerRequestStatus,
 		Content:        utils.StructToJsonString(&tips),
 	}

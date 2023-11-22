@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
 	"github.com/OpenIMSDK/protocol/constant"
@@ -40,9 +39,6 @@ func (m *msgServer) ModifyMsg(ctx context.Context, req *msgv3.ModifyMsgReq) (*ms
 	}
 	if req.Seq < 0 {
 		return nil, errs.ErrArgs.Wrap("seq is invalid")
-	}
-	if err := authverify.CheckAccessV3(ctx, req.UserID); err != nil {
-		return nil, err
 	}
 	_, _, msgs, err := m.MsgDatabase.GetMsgBySeqs(ctx, req.UserID, req.ConversationID, []int64{req.Seq})
 	if err != nil {

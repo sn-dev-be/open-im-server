@@ -25,6 +25,10 @@ import (
 
 func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) (resp *pbclub.JoinServerResp, err error) {
 	defer log.ZInfo(ctx, "JoinServer.Return")
+	err = authverify.CheckAccessV3(ctx, req.InviterUserID)
+	if err != nil {
+		return nil, err
+	}
 	user, err := c.User.GetUserInfo(ctx, req.InviterUserID)
 	if err != nil {
 		return nil, err
