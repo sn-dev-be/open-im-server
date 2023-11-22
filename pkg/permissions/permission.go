@@ -2,6 +2,8 @@ package permissions
 
 import (
 	"encoding/json"
+
+	"github.com/OpenIMSDK/protocol/constant"
 )
 
 type Permissions map[string]bool
@@ -138,4 +140,11 @@ func PermissionsFromJSON(jsonStr string) (Permissions, error) {
 		return nil, err
 	}
 	return p, nil
+}
+
+func (p Permissions) GetRoleLevel() int32 {
+    if p.HasPermission(ManageServer) {
+        return constant.ServerOwner
+    }
+	return 0
 }

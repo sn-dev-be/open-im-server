@@ -208,8 +208,8 @@ func (c *ClubNotificationSender) JoinServerApplicationNotification(ctx context.C
 	if err != nil {
 		return err
 	}
-	userIDs = append(userIDs, req.InviterUserID, mcontext.GetOpUserID(ctx))
-	tips := &sdkws.JoinServerApplicationTips{Server: server, Applicant: user, ReqMsg: req.ReqMessage}
+	userIDs = append(userIDs)
+	tips := &sdkws.JoinServerApplicationTips{Server: server, Applicant: user, ReqMsg: req.ReqMessage, HandleResult: constant.ServerResponseNotHandle}
 	for _, userID := range utils.Distinct(userIDs) {
 		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.JoinServerApplicationNotification, tips)
 		if err != nil {
@@ -230,19 +230,13 @@ func (c *ClubNotificationSender) ServerApplicationAcceptedNotification(ctx conte
 	if err != nil {
 		return err
 	}
-	userIDs, err := c.getServerManageRoleUserID(ctx, req.ServerID)
-	if err != nil {
-		return err
-	}
 	tips := &sdkws.ServerApplicationAcceptedTips{Server: server, HandleMsg: req.HandledMsg, ReceiverAs: 1}
 	if err := c.fillOpUser(ctx, &tips.OpUser, tips.Server.ServerID); err != nil {
 		return err
 	}
-	for _, userID := range append(userIDs, mcontext.GetOpUserID(ctx)) {
-		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.ServerApplicationAcceptedNotification, tips)
-		if err != nil {
-			log.ZError(ctx, "failed", err)
-		}
+	err = c.Notification(ctx, c.getNotificationAdminUserID(), req.FromUserID, constant.ServerApplicationAcceptedNotification, tips)
+	if err != nil {
+		log.ZError(ctx, "failed", err)
 	}
 	return nil
 }
@@ -258,19 +252,13 @@ func (c *ClubNotificationSender) ServerApplicationRejectedNotification(ctx conte
 	if err != nil {
 		return err
 	}
-	userIDs, err := c.getServerManageRoleUserID(ctx, req.ServerID)
-	if err != nil {
-		return err
-	}
 	tips := &sdkws.ServerApplicationRejectedTips{Server: server, HandleMsg: req.HandledMsg}
 	if err := c.fillOpUser(ctx, &tips.OpUser, tips.Server.ServerID); err != nil {
 		return err
 	}
-	for _, userID := range append(userIDs, mcontext.GetOpUserID(ctx)) {
-		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.ServerApplicationRejectedNotification, tips)
-		if err != nil {
-			log.ZError(ctx, "failed", err)
-		}
+	err = c.Notification(ctx, c.getNotificationAdminUserID(), req.FromUserID, constant.ServerApplicationRejectedNotification, tips)
+	if err != nil {
+		log.ZError(ctx, "failed", err)
 	}
 	return nil
 }

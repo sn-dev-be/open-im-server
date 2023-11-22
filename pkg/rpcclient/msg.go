@@ -99,6 +99,8 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.JoinServerApplicationNotification:     config.Config.Notification.JoinServerApplication,
 		constant.ServerApplicationAcceptedNotification: config.Config.Notification.ServerApplicationAccepted,
 		constant.ServerApplicationRejectedNotification: config.Config.Notification.ServerApplicationRejected,
+		// modifyMsg
+		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 	}
 }
 
@@ -198,6 +200,11 @@ func (m *MessageRpcClient) GetConversationMaxSeq(ctx context.Context, conversati
 		return 0, err
 	}
 	return resp.MaxSeq, nil
+}
+
+func (m *MessageRpcClient) ModifyMsg(ctx context.Context, req *msg.ModifyMsgReq) (*msg.ModifyMsgResp, error) {
+	resp, err := m.Client.ModifyMsg(ctx, req)
+	return resp, err
 }
 
 type NotificationSender struct {

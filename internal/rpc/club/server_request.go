@@ -7,6 +7,7 @@ import (
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/constant"
+	pbmsg "github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/OpenIMSDK/tools/errs"
@@ -79,6 +80,9 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 		}
 	case constant.ServerResponseRefuse:
 		c.Notification.ServerApplicationRejectedNotification(ctx, req)
+	}
+	if err := c.modifyServerApplicationStatus(ctx, req); err != nil {
+		return nil, err
 	}
 	return &pbclub.ServerApplicationResponseResp{}, nil
 }
@@ -230,4 +234,34 @@ func (c *clubServer) GetServerUsersReqApplicationList(ctx context.Context, req *
 	})
 	resp.Total = total
 	return resp, nil
+}
+
+func (c *clubServer) modifyServerApplicationStatus(ctx context.Context, req *pbclub.ServerApplicationResponseReq) error {
+	userID := mcontext.GetOpUserID(ctx)
+	server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
+	if err != nil {
+		return err
+	}
+	user, err := c.User.GetPublicUserInfo(ctx, req.FromUserID)
+	if err != nil {
+		return err
+	}
+	tips := &sdkws.JoinServerApplicationTips{
+		Server:       convert.DB2PbServerInfo(server),
+		Applicant:    user,
+		ReqMsg:       "",
+		HandleResult: req.HandleResult,
+	}
+	modifyReq := pbmsg.ModifyMsgReq{
+		ConversationID: req.ConversationID,
+		Seq:            req.Seq,
+		UserID:         userID,
+		ModifyType:     constant.MsgModifyServerRequestStatus,
+		Content:        utils.StructToJsonString(&tips),
+	}
+	_, err = c.msgRpcClient.ModifyMsg(ctx, &modifyReq)
+	if err != nil {
+		return err
+	}
+	return nil
 }

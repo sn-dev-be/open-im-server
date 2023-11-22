@@ -17,6 +17,7 @@ package msg
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
@@ -24,15 +25,13 @@ import (
 	"github.com/OpenIMSDK/protocol/constant"
 	msgv3 "github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
-
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
-
-	"github.com/OpenIMSDK/tools/utils"
+	"github.com/OpenIMSDK/tools/mcontext"
 )
 
-func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRedPacketMsgStatusReq) (*msgv3.SetRedPacketMsgStatusResp, error) {
-	defer log.ZDebug(ctx, "SetRedPacketMsgStatus return line")
+func (m *msgServer) ModifyMsg(ctx context.Context, req *msgv3.ModifyMsgReq) (*msgv3.ModifyMsgResp, error) {
+	defer log.ZDebug(ctx, "ModifyMsg return line")
 	if req.UserID == "" {
 		return nil, errs.ErrArgs.Wrap("user_id is empty")
 	}
@@ -42,11 +41,9 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 	if req.Seq < 0 {
 		return nil, errs.ErrArgs.Wrap("seq is invalid")
 	}
-
-	if !authverify.IsAppManagerUid(ctx) {
-		return nil, errs.ErrNoPermission.Wrap(utils.GetSelfFuncName())
+	if err := authverify.CheckAccessV3(ctx, req.UserID); err != nil {
+		return nil, err
 	}
-
 	_, _, msgs, err := m.MsgDatabase.GetMsgBySeqs(ctx, req.UserID, req.ConversationID, []int64{req.Seq})
 	if err != nil {
 		return nil, err
@@ -54,37 +51,23 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 	if len(msgs) == 0 || msgs[0] == nil {
 		return nil, errs.ErrRecordNotFound.Wrap("msg not found")
 	}
-
 	data, _ := json.Marshal(msgs[0])
 	log.ZInfo(ctx, "GetMsgBySeqs", "conversationID", req.ConversationID, "seq", req.Seq, "msg", string(data))
 	msg := msgs[0]
 
-	if req.ContentType == constant.RedPacketExpiredNotification || req.ContentType == constant.RedPacketClaimedNotification {
-		elem := sdkws.RedPacketElem{}
-		utils.JsonStringToStruct(string(msg.Content), &elem)
-		elem.Status = req.Status
-
-		err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, req.Seq, utils.StructToJsonString(&elem))
-		if err != nil {
-			return nil, err
-		}
+	err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, req.Seq, req.Content)
+	if err != nil {
+		return nil, err
 	}
 
-	tips := sdkws.RedPacketTips{
+	tips := &sdkws.ModifyMessageTips{
 		ClientMsgID:    msg.ClientMsgID,
-		Seq:            req.Seq,
+		Seq:            msg.Seq,
 		ConversationID: req.ConversationID,
-		RedPacketID:    req.RedPacketID,
-		Status:         req.Status,
-		ContentType:    req.ContentType,
-	}
-
-	if req.ContentType == constant.RedPacketClaimedByUserNotification {
-		user, err := m.User.GetPublicUserInfo(ctx, req.ClaimUserID)
-		if err != nil {
-			return nil, err
-		}
-		tips.ClaimUser = user
+		OpUser:         mcontext.GetOpUserID(ctx),
+		ModifyTime:     time.Now().UnixMilli(),
+		Content:        req.Content,
+		ModifyType:     req.ModifyType,
 	}
 
 	var recvID string
@@ -93,8 +76,16 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 	} else {
 		recvID = msg.RecvID
 	}
-	if err := m.notificationSender.NotificationWithSesstionType(ctx, req.UserID, recvID, req.ContentType, msg.SessionType, &tips, rpcclient.WithRpcGetUserName()); err != nil {
+	if err := m.notificationSender.NotificationWithSesstionType(
+		ctx,
+		req.UserID,
+		recvID,
+		constant.ModifyMessageNotification,
+		msg.SessionType,
+		tips,
+		rpcclient.WithRpcGetUserName(),
+	); err != nil {
 		return nil, err
 	}
-	return &msgv3.SetRedPacketMsgStatusResp{}, nil
+	return &msgv3.ModifyMsgResp{}, nil
 }
