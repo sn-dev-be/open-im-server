@@ -252,6 +252,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/delete_server_group", c.DeleteServerGroup)
 		clubGroup.POST("/mute_server_group", c.MuteServerGroup)
 		clubGroup.POST("/cancel_mute_server_group", c.CancelMuteServerGroup)
+		clubGroup.POST("/get_server_group_members_info", c.GetServerGroupMembersInfo)
 
 		clubGroup.POST("/get_server_members_info", c.GetServerMembersInfo)
 		clubGroup.POST("/get_server_member_list", c.GetServerMemberList)
@@ -259,6 +260,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/mute_server_member", c.MuteServerMember)
 		clubGroup.POST("/cancel_mute_server_member", c.CancelMuteServerMember)
 		clubGroup.POST("/set_server_member_info", c.SetServerMemberInfo)
+		clubGroup.POST("/get_server_mute_list", nil)
 
 		clubGroup.POST("/server_application_response", c.ApplicationServerResponse)
 		clubGroup.POST("/get_recv_server_application_list", c.GetRecvServerApplicationList)

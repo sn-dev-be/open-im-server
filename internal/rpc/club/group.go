@@ -341,3 +341,39 @@ func (c *clubServer) GetServerGroupsInfo(ctx context.Context, req *pbclub.GetSer
 	})
 	return resp, nil
 }
+
+func (c *clubServer) GetServerGroupMembersInfo(ctx context.Context, req *pbclub.GetServerGroupMembersInfoReq) (*pbclub.GetServerGroupMembersInfoResp, error) {
+	resp := &pbclub.GetServerGroupMembersInfoResp{}
+	if len(req.UserIDs) == 0 {
+		return nil, errs.ErrArgs.Wrap("userIDs empty")
+	}
+	if req.GroupID == "" {
+		return nil, errs.ErrArgs.Wrap("groupID empty")
+	}
+	group, err := c.ClubDatabase.TakeGroup(ctx, req.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	members, err := c.FindServerMember(ctx, []string{group.ServerID}, req.UserIDs, nil)
+	if err != nil {
+		return nil, err
+	}
+	publicUserInfoMap, err := c.GetPublicUserInfoMap(ctx, utils.Filter(members, func(e *relationtb.ServerMemberModel) (string, bool) {
+		return e.UserID, e.Nickname == "" || e.FaceURL == ""
+	}), true)
+	if err != nil {
+		return nil, err
+	}
+	resp.Members = utils.Slice(members, func(e *relationtb.ServerMemberModel) *sdkws.ServerMemberFullInfo {
+		if userInfo, ok := publicUserInfoMap[e.UserID]; ok {
+			if e.Nickname == "" {
+				e.Nickname = userInfo.Nickname
+			}
+			if e.FaceURL == "" {
+				e.FaceURL = userInfo.FaceURL
+			}
+		}
+		return convert.Db2PbServerMember(e)
+	})
+	return resp, nil
+}
