@@ -168,7 +168,7 @@ func (c *clubServer) GenGroupCategoryID(ctx context.Context, categoryID *string)
 	return errs.ErrData.Wrap("group_category id gen error")
 }
 
-func (c *clubServer) createGroupCategoryByDefault(ctx context.Context, serverID, categoryName string, categoryType, reorderWeight int32) (string, error) {
+func (c *clubServer) genGroupCategoryByDefault(ctx context.Context, serverID, categoryName string, categoryType, reorderWeight int32) (*relationtb.GroupCategoryModel, error) {
 	category := &relationtb.GroupCategoryModel{
 		CategoryName:  categoryName,
 		ReorderWeight: reorderWeight,
@@ -179,10 +179,10 @@ func (c *clubServer) createGroupCategoryByDefault(ctx context.Context, serverID,
 		CreateTime:    time.Now(),
 	}
 	if err := c.GenGroupCategoryID(ctx, &category.CategoryID); err != nil {
-		return "", err
+		return nil, err
 	}
-	if err := c.ClubDatabase.CreateGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
-		return "", err
-	}
-	return category.CategoryID, nil
+	// if err := c.ClubDatabase.CreateGroupCategory(ctx, []*relationtb.GroupCategoryModel{category}); err != nil {
+	// 	return "", err
+	// }
+	return category, nil
 }

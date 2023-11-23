@@ -125,8 +125,8 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	return resp, nil
 }
 
-func (c *clubServer) createServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) error {
-	server_member := &relationtb.ServerMemberModel{
+func (c *clubServer) genServerMember(ctx context.Context, serverID, user_id, nickname, serverRoleID, invitedUserID, ex string, roleLevel, joinSource int32) *relationtb.ServerMemberModel {
+	serverMember := &relationtb.ServerMemberModel{
 		ServerID:      serverID,
 		UserID:        user_id,
 		Nickname:      nickname,
@@ -138,10 +138,10 @@ func (c *clubServer) createServerMember(ctx context.Context, serverID, user_id, 
 		MuteEndTime:   time.UnixMilli(0),
 		JoinTime:      time.Now(),
 	}
-	if err := c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{server_member}); err != nil {
-		return err
-	}
-	return nil
+	// if err := c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{server_member}); err != nil {
+	// 	return err
+	// }
+	return serverMember
 }
 
 func (c *clubServer) serverMemberHashCode(ctx context.Context, serverID string) (uint64, error) {
@@ -706,4 +706,71 @@ func (c *clubServer) deleteMemberAndSetConversationSeq(ctx context.Context, serv
 		c.conversationRpcClient.SetConversationMaxSeq(ctx, userIDs, conevrsationID, maxSeq)
 	}
 	return nil
+}
+
+func (c *clubServer) GetServerMuteRecordList(ctx context.Context, req *pbclub.GetServerMuteRecordListReq) (*pbclub.GetServerMuteRecordListResp, error) {
+	resp := &pbclub.GetServerMuteRecordListResp{}
+	records, total, err := c.ClubDatabase.FindServerMuteRecords(ctx, req.ServerID, req.Pagination.PageNumber, req.Pagination.ShowNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	operatorUserIDs := utils.DistinctAnyGetComparable(records, func(m *relationtb.MuteRecordModel) string {
+		return m.OperatorUserID
+	})
+
+	blockUserIDs := utils.DistinctAnyGetComparable(records, func(m *relationtb.MuteRecordModel) string {
+		return m.BlockUserID
+	})
+
+	merged := mergeAndDeduplicate(operatorUserIDs, blockUserIDs)
+
+	publicUserInfoMap, err := c.GetPublicUserInfoMap(ctx, merged, true)
+	if err != nil {
+		return nil, err
+	}
+	resp.Records = utils.Slice(records, func(e *relationtb.MuteRecordModel) *sdkws.ServerMuteRecord {
+		record := &sdkws.ServerMuteRecord{}
+		if userInfo, ok := publicUserInfoMap[e.OperatorUserID]; ok {
+			record.OperatorUser = &sdkws.UserInfo{
+				UserID:   userInfo.UserID,
+				Nickname: userInfo.Nickname,
+				FaceURL:  userInfo.FaceURL,
+			}
+		}
+		if userInfo, ok := publicUserInfoMap[e.BlockUserID]; ok {
+			record.BlockUser = &sdkws.UserInfo{
+				UserID:   userInfo.UserID,
+				Nickname: userInfo.Nickname,
+				FaceURL:  userInfo.FaceURL,
+			}
+		}
+		return record
+	})
+
+	resp.Total = uint32(total)
+	return resp, nil
+}
+
+// mergeAndDeduplicate 合并两个切片并去重
+func mergeAndDeduplicate(slice1, slice2 []string) []string {
+	uniqueMap := make(map[string]struct{})
+
+	// 将 slice1 中的元素放入 map
+	for _, value := range slice1 {
+		uniqueMap[value] = struct{}{}
+	}
+
+	// 将 slice2 中的元素放入 map
+	for _, value := range slice2 {
+		uniqueMap[value] = struct{}{}
+	}
+
+	// 从 map 中提取所有唯一元素
+	var result []string
+	for key := range uniqueMap {
+		result = append(result, key)
+	}
+
+	return result
 }

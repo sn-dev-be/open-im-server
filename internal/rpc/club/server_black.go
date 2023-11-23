@@ -5,6 +5,7 @@ import (
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
@@ -98,6 +99,16 @@ func (c *clubServer) GetServerBlackList(ctx context.Context, req *pbclub.GetServ
 			}
 			if member.FaceUrl == "" {
 				member.FaceUrl = user.FaceURL
+			}
+
+			operatorUser, ok := users[member.OperatorUserID]
+			if !ok {
+				continue
+			}
+			member.OperatorUser = &sdkws.UserInfo{
+				UserID:   operatorUser.UserID,
+				Nickname: operatorUser.Nickname,
+				FaceURL:  operatorUser.FaceURL,
 			}
 		}
 	}
