@@ -27,6 +27,7 @@ import (
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
+	"github.com/OpenIMSDK/tools/utils"
 )
 
 func (m *msgServer) ModifyMsg(ctx context.Context, req *msgv3.ModifyMsgReq) (*msgv3.ModifyMsgResp, error) {
@@ -51,7 +52,9 @@ func (m *msgServer) ModifyMsg(ctx context.Context, req *msgv3.ModifyMsgReq) (*ms
 	log.ZInfo(ctx, "GetMsgBySeqs", "conversationID", req.ConversationID, "seq", req.Seq, "msg", string(data))
 	msg := msgs[0]
 
-	err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, req.Seq, req.Content)
+	notificationElem := sdkws.NotificationElem{Detail: req.Content}
+	modifyMsg := utils.StructToJsonString(&notificationElem)
+	err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, req.Seq, modifyMsg)
 	if err != nil {
 		return nil, err
 	}
