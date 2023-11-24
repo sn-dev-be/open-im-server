@@ -52,7 +52,7 @@ func (c *clubServer) GenServerRoleID(ctx context.Context, serverRoleID *string) 
 	return errs.ErrData.Wrap("server_role id gen error")
 }
 
-func (c *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID string) error {
+func (c *clubServer) genServerRoleForEveryone(ctx context.Context, serverID string) (*relationtb.ServerRoleModel, error) {
 	permissions, _ := permissions.NewDefaultEveryonePermissions().ToJSON()
 	everyone := &relationtb.ServerRoleModel{
 		RoleName:     "全体成员",
@@ -67,15 +67,15 @@ func (c *clubServer) CreateServerRoleForEveryone(ctx context.Context, serverID s
 		CreateTime:   time.Now(),
 	}
 	if err := c.GenServerRoleID(ctx, &everyone.RoleID); err != nil {
-		return err
+		return nil, err
 	}
-	if err := c.ClubDatabase.CreateServerRole(ctx, []*relationtb.ServerRoleModel{everyone}); err != nil {
-		return err
-	}
-	return nil
+	// if err := c.ClubDatabase.CreateServerRole(ctx, []*relationtb.ServerRoleModel{everyone}); err != nil {
+	// 	return err
+	// }
+	return everyone, nil
 }
 
-func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID string) (string, error) {
+func (c *clubServer) genServerRoleForOwner(ctx context.Context, serverID string) (*relationtb.ServerRoleModel, error) {
 	permissions, _ := permissions.NewDefaultAdminPermissions().ToJSON()
 	owner := &relationtb.ServerRoleModel{
 		RoleName:     "部落主",
@@ -90,13 +90,13 @@ func (c *clubServer) CreateServerRoleForOwner(ctx context.Context, serverID stri
 		CreateTime:   time.Now(),
 	}
 	if err := c.GenServerRoleID(ctx, &owner.RoleID); err != nil {
-		return "", err
+		return nil, err
 	}
-	if err := c.ClubDatabase.CreateServerRole(ctx, []*relationtb.ServerRoleModel{owner}); err != nil {
-		return "", err
-	}
+	// if err := c.ClubDatabase.CreateServerRole(ctx, []*relationtb.ServerRoleModel{owner}); err != nil {
+	// 	return "", err
+	// }
 
-	return owner.RoleID, nil
+	return owner, nil
 }
 
 func (c *clubServer) getServerRoleByPriority(ctx context.Context, serverID string, priority int32) (*relationtb.ServerRoleModel, error) {

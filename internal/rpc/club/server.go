@@ -67,40 +67,38 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	if err := s.GenServerID(ctx, &serverDB.ServerID); err != nil {
 		return nil, err
 	}
-	if err := s.ClubDatabase.CreateServer(ctx, []*relationtb.ServerModel{serverDB}); err != nil {
-		return nil, err
-	}
 
 	//创建默认身份组
-	go func() {
-		s.CreateServerRoleForEveryone(ctx, serverDB.ServerID)
-	}()
-
-	roleID, err := s.CreateServerRoleForOwner(ctx, serverDB.ServerID)
+	roles := []*relationtb.ServerRoleModel{}
+	everyone, err := s.genServerRoleForEveryone(ctx, serverDB.ServerID)
+	owner, err := s.genServerRoleForOwner(ctx, serverDB.ServerID)
 	if err != nil {
 		return nil, err
 	}
-
-	//部落主进部落
-	err = s.createServerMember(ctx, serverDB.ServerID, opUserID, "", roleID, opUserID, "", constant.ServerOwner, 0)
-	if err != nil {
-		return nil, err
-	}
+	roles = append(append(roles, everyone), owner)
 
 	//创建默认分组与房间
-	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
-		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "公告栏", opUserID)
-		s.CreateServerGroup(ctx, createServerReq)
+	categories := []*relationtb.GroupCategoryModel{}
+	groups := []*relationtb.GroupModel{}
+	if categoryA, err := s.genGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
+		categories = append(categories, categoryA)
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryA.CategoryID, "公告栏", opUserID, "https://d2defihkjykaxy.cloudfront.net/image/notice.png"))
 	}
-	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
-		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "日常聊天", opUserID)
-		s.CreateServerGroup(ctx, createServerReq)
-		createServerReq = s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "资讯互动", opUserID)
-		s.CreateServerGroup(ctx, createServerReq)
+	if categoryB, err := s.genGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
+		categories = append(categories, categoryB)
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryB.CategoryID, "日常聊天", opUserID, "https://d2defihkjykaxy.cloudfront.net/image/topic.png"))
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryB.CategoryID, "资讯互动", opUserID, "https://d2defihkjykaxy.cloudfront.net/image/topic.png"))
 	}
-	if categoryID, err := s.createGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
-		createServerReq := s.genCreateServerGroupReq(serverDB.ServerID, categoryID, "部落事务讨论", opUserID)
-		s.CreateServerGroup(ctx, createServerReq)
+	if categoryC, err := s.genGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
+		categories = append(categories, categoryC)
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryC.CategoryID, "部落事务讨论", opUserID, "https://d2defihkjykaxy.cloudfront.net/image/service.png"))
+	}
+
+	members := []*relationtb.ServerMemberModel{}
+	members = append(members, s.genServerMember(ctx, serverDB.ServerID, opUserID, "", owner.RoleID, opUserID, "", constant.ServerOwner, 0))
+
+	if err := s.ClubDatabase.CreateServer(ctx, []*relationtb.ServerModel{serverDB}, roles, categories, groups, members); err != nil {
+		return nil, err
 	}
 
 	return &pbclub.CreateServerResp{ServerID: serverDB.ServerID}, nil
@@ -268,22 +266,29 @@ func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.Ser
 	return nil
 }
 
-func (s *clubServer) genCreateServerGroupReq(serverID, categoryID, groupName, ownerUserID string) *pbclub.CreateServerGroupReq {
-	req := &pbclub.CreateServerGroupReq{}
+func (s *clubServer) genCreateServerGroupReq(ctx context.Context, serverID, categoryID, groupName, ownerUserID, faceURL string) *relationtb.GroupModel {
+	//req := &pbclub.CreateServerGroupReq{}
 
-	groupInfo := &sdkws.GroupInfo{
-		GroupName:       groupName,
-		OwnerUserID:     ownerUserID,
-		Status:          constant.GroupOk,
-		CreatorUserID:   ownerUserID,
-		GroupType:       constant.ServerGroup,
-		ConditionType:   1,
-		Condition:       "",
-		GroupCategoryID: categoryID,
-		ServerID:        serverID,
+	groupInfo := &relationtb.GroupModel{
+		GroupName:              groupName,
+		FaceURL:                faceURL,
+		Status:                 constant.GroupOk,
+		CreatorUserID:          ownerUserID,
+		GroupType:              constant.ServerGroup,
+		ConditionType:          1,
+		Condition:              "",
+		GroupCategoryID:        categoryID,
+		ServerID:               serverID,
+		GroupMode:              constant.ChatGroupMode,
+		CreateTime:             time.Now(),
+		NotificationUpdateTime: time.UnixMilli(0),
 	}
-	req.GroupInfo = groupInfo
-	return req
+	err := s.GenGroupID(ctx, &groupInfo.GroupID)
+	if err != nil {
+		return nil
+	}
+	//req.GroupInfo = groupInfo
+	return groupInfo
 }
 
 func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInfoReq) (*pbclub.SetServerInfoResp, error) {

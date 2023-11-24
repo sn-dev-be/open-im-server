@@ -25,6 +25,7 @@ import (
 
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/tools/errs"
+	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/tx"
 	"github.com/OpenIMSDK/tools/utils"
 
@@ -35,7 +36,7 @@ import (
 
 type ClubDatabase interface {
 	// server
-	CreateServer(ctx context.Context, servers []*relationtb.ServerModel) error
+	CreateServer(ctx context.Context, servers []*relationtb.ServerModel, roles []*relationtb.ServerRoleModel, categories []*relationtb.GroupCategoryModel, groups []*relationtb.GroupModel, members []*relationtb.ServerMemberModel) error
 	TakeServer(ctx context.Context, serverID string) (server *relationtb.ServerModel, err error)
 	DismissServer(ctx context.Context, serverID string) error // 解散部落，并删除群成员
 
@@ -104,6 +105,9 @@ type ClubDatabase interface {
 	TransferServerOwner(ctx context.Context, serverID string, oldOwner, newOwner *relationtb.ServerMemberModel, roleLevel int32) error // 转让群
 	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
 	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
+
+	//mute_record
+	FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*relationtb.MuteRecordModel, total int64, err error)
 }
 
 func NewClubDatabase(
@@ -116,6 +120,7 @@ func NewClubDatabase(
 	serverRequest relationtb.ServerRequestModelInterface,
 	serverBlack relationtb.ServerBlackModelInterface,
 	groupDapp relationtb.GroupDappModellInterface,
+	muteRecord relationtb.MuteRecordModelInterface,
 	tx tx.Tx,
 	ctxTx tx.CtxTx,
 	cache cache.ClubCache,
@@ -130,6 +135,7 @@ func NewClubDatabase(
 		groupCategoryDB:     groupCategory,
 		groupDB:             group,
 		groupDappDB:         groupDapp,
+		muteRecordDB:        muteRecord,
 
 		tx: tx,
 
@@ -153,6 +159,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		relation.NewServerRequestDB(db),
 		relation.NewServerBlackDB(db),
 		relation.NewGroupDappDB(db),
+		relation.NewMuteRecordDB(db),
 		tx.NewGorm(db),
 		tx.NewMongo(database.Client()),
 		cache.NewClubCacheRedis(
@@ -181,6 +188,7 @@ type clubDatabase struct {
 	serverRequestDB     relationtb.ServerRequestModelInterface
 	serverBlackDB       relationtb.ServerBlackModelInterface
 	groupDappDB         relationtb.GroupDappModellInterface
+	muteRecordDB        relationtb.MuteRecordModelInterface
 
 	tx    tx.Tx
 	ctxTx tx.CtxTx
@@ -192,11 +200,36 @@ type clubDatabase struct {
 func (c *clubDatabase) CreateServer(
 	ctx context.Context,
 	servers []*relationtb.ServerModel,
+	roles []*relationtb.ServerRoleModel,
+	categories []*relationtb.GroupCategoryModel,
+	groups []*relationtb.GroupModel,
+	members []*relationtb.ServerMemberModel,
 ) error {
 	if err := c.tx.Transaction(func(tx any) error {
 		if err := c.serverDB.NewTx(tx).Create(ctx, servers); err != nil {
 			return err
 		}
+
+		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
+			return err
+		}
+
+		if err := c.groupDB.NewTx(tx).Create(ctx, groups); err != nil {
+			return err
+		}
+
+		if err := c.serverRoleDB.NewTx(tx).Create(ctx, roles); err != nil {
+			return err
+		}
+
+		if err := c.serverMemberDB.NewTx(tx).Create(ctx, members); err != nil {
+			return err
+		}
+		serverID := servers[0].ServerID
+		userID := members[0].UserID
+		groupIDs := utils.Slice(groups, func(g *relationtb.GroupModel) string { return g.GroupID })
+		categoryIDs := utils.Slice(categories, func(c *relationtb.GroupCategoryModel) string { return c.CategoryID })
+		c.cache.DelServerMemberIDs(serverID).DelJoinedServerID(userID).DelGroupCategoriesInfo(categoryIDs...).DelServersInfo(serverID).DelGroupsInfo(groupIDs...).ExecDel(ctx)
 		return nil
 	}); err != nil {
 		return err
@@ -795,9 +828,43 @@ func (c *clubDatabase) UpdateServerMember(
 	userID string,
 	data map[string]any,
 ) error {
-	if err := c.serverMemberDB.Update(ctx, serverID, userID, data); err != nil {
+	if err := c.tx.Transaction(func(tx any) error {
+		if err := c.serverMemberDB.NewTx(tx).Update(ctx, serverID, userID, data); err != nil {
+			return err
+		}
+
+		mute_end_time, ok := data["mute_end_time"].(time.Time)
+		if ok {
+			mrm, err := c.muteRecordDB.Take(ctx, userID, serverID)
+			if err != nil && !errs.ErrRecordNotFound.Is(utils.Unwrap(err)) {
+				return err
+			}
+			if err != nil {
+				if mute_end_time.IsZero() {
+					//cancel_mute
+					err = c.muteRecordDB.NewTx(tx).Delete(ctx, []*relationtb.MuteRecordModel{mrm})
+				} else {
+					//mute
+					mrm = &relationtb.MuteRecordModel{
+						ServerID:       serverID,
+						BlockUserID:    userID,
+						OperatorUserID: mcontext.GetOpUserID(ctx),
+						CreateTime:     time.Now(),
+						MuteEndTime:    mute_end_time,
+					}
+					err = c.muteRecordDB.NewTx(tx).Create(ctx, []*relationtb.MuteRecordModel{mrm})
+				}
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	}); err != nil {
 		return err
 	}
+
 	return c.cache.DelServerMembersInfo(serverID, userID).ExecDel(ctx)
 }
 
@@ -906,4 +973,9 @@ func (c *clubDatabase) deleteBlackIDsCache(ctx context.Context, blacks []*relati
 		cache = cache.DeleteBlackIDsCache(black.ServerID)
 	}
 	return cache.ExecDel(ctx)
+}
+
+// ///mute_record
+func (c *clubDatabase) FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*relationtb.MuteRecordModel, total int64, err error) {
+	return c.muteRecordDB.FindServerMuteRecords(ctx, serverID, pageNumber, showNumber)
 }
