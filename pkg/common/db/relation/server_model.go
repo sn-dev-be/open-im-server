@@ -59,7 +59,7 @@ func (s *ServerGorm) Take(ctx context.Context, serverID string) (server *relatio
 
 func (s *ServerGorm) Search(ctx context.Context, keyword string, pageNumber, showNumber int32) (total uint32, groups []*relation.ServerModel, err error) {
 	db := s.DB
-	db = db.WithContext(ctx).Where("status!=?", constant.ServerStatusDismissed)
+	db = db.WithContext(ctx).Where("status!=? and searchable = 1", constant.ServerStatusDismissed)
 	return ormutil.GormSearch[relation.ServerModel](db, []string{"name"}, keyword, pageNumber, showNumber)
 }
 

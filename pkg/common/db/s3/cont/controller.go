@@ -227,9 +227,9 @@ func (c *Controller) CompleteUpload(ctx context.Context, uploadID string, partHa
 			return nil, err
 		}
 		cleanObject[copyInfo.Key] = struct{}{}
-		if copyInfo.ETag != uploadInfo.ETag {
-			return nil, errors.New("[concurrency]copy md5 mismatching")
-		}
+		// if copyInfo.ETag != uploadInfo.ETag {
+		// 	return nil, errors.New("[concurrency]copy md5 mismatching")
+		// }
 		hashCopyInfo, err := c.impl.CopyObject(ctx, copyInfo.Key, c.HashPath(upload.Hash))
 		if err != nil {
 			return nil, err
