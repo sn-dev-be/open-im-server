@@ -52,7 +52,7 @@ func (b *MuteRecordGorm) Take(ctx context.Context, blockUserID string, serverID 
 
 func (b *MuteRecordGorm) FindServerMuteRecords(
 	ctx context.Context,
-	ownerUserID string,
+	serverID string,
 	pageNumber, showNumber int32,
 ) (mute_records []*relation.MuteRecordModel, total int64, err error) {
 	err = b.db(ctx).Count(&total).Error
@@ -60,7 +60,7 @@ func (b *MuteRecordGorm) FindServerMuteRecords(
 		return nil, 0, utils.Wrap(err, "")
 	}
 	totalUint32, mute_records, err := ormutil.GormPage[relation.MuteRecordModel](
-		b.db(ctx).Where("owner_user_id = ?", ownerUserID),
+		b.db(ctx).Where("server_id = ?", serverID),
 		pageNumber,
 		showNumber,
 	)
