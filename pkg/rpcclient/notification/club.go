@@ -209,6 +209,7 @@ func (c *ClubNotificationSender) JoinServerApplicationNotification(ctx context.C
 		return err
 	}
 	userIDs = append(userIDs)
+	log.ZInfo(ctx, "JoinServerApplicationNotification", "server", req.ServerID, "ManageMember userIDs", userIDs)
 	tips := &sdkws.JoinServerApplicationTips{Server: server, Applicant: user, ReqMsg: req.ReqMessage, HandleResult: constant.ServerResponseNotHandle}
 	for _, userID := range utils.Distinct(userIDs) {
 		err = c.Notification(ctx, c.getNotificationAdminUserID(), userID, constant.JoinServerApplicationNotification, tips)
