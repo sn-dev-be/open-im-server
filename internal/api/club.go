@@ -168,6 +168,10 @@ func (o *ClubApi) CancelMuteServerMember(c *gin.Context) {
 	a2r.Call(club.ClubClient.CancelMuteServerMember, o.Client, c)
 }
 
+func (o *ClubApi) GetServerMuteRecords(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerMuteRecordList, o.Client, c)
+}
+
 func (o *ClubApi) SetServerMemberInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.SetServerMemberInfo, o.Client, c)
 }
