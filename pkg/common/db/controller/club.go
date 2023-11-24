@@ -225,6 +225,11 @@ func (c *clubDatabase) CreateServer(
 		if err := c.serverMemberDB.NewTx(tx).Create(ctx, members); err != nil {
 			return err
 		}
+		serverID := servers[0].ServerID
+		userID := members[0].UserID
+		groupIDs := utils.Slice(groups, func(g *relationtb.GroupModel) string { return g.GroupID })
+		categoryIDs := utils.Slice(categories, func(c *relationtb.GroupCategoryModel) string { return c.CategoryID })
+		c.cache.DelServerMemberIDs(serverID).DelJoinedServerID(userID).DelGroupCategoriesInfo(categoryIDs...).DelServersInfo(serverID).DelGroupsInfo(groupIDs...).ExecDel(ctx)
 		return nil
 	}); err != nil {
 		return err
