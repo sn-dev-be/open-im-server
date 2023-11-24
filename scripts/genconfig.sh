@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# 本脚本功能：根据 scripts/environment.sh 配置，生成 OPENIM 组件 YAML 配置文件。
-# 示例：./scripts/genconfig.sh scripts/install/environment.sh scripts/template/config.yaml
-# Read: https://github.com/openimsdk/open-im-server/blob/main/docs/contrib/init_config.md
+# Function of this script: Generate the OPENIM component YAML configuration file according to the scripts/environment.sh configuration.
+# eg：./scripts/genconfig.sh scripts/install/environment.sh scripts/template/config.yaml
+# Read: https://github.com/openimsdk/open-im-server/blob/main/docs/contrib/init-config.md
 
 env_file="$1"
 template_file="$2"
@@ -27,6 +27,18 @@ source "${OPENIM_ROOT}/scripts/lib/init.sh"
 if [ $# -ne 2 ];then
     openim::log::error "Usage: scripts/genconfig.sh scripts/environment.sh configs/openim-api.yaml"
     exit 1
+fi
+
+openim::util::require-dig
+result=$?
+if [ $result -ne 0 ]; then
+    openim::log::info "Please install 'dig' to use this feature."
+    openim::log::info "Installation instructions:"
+    openim::log::info "  For Ubuntu/Debian: sudo apt-get install dnsutils"
+    openim::log::info "  For CentOS/RedHat: sudo yum install bind-utils"
+    openim::log::info "  For macOS: 'dig' should be preinstalled. If missing, try: brew install bind"
+    openim::log::info "  For Windows: Install BIND9 tools from https://www.isc.org/download/"
+    openim::log::error_exit "Error: 'dig' command is required but not installed."
 fi
 
 source "${env_file}"

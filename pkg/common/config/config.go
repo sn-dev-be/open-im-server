@@ -78,17 +78,20 @@ type configStruct struct {
 	} `yaml:"mongo"`
 
 	Redis struct {
-		ClusterMode bool     `yaml:"clusterMode"`
-		Address     []string `yaml:"address"`
-		Username    string   `yaml:"username"`
-		Password    string   `yaml:"password"`
+		ClusterMode    bool     `yaml:"clusterMode"`
+		Address        []string `yaml:"address"`
+		Username       string   `yaml:"username"`
+		Password       string   `yaml:"password"`
+		EnablePipeline bool     `yaml:"enablePipeline"`
 	} `yaml:"redis"`
 
 	Kafka struct {
-		Username string   `yaml:"username"`
-		Password string   `yaml:"password"`
-		Addr     []string `yaml:"addr"`
-		TLS      *struct {
+		Username     string   `yaml:"username"`
+		Password     string   `yaml:"password"`
+		ProducerAck  string   `yaml:"producerAck"`
+		CompressType string   `yaml:"compressType"`
+		Addr         []string `yaml:"addr"`
+		TLS          *struct {
 			CACrt              string `yaml:"caCrt"`
 			ClientCrt          string `yaml:"clientCrt"`
 			ClientKey          string `yaml:"clientKey"`
@@ -194,11 +197,13 @@ type configStruct struct {
 		WebsocketMaxConnNum      int   `yaml:"websocketMaxConnNum"`
 		WebsocketMaxMsgLen       int   `yaml:"websocketMaxMsgLen"`
 		WebsocketTimeout         int   `yaml:"websocketTimeout"`
+		WebsocketWriteBufferSize int   `yaml:"websocketWriteBufferSize"`
 	} `yaml:"longConnSvr"`
 
 	Push struct {
-		Enable string `yaml:"enable"`
-		GeTui  struct {
+		MaxConcurrentWorkers int    `yaml:"maxConcurrentWorkers"`
+		Enable               string `yaml:"enable"`
+		GeTui                struct {
 			PushUrl      string `yaml:"pushUrl"`
 			AppKey       string `yaml:"appKey"`
 			Intent       string `yaml:"intent"`
@@ -230,11 +235,11 @@ type configStruct struct {
 	ChatRecordsClearTime              string `yaml:"chatRecordsClearTime"`
 	MsgDestructTime                   string `yaml:"msgDestructTime"`
 	Secret                            string `yaml:"secret"`
-	SingleFriend                      bool   `yaml:"singleFriend"`
-
-	TokenPolicy struct {
+	EnableCronLocker                  bool   `yaml:"enableCronLocker"`
+	TokenPolicy                       struct {
 		Expire int64 `yaml:"expire"`
 	} `yaml:"tokenPolicy"`
+	SingleFriend    bool `yaml:"singleFriend"`
 	VoiceCallPolicy struct {
 		Expire int64 `yaml:"expire"`
 	} `yaml:"voiceCallPolicy"`

@@ -44,8 +44,11 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.45
+	go.uber.org/automaxprocs v1.5.3
+	golang.org/x/sync v0.4.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gorm.io/datatypes v1.2.0
+	gotest.tools v2.2.0+incompatible
 )
 
 require (
@@ -74,6 +77,7 @@ require (
 	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.1 // indirect
@@ -117,6 +121,7 @@ require (
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -129,7 +134,6 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
@@ -154,4 +158,4 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/OpenIMSDK/protocol => github.com/sn-dev-be/protocol v0.10.2
+replace github.com/OpenIMSDK/protocol => github.com/sn-dev-be/protocol v0.10.3

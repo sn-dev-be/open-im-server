@@ -15,7 +15,7 @@
 
 # This is a file that initializes variables for the automation script that initializes the config file
 # You need to supplement the script according to the specification.
-# Read: https://github.com/openimsdk/open-im-server/blob/main/docs/contrib/init_config.md
+# Read: https://github.com/openimsdk/open-im-server/blob/main/docs/contrib/init-config.md
 # 格式化 bash 注释：https://tool.lu/shell/
 # 配置中心文档：https://github.com/openimsdk/open-im-server/blob/main/docs/contrib/environment.md
 
@@ -46,7 +46,7 @@ function def() {
 def "DATA_DIR" "${OPENIM_ROOT}"
 
 # 设置统一的用户名，方便记忆
-def "USER" "root"
+def "OPENIM_USER" "root"
 
 # 设置统一的密码，方便记忆
 readonly PASSWORD=${PASSWORD:-'openIM123'}
@@ -116,7 +116,12 @@ LAST_OCTET=$((LAST_OCTET + 1))
 PROMETHEUS_NETWORK_ADDRESS=$(generate_ip)
 LAST_OCTET=$((LAST_OCTET + 1))
 GRAFANA_NETWORK_ADDRESS=$(generate_ip)
-
+LAST_OCTET=$((LAST_OCTET + 1))
+NODE_EXPORTER_NETWORK_ADDRESS=$(generate_ip)
+LAST_OCTET=$((LAST_OCTET + 1))
+OPENIM_ADMIN_FRONT_NETWORK_ADDRESS=$(generate_ip)
+LAST_OCTET=$((LAST_OCTET + 1))
+ALERT_MANAGER_NETWORK_ADDRESS=$(generate_ip)
 ###################### openim 配置 ######################
 # read: https://github.com/openimsdk/open-im-server/blob/main/deployment/README.md
 def "OPENIM_DATA_DIR" "/data/openim"
@@ -166,7 +171,7 @@ def "ZOOKEEPER_PASSWORD" ""                        # Zookeeper的密码
 ###################### MySQL 配置信息 ######################
 def "MYSQL_PORT" "13306"                       # MySQL的端口
 def "MYSQL_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # MySQL的地址
-def "MYSQL_USERNAME" "${USER}"                 # MySQL的用户名
+def "MYSQL_USERNAME" "${OPENIM_USER}"                 # MySQL的用户名
 # MySQL的密码
 readonly MYSQL_PASSWORD=${MYSQL_PASSWORD:-"${PASSWORD}"}
 def "MYSQL_DATABASE" "${DATABASE_NAME}"        # MySQL的数据库名
@@ -181,7 +186,7 @@ def "MONGO_URI"                                # MongoDB的URI
 def "MONGO_PORT" "37017"                       # MongoDB的端口
 def "MONGO_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # MongoDB的地址
 def "MONGO_DATABASE" "${DATABASE_NAME}"        # MongoDB的数据库名
-def "MONGO_USERNAME" "${USER}"                 # MongoDB的用户名
+def "MONGO_USERNAME" "${OPENIM_USER}"                 # MongoDB的用户名
 # MongoDB的密码
 readonly MONGO_PASSWORD=${MONGO_PASSWORD:-"${PASSWORD}"}
 def "MONGO_MAX_POOL_SIZE" "100"                # 最大连接池大小
@@ -198,7 +203,7 @@ def "MINIO_PORT" "10005"    # MinIO的端口
 # MinIO的端点URL
 def MINIO_ADDRESS "${DOCKER_BRIDGE_GATEWAY}"
 readonly MINIO_ENDPOINT=${MINIO_ENDPOINT:-"http://${MINIO_ADDRESS}:${MINIO_PORT}"}
-def "MINIO_ACCESS_KEY" "${USER}"                                                  # MinIO的访问密钥ID
+def "MINIO_ACCESS_KEY" "${OPENIM_USER}"                                                  # MinIO的访问密钥ID
 readonly MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-"${PASSWORD}"}
 def "MINIO_SESSION_TOKEN"                                                         # MinIO的会话令牌
 readonly MINIO_SIGN_ENDPOINT=${MINIO_SIGN_ENDPOINT:-"http://${OPENIM_IP}:${MINIO_PORT}"} # signEndpoint为minio公网地址
@@ -242,6 +247,9 @@ def "OPENIM_WEB_PORT" "11001"                       # openim-web的端口
 def "OPENIM_WEB_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # openim-web的地址
 def "OPENIM_WEB_DIST_PATH" "/app/dist"              # openim-web的dist路径
 
+###################### openim-admin-front 配置信息 ######################
+def "OPENIM_ADMIN_FRONT_PORT" "11002"                       # openim-admin-front的端口
+
 ###################### RPC 配置信息 ######################
 def "RPC_REGISTER_IP"                               # RPC的注册IP
 def "RPC_LISTEN_IP" "0.0.0.0"                       # RPC的监听IP
@@ -250,8 +258,38 @@ def "RPC_LISTEN_IP" "0.0.0.0"                       # RPC的监听IP
 def "PROMETHEUS_PORT" "19090"                       # Prometheus的端口
 def "PROMETHEUS_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # Prometheus的地址
 
+###################### node-exporter 配置 ######################
+def "NODE_EXPORTER_PORT" "19100"                       # node-exporter的端口
+def "NODE_EXPORTER_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # node-exporter的地址
+
+###################### alertmanagerS 配置 ######################
+def "ALERT_MANAGER_PORT" "19093"                       # node-exporter的端口
+def "ALERT_MANAGER_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # node-exporter的地址
+
+###################### AlertManager Configuration Script ######################
+# 解析超时
+readonly ALERTMANAGER_RESOLVE_TIMEOUT=${ALERTMANAGER_RESOLVE_TIMEOUT:-'5m'}
+# 发件人邮箱
+readonly ALERTMANAGER_SMTP_FROM=${ALERTMANAGER_SMTP_FROM:-'alert@openim.io'}
+# SMTP服务器地址和端口
+readonly ALERTMANAGER_SMTP_SMARTHOST=${ALERTMANAGER_SMTP_SMARTHOST:-'smtp.163.com:465'}
+# SMTP认证用户名
+readonly ALERTMANAGER_SMTP_AUTH_USERNAME=${SMTP_USERNAME:-"alert@openim.io"}
+# SMTP认证密码
+readonly ALERTMANAGER_SMTP_AUTH_PASSWORD=${SMTP_PASSWORD:-"YOURAUTHPASSWORD"}
+# SMTP是否需要TLS
+readonly ALERTMANAGER_SMTP_REQUIRE_TLS=${ALERTMANAGER_SMTP_REQUIRE_TLS:-"false"}
+# SMTP HELO/EHLO标识符
+readonly ALERTMANAGER_SMTP_HELLO=${ALERTMANAGER_SMTP_HELLO:-"xxx监控告警"}
+# 邮箱接收人
+readonly ALERTMANAGER_EMAIL_TO=${ALERTMANAGER_EMAIL_TO:-"alert@example.com"}
+# 邮箱主题
+readonly ALERTMANAGER_EMAIL_SUBJECT=${ALERTMANAGER_EMAIL_SUBJECT:-"{EMAIL_SUBJECT:-'[Alert] Notification'}"}
+# 是否发送已解决的告警
+readonly ALERTMANAGER_SEND_RESOLVED=${ALERTMANAGER_SEND_RESOLVED:-"{SEND_RESOLVED:-'true'}"}
+
 ###################### Grafana 配置信息 ######################
-def "GRAFANA_PORT" "3000"                        # Grafana的端口
+def "GRAFANA_PORT" "13000"                        # Grafana的端口
 def "GRAFANA_ADDRESS" "${DOCKER_BRIDGE_GATEWAY}" # Grafana的地址
 
 ###################### RPC Port Configuration Variables ######################
@@ -342,8 +380,9 @@ def "IOS_BADGE_COUNT" "true"    # IOS徽章计数
 def "IOS_PRODUCTION" "false"    # IOS生产
 
 ###################### Prometheus 配置信息 ######################
-def "PROMETHEUS_ENABLE" "false" # 是否启用 Prometheus
-def "PROMETHEUS_URL" "/prometheus"
+# 是否启用 Prometheus
+readonly PROMETHEUS_ENABLE=${PROMETHEUS_ENABLE:-'false'}
+def "PROMETHEUS_URL" "${GRAFANA_ADDRESS}:${GRAFANA_PORT}"
 # Api 服务的 Prometheus 端口
 readonly API_PROM_PORT=${API_PROM_PORT:-'20100'}
 # User 服务的 Prometheus 端口
@@ -371,6 +410,7 @@ readonly CLUB_PROM_PORT=${CLUB_PROM_PORT:-'20180'}
 
 # Message Transfer 服务的 Prometheus 端口列表
 readonly MSG_TRANSFER_PROM_PORT=${MSG_TRANSFER_PROM_PORT:-'21400, 21401, 21402, 21403'}
+readonly MSG_TRANSFER_PROM_ADDRESS_PORT=${MSG_TRANSFER_PROM_ADDRESS_PORT:-"${DOCKER_BRIDGE_GATEWAY}:21400, ${DOCKER_BRIDGE_GATEWAY}:21401, ${DOCKER_BRIDGE_GATEWAY}:21402, ${DOCKER_BRIDGE_GATEWAY}:21403"}
 
 ###################### OpenIM openim-api ######################
 def "OPENIM_API_HOST" "127.0.0.1"

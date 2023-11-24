@@ -16,17 +16,20 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
-	"github.com/openimsdk/open-im-server/v3/pkg/common/prom_metrics"
+	"github.com/OpenIMSDK/protocol/constant"
 
-	"github.com/openimsdk/open-im-server/v3/pkg/common/prom_metrics"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/prommetrics"
 
 	"github.com/redis/go-redis/v9"
 
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
@@ -34,7 +37,6 @@ import (
 	unrelationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/unrelation"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/unrelation"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/kafka"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	pbmsg "github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
@@ -389,20 +391,20 @@ func (db *commonMsgDatabase) BatchInsertChat2Cache(ctx context.Context, conversa
 	}
 	failedNum, err := db.cache.SetMessageToCache(ctx, conversationID, msgs)
 	if err != nil {
-		prom_metrics.MsgInsertRedisFailedCounter.Add(float64(failedNum))
+		prommetrics.MsgInsertRedisFailedCounter.Add(float64(failedNum))
 		log.ZError(ctx, "setMessageToCache error", err, "len", len(msgs), "conversationID", conversationID)
 	} else {
-		prom_metrics.MsgInsertRedisSuccessCounter.Inc()
+		prommetrics.MsgInsertRedisSuccessCounter.Inc()
 	}
 	err = db.cache.SetMaxSeq(ctx, conversationID, currentMaxSeq)
 	if err != nil {
 		log.ZError(ctx, "db.cache.SetMaxSeq error", err, "conversationID", conversationID)
-		prom_metrics.SeqSetFailedCounter.Inc()
+		prommetrics.SeqSetFailedCounter.Inc()
 	}
 	err2 := db.cache.SetHasReadSeqs(ctx, conversationID, userSeqMap)
 	if err != nil {
 		log.ZError(ctx, "SetHasReadSeqs error", err2, "userSeqMap", userSeqMap, "conversationID", conversationID)
-		prom_metrics.SeqSetFailedCounter.Inc()
+		prommetrics.SeqSetFailedCounter.Inc()
 	}
 	return lastMaxSeq, isNew, utils.Wrap(err, "")
 }
@@ -410,7 +412,7 @@ func (db *commonMsgDatabase) BatchInsertChat2Cache(ctx context.Context, conversa
 func (db *commonMsgDatabase) getMsgBySeqs(ctx context.Context, userID, conversationID string, seqs []int64) (totalMsgs []*sdkws.MsgData, err error) {
 	for docID, seqs := range db.msg.GetDocIDSeqsMap(conversationID, seqs) {
 		// log.ZDebug(ctx, "getMsgBySeqs", "docID", docID, "seqs", seqs)
-		msgs, err := db.findMsgInfoBySeq(ctx, userID, docID, seqs)
+		msgs, err := db.findMsgInfoBySeq(ctx, userID, docID, conversationID, seqs)
 		if err != nil {
 			return nil, err
 		}
@@ -421,12 +423,70 @@ func (db *commonMsgDatabase) getMsgBySeqs(ctx context.Context, userID, conversat
 	return totalMsgs, nil
 }
 
-func (db *commonMsgDatabase) findMsgInfoBySeq(ctx context.Context, userID, docID string, seqs []int64) (totalMsgs []*unrelationtb.MsgInfoModel, err error) {
-	msgs, err := db.msgDocDatabase.GetMsgBySeqIndexIn1Doc(ctx, userID, docID, seqs)
-	for _, msg := range msgs {
-		if msg.IsRead {
-			msg.Msg.IsRead = true
+func (db *commonMsgDatabase) handlerDBMsg(ctx context.Context, cache map[int64][]*unrelationtb.MsgInfoModel, userID, conversationID string, msg *unrelationtb.MsgInfoModel) {
+	if msg.IsRead {
+		msg.Msg.IsRead = true
+	}
+	if msg.Msg.ContentType != constant.Quote {
+		return
+	}
+	if msg.Msg.Content == "" {
+		return
+	}
+	var quoteMsg struct {
+		Text              string          `json:"text,omitempty"`
+		QuoteMessage      *sdkws.MsgData  `json:"quoteMessage,omitempty"`
+		MessageEntityList json.RawMessage `json:"messageEntityList,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(msg.Msg.Content), &quoteMsg); err != nil {
+		log.ZError(ctx, "json.Unmarshal", err)
+		return
+	}
+	if quoteMsg.QuoteMessage == nil || quoteMsg.QuoteMessage.ContentType == constant.MsgRevokeNotification {
+		return
+	}
+	var msgs []*unrelationtb.MsgInfoModel
+	if v, ok := cache[quoteMsg.QuoteMessage.Seq]; ok {
+		msgs = v
+	} else {
+		if quoteMsg.QuoteMessage.Seq > 0 {
+			ms, err := db.msgDocDatabase.GetMsgBySeqIndexIn1Doc(ctx, userID, db.msg.GetDocID(conversationID, quoteMsg.QuoteMessage.Seq), []int64{quoteMsg.QuoteMessage.Seq})
+			if err != nil {
+				log.ZError(ctx, "GetMsgBySeqIndexIn1Doc", err, "conversationID", conversationID, "seq", quoteMsg.QuoteMessage.Seq)
+				return
+			}
+			msgs = ms
+			cache[quoteMsg.QuoteMessage.Seq] = ms
 		}
+	}
+	if len(msgs) != 0 && msgs[0].Msg.ContentType != constant.MsgRevokeNotification {
+		return
+	}
+	quoteMsg.QuoteMessage.ContentType = constant.MsgRevokeNotification
+	if len(msgs) > 0 {
+		quoteMsg.QuoteMessage.Content = []byte(msgs[0].Msg.Content)
+	} else {
+		quoteMsg.QuoteMessage.Content = []byte("{}")
+	}
+	data, err := json.Marshal(&quoteMsg)
+	if err != nil {
+		log.ZError(ctx, "json.Marshal", err)
+		return
+	}
+	msg.Msg.Content = string(data)
+	if _, err := db.msgDocDatabase.UpdateMsg(ctx, db.msg.GetDocID(conversationID, msg.Msg.Seq), db.msg.GetMsgIndex(msg.Msg.Seq), "msg", msg.Msg); err != nil {
+		log.ZError(ctx, "UpdateMsgContent", err)
+	}
+}
+
+func (db *commonMsgDatabase) findMsgInfoBySeq(ctx context.Context, userID, docID string, conversationID string, seqs []int64) (totalMsgs []*unrelationtb.MsgInfoModel, err error) {
+	msgs, err := db.msgDocDatabase.GetMsgBySeqIndexIn1Doc(ctx, userID, docID, seqs)
+	if err != nil {
+		return nil, err
+	}
+	tempCache := make(map[int64][]*unrelationtb.MsgInfoModel)
+	for _, msg := range msgs {
+		db.handlerDBMsg(ctx, tempCache, userID, conversationID, msg)
 	}
 	return msgs, err
 }
@@ -435,7 +495,7 @@ func (db *commonMsgDatabase) getMsgBySeqsRange(ctx context.Context, userID strin
 	log.ZDebug(ctx, "getMsgBySeqsRange", "conversationID", conversationID, "allSeqs", allSeqs, "begin", begin, "end", end)
 	for docID, seqs := range db.msg.GetDocIDSeqsMap(conversationID, allSeqs) {
 		log.ZDebug(ctx, "getMsgBySeqsRange", "docID", docID, "seqs", seqs)
-		msgs, err := db.findMsgInfoBySeq(ctx, userID, docID, seqs)
+		msgs, err := db.findMsgInfoBySeq(ctx, userID, docID, conversationID, seqs)
 		if err != nil {
 			return nil, err
 		}
@@ -449,6 +509,25 @@ func (db *commonMsgDatabase) getMsgBySeqsRange(ctx context.Context, userID strin
 	return seqMsgs, nil
 }
 
+// GetMsgBySeqsRange In the context of group chat, we have the following parameters:
+//
+// "maxSeq" of a conversation: It represents the maximum value of messages in the group conversation.
+// "minSeq" of a conversation (default: 1): It represents the minimum value of messages in the group conversation.
+//
+// For a user's perspective regarding the group conversation, we have the following parameters:
+//
+// "userMaxSeq": It represents the user's upper limit for message retrieval in the group. If not set (default: 0),
+// it means the upper limit is the same as the conversation's "maxSeq".
+// "userMinSeq": It represents the user's starting point for message retrieval in the group. If not set (default: 0),
+// it means the starting point is the same as the conversation's "minSeq".
+//
+// The scenarios for these parameters are as follows:
+//
+// For users who have been kicked out of the group, "userMaxSeq" can be set as the maximum value they had before
+// being kicked out. This limits their ability to retrieve messages up to a certain point.
+// For new users joining the group, if they don't need to receive old messages,
+// "userMinSeq" can be set as the same value as the conversation's "maxSeq" at the moment they join the group.
+// This ensures that their message retrieval starts from the point they joined.
 func (db *commonMsgDatabase) GetMsgBySeqsRange(ctx context.Context, userID string, conversationID string, begin, end, num, userMaxSeq int64) (int64, int64, []*sdkws.MsgData, error) {
 	userMinSeq, err := db.cache.GetConversationUserMinSeq(ctx, conversationID, userID)
 	if err != nil && errs.Unwrap(err) != redis.Nil {
@@ -461,6 +540,7 @@ func (db *commonMsgDatabase) GetMsgBySeqsRange(ctx context.Context, userID strin
 	if userMinSeq > minSeq {
 		minSeq = userMinSeq
 	}
+	//"minSeq" represents the startSeq value that the user can retrieve.
 	if minSeq > end {
 		log.ZInfo(ctx, "minSeq > end", "minSeq", minSeq, "end", end)
 		return 0, 0, nil, nil
@@ -475,23 +555,41 @@ func (db *commonMsgDatabase) GetMsgBySeqsRange(ctx context.Context, userID strin
 			maxSeq = userMaxSeq
 		}
 	}
+	//"maxSeq" represents the endSeq value that the user can retrieve.
+
 	if begin < minSeq {
 		begin = minSeq
 	}
 	if end > maxSeq {
 		end = maxSeq
 	}
+	//"begin" and "end" represent the actual startSeq and endSeq values that the user can retrieve.
 	if end < begin {
 		return 0, 0, nil, errs.ErrArgs.Wrap("seq end < begin")
 	}
 	var seqs []int64
-	for i := end; i > end-num; i-- {
-		if i >= begin {
-			seqs = append([]int64{i}, seqs...)
-		} else {
-			break
+	if end-begin+1 <= num {
+		for i := begin; i <= end; i++ {
+			seqs = append(seqs, i)
+		}
+	} else {
+		for i := end - num + 1; i <= end; i++ {
+			seqs = append(seqs, i)
 		}
 	}
+
+	//167 178 10
+	//if end-num <  {
+	//
+	//}
+	//var seqs []int64
+	//for i := end; i > end-num; i-- {
+	//	if i >= begin {
+	//		seqs = append([]int64{i}, seqs...)
+	//	} else {
+	//		break
+	//	}
+	//}
 	if len(seqs) == 0 {
 		return 0, 0, nil, nil
 	}
@@ -558,8 +656,7 @@ func (db *commonMsgDatabase) GetMsgBySeqsRange(ctx context.Context, userID strin
 
 			return 0, 0, nil, err
 		}
-
-		successMsgs = append(successMsgs, mongoMsgs...)
+		successMsgs = append(mongoMsgs, successMsgs...)
 	}
 
 	return minSeq, maxSeq, successMsgs, nil

@@ -71,14 +71,13 @@ function openim::install::show_help() {
     echo "  $0 --install  Same as above."
 }
 
-function openim::install::install_openim()
-{
+function openim::install::install_openim() {
     openim::common::sudo "mkdir -p ${OPENIM_DATA_DIR} ${OPENIM_INSTALL_DIR} ${OPENIM_CONFIG_DIR} ${OPENIM_LOG_DIR}"
     openim::log::info "check openim dependency"
     openim::common::sudo "cp -r ${OPENIM_ROOT}/config/* ${OPENIM_CONFIG_DIR}/"
 
-    echo ${LINUX_PASSWORD} | sudo -S bash -c \
-        "${OPENIM_ROOT}/scripts/genconfig.sh ${ENV_FILE} deployments/templates/openim.yaml > ${OPENIM_CONFIG_DIR}/config.yaml"
+    ${OPENIM_ROOT}/scripts/genconfig.sh ${ENV_FILE} ${OPENIM_ROOT}/deployments/templates/openim.yaml > ${OPENIM_CONFIG_DIR}/config.yaml
+    ${OPENIM_ROOT}/scripts/genconfig.sh ${ENV_FILE} ${OPENIM_ROOT}/deployments/templates/prometheus.yml > ${OPENIM_CONFIG_DIR}/prometheus.yml
 
     openim::util::check_ports ${OPENIM_DEPENDENCY_PORT_LISTARIES[@]}
 
@@ -96,8 +95,7 @@ function openim::install::install_openim()
     openim::log::success "openim install success"
 }
 
-function openim::uninstall::uninstall_openim()
-{
+function openim::uninstall::uninstall_openim() {
     openim::log::info "uninstall openim"
 
     ${OPENIM_ROOT}/scripts/install/openim-msggateway.sh openim::msggateway::uninstall || return 1
@@ -115,8 +113,7 @@ function openim::uninstall::uninstall_openim()
     openim::log::success "openim uninstall success"
 }
 
-function openim::install::status()
-{
+function openim::install::status() {
     openim::log::info "check openim status"
 
     ${OPENIM_ROOT}/scripts/install/openim-msggateway.sh openim::msggateway::status || return 1

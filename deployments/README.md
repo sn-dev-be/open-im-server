@@ -106,7 +106,7 @@ $ helm repo add brigade https://openimsdk.github.io/openim-charts
 
 ### OpenIM Image Strategy
 
-Automated offerings include aliyun, ghcr, docker hub: [Image Documentation](https://github.com/openimsdk/open-im-server/blob/main/docs/conversions/images.md)
+Automated offerings include aliyun, ghcr, docker hub: [Image Documentation](https://github.com/openimsdk/open-im-server/blob/main/docs/contrib/images.md)
 
 **Local Test Build Method:**
 
@@ -122,6 +122,30 @@ Explore our Helm-Charts repository and read through: [Helm-Charts Repository](ht
 
 
 Using the helm charts repository, you can ignore the following configuration, but if you want to just use the server and scale on top of it, you can go ahead:
+
+**Use the Helm template to generate the deployment yaml file: `openim-charts.yaml`**
+
+**Gen Image:**
+
+```bash
+../scripts/genconfig.sh ../scripts/install/environment.sh ./templates/helm-image.yaml > ./charts/generated-configs/helm-image.yaml
+```
+
+**Gen Charts:**
+
+```bash
+for chart in ./charts/*/; do
+    if [[ "$chart" == *"generated-configs"* || "$chart" == *"helmfile.yaml"* ]]; then
+        continue
+    fi
+
+    if [ -f "${chart}values.yaml" ]; then
+        helm template "$chart" -f "./charts/generated-configs/helm-image.yaml" -f "./charts/generated-configs/config.yaml" -f "./charts/generated-configs/notification.yaml" >> openim-charts.yaml
+    else
+        helm template "$chart" >> openim-charts.yaml
+    fi
+done
+```
 
 **Use Helmfile:**
 

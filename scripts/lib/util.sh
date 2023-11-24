@@ -1123,9 +1123,18 @@ function openim::util::check-file-in-alphabetical-order {
 # Checks whether jq is installed.
 function openim::util::require-jq {
   if ! command -v jq &>/dev/null; then
-    echo "jq not found. Please install." 1>&2
+    openim::log::errexit "jq not found. Please install." 1>&2
+  fi
+}
+
+# openim::util::require-dig
+# Checks whether dig is installed and provides installation instructions if it is not.
+function openim::util::require-dig {
+  if ! command -v dig &>/dev/null; then
+    openim::log::error "dig command not found."
     return 1
   fi
+  return 0
 }
 
 # outputs md5 hash of $1, works on macOS and Linux

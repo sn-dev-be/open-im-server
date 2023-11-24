@@ -20,8 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dtm-labs/rockscache"
-	unrelationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/unrelation"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
 
@@ -50,7 +49,7 @@ const (
 	getuiTaskID      = "GETUI_TASK_ID"
 	signalCache      = "SIGNAL_CACHE:"
 	signalListCache  = "SIGNAL_LIST_CACHE:"
-	fcmToken         = "FCM_TOKEN:"
+	FCM_TOKEN        = "FCM_TOKEN:"
 
 	messageCache            = "MESSAGE_CACHE:"
 	messageDelUserList      = "MESSAGE_DEL_USER_LIST:"
@@ -62,6 +61,8 @@ const (
 
 	voiceCall = "VOICE_CALL:"
 )
+
+var concurrentLimit = 3
 
 type SeqCache interface {
 	SetMaxSeq(ctx context.Context, conversationID string, maxSeq int64) error
@@ -145,10 +146,7 @@ func NewMsgCacheModel(client redis.UniversalClient) MsgModel {
 
 type msgCache struct {
 	metaCache
-	rdb            redis.UniversalClient
-	expireTime     time.Duration
-	rcClient       *rockscache.Client
-	msgDocDatabase unrelationtb.MsgDocModelInterface
+	rdb redis.UniversalClient
 }
 
 func (c *msgCache) getMaxSeqKey(conversationID string) string {
@@ -185,29 +183,6 @@ func (c *msgCache) getSeqs(ctx context.Context, items []string, getkey func(s st
 	}
 
 	return m, nil
-
-	//pipe := c.rdb.Pipeline()
-	//for _, v := range items {
-	//	if err := pipe.Get(ctx, getkey(v)).Err(); err != nil && err != redis.Nil {
-	//		return nil, errs.Wrap(err)
-	//	}
-	//}
-	//result, err := pipe.Exec(ctx)
-	//if err != nil && err != redis.Nil {
-	//	return nil, errs.Wrap(err)
-	//}
-	//m = make(map[string]int64, len(items))
-	//for i, v := range result {
-	//	seq := v.(*redis.StringCmd)
-	//	if seq.Err() != nil && seq.Err() != redis.Nil {
-	//		return nil, errs.Wrap(v.Err())
-	//	}
-	//	val := utils.StringToInt64(seq.Val())
-	//	if val != 0 {
-	//		m[items[i]] = val
-	//	}
-	//}
-	//return m, nil
 }
 
 func (c *msgCache) SetMaxSeq(ctx context.Context, conversationID string, maxSeq int64) error {
@@ -233,15 +208,6 @@ func (c *msgCache) setSeqs(ctx context.Context, seqs map[string]int64, getkey fu
 		}
 	}
 	return nil
-	//pipe := c.rdb.Pipeline()
-	//for k, seq := range seqs {
-	//	err := pipe.Set(ctx, getkey(k), seq, 0).Err()
-	//	if err != nil {
-	//		return errs.Wrap(err)
-	//	}
-	//}
-	//_, err := pipe.Exec(ctx)
-	//return err
 }
 
 func (c *msgCache) SetMinSeqs(ctx context.Context, seqs map[string]int64) error {
@@ -357,85 +323,165 @@ func (c *msgCache) allMessageCacheKey(conversationID string) string {
 }
 
 func (c *msgCache) GetMessagesBySeq(ctx context.Context, conversationID string, seqs []int64) (seqMsgs []*sdkws.MsgData, failedSeqs []int64, err error) {
+	if config.Config.Redis.EnablePipeline {
+		return c.PipeGetMessagesBySeq(ctx, conversationID, seqs)
+	}
+
+	return c.ParallelGetMessagesBySeq(ctx, conversationID, seqs)
+}
+
+func (c *msgCache) PipeGetMessagesBySeq(ctx context.Context, conversationID string, seqs []int64) (seqMsgs []*sdkws.MsgData, failedSeqs []int64, err error) {
+	pipe := c.rdb.Pipeline()
+
+	results := []*redis.StringCmd{}
 	for _, seq := range seqs {
-		res, err := c.rdb.Get(ctx, c.getMessageCacheKey(conversationID, seq)).Result()
-		if err != nil {
-			log.ZError(ctx, "GetMessagesBySeq failed", err, "conversationID", conversationID, "seq", seq)
+		results = append(results, pipe.Get(ctx, c.getMessageCacheKey(conversationID, seq)))
+	}
+
+	_, err = pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		return seqMsgs, failedSeqs, errs.Wrap(err, "pipe.get")
+	}
+
+	for idx, res := range results {
+		seq := seqs[idx]
+		if res.Err() != nil {
+			log.ZError(ctx, "GetMessagesBySeq failed", err, "conversationID", conversationID, "seq", seq, "err", res.Err())
 			failedSeqs = append(failedSeqs, seq)
 			continue
 		}
+
 		msg := sdkws.MsgData{}
-		if err = msgprocessor.String2Pb(res, &msg); err != nil {
+		if err = msgprocessor.String2Pb(res.Val(), &msg); err != nil {
 			log.ZError(ctx, "GetMessagesBySeq Unmarshal failed", err, "res", res, "conversationID", conversationID, "seq", seq)
 			failedSeqs = append(failedSeqs, seq)
 			continue
 		}
+
 		if msg.Status == constant.MsgDeleted {
 			failedSeqs = append(failedSeqs, seq)
 			continue
 		}
+
 		seqMsgs = append(seqMsgs, &msg)
 	}
 
 	return
-	//pipe := c.rdb.Pipeline()
-	//for _, v := range seqs {
-	//	// MESSAGE_CACHE:169.254.225.224_reliability1653387820_0_1
-	//	key := c.getMessageCacheKey(conversationID, v)
-	//	if err := pipe.Get(ctx, key).Err(); err != nil && err != redis.Nil {
-	//		return nil, nil, err
-	//	}
-	//}
-	//result, err := pipe.Exec(ctx)
-	//for i, v := range result {
-	//	cmd := v.(*redis.StringCmd)
-	//	if cmd.Err() != nil {
-	//		failedSeqs = append(failedSeqs, seqs[i])
-	//	} else {
-	//		msg := sdkws.MsgData{}
-	//		err = msgprocessor.String2Pb(cmd.Val(), &msg)
-	//		if err == nil {
-	//			if msg.Status != constant.MsgDeleted {
-	//				seqMsgs = append(seqMsgs, &msg)
-	//				continue
-	//			}
-	//		} else {
-	//			log.ZWarn(ctx, "UnmarshalString failed", err, "conversationID", conversationID, "seq", seqs[i], "msg", cmd.Val())
-	//		}
-	//		failedSeqs = append(failedSeqs, seqs[i])
-	//	}
-	//}
-	//return seqMsgs, failedSeqs, err
+}
+
+func (c *msgCache) ParallelGetMessagesBySeq(ctx context.Context, conversationID string, seqs []int64) (seqMsgs []*sdkws.MsgData, failedSeqs []int64, err error) {
+	type entry struct {
+		err error
+		msg *sdkws.MsgData
+	}
+
+	wg := errgroup.Group{}
+	wg.SetLimit(concurrentLimit)
+
+	results := make([]entry, len(seqs)) // set slice len/cap to length of seqs.
+	for idx, seq := range seqs {
+		// closure safe var
+		idx := idx
+		seq := seq
+
+		wg.Go(func() error {
+			res, err := c.rdb.Get(ctx, c.getMessageCacheKey(conversationID, seq)).Result()
+			if err != nil {
+				log.ZError(ctx, "GetMessagesBySeq failed", err, "conversationID", conversationID, "seq", seq)
+				results[idx] = entry{err: err}
+				return nil
+			}
+
+			msg := sdkws.MsgData{}
+			if err = msgprocessor.String2Pb(res, &msg); err != nil {
+				log.ZError(ctx, "GetMessagesBySeq Unmarshal failed", err, "res", res, "conversationID", conversationID, "seq", seq)
+				results[idx] = entry{err: err}
+				return nil
+			}
+
+			if msg.Status == constant.MsgDeleted {
+				results[idx] = entry{err: err}
+				return nil
+			}
+
+			results[idx] = entry{msg: &msg}
+			return nil
+		})
+	}
+
+	_ = wg.Wait()
+
+	for idx, res := range results {
+		if res.err != nil {
+			failedSeqs = append(failedSeqs, seqs[idx])
+			continue
+		}
+
+		seqMsgs = append(seqMsgs, res.msg)
+	}
+
+	return
 }
 
 func (c *msgCache) SetMessageToCache(ctx context.Context, conversationID string, msgs []*sdkws.MsgData) (int, error) {
+	if config.Config.Redis.EnablePipeline {
+		return c.PipeSetMessageToCache(ctx, conversationID, msgs)
+	}
+	return c.ParallelSetMessageToCache(ctx, conversationID, msgs)
+}
+
+func (c *msgCache) PipeSetMessageToCache(ctx context.Context, conversationID string, msgs []*sdkws.MsgData) (int, error) {
+	pipe := c.rdb.Pipeline()
 	for _, msg := range msgs {
 		s, err := msgprocessor.Pb2String(msg)
 		if err != nil {
-			return 0, errs.Wrap(err)
+			return 0, errs.Wrap(err, "pb.marshal")
 		}
+
 		key := c.getMessageCacheKey(conversationID, msg.Seq)
-		if err := c.rdb.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err(); err != nil {
+		_ = pipe.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second)
+	}
+
+	results, err := pipe.Exec(ctx)
+	if err != nil {
+		return 0, errs.Wrap(err, "pipe.set")
+	}
+
+	for _, res := range results {
+		if res.Err() != nil {
 			return 0, errs.Wrap(err)
 		}
 	}
+
 	return len(msgs), nil
-	//pipe := c.rdb.Pipeline()
-	//var failedMsgs []*sdkws.MsgData
-	//for _, msg := range msgs {
-	//	key := c.getMessageCacheKey(conversationID, msg.Seq)
-	//	s, err := msgprocessor.Pb2String(msg)
-	//	if err != nil {
-	//		return 0, errs.Wrap(err)
-	//	}
-	//	err = pipe.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err()
-	//	if err != nil {
-	//		failedMsgs = append(failedMsgs, msg)
-	//		log.ZWarn(ctx, "set msg 2 cache failed", err, "msg", failedMsgs)
-	//	}
-	//}
-	//_, err := pipe.Exec(ctx)
-	//return len(failedMsgs), err
+}
+
+func (c *msgCache) ParallelSetMessageToCache(ctx context.Context, conversationID string, msgs []*sdkws.MsgData) (int, error) {
+	wg := errgroup.Group{}
+	wg.SetLimit(concurrentLimit)
+
+	for _, msg := range msgs {
+		msg := msg // closure safe var
+		wg.Go(func() error {
+			s, err := msgprocessor.Pb2String(msg)
+			if err != nil {
+				return errs.Wrap(err)
+			}
+
+			key := c.getMessageCacheKey(conversationID, msg.Seq)
+			if err := c.rdb.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err(); err != nil {
+				return errs.Wrap(err)
+			}
+			return nil
+		})
+	}
+
+	err := wg.Wait()
+	if err != nil {
+		return 0, err
+	}
+
+	return len(msgs), nil
 }
 
 func (c *msgCache) getMessageDelUserListKey(conversationID string, seq int64) string {
@@ -566,20 +612,49 @@ func (c *msgCache) DelUserDeleteMsgsList(ctx context.Context, conversationID str
 }
 
 func (c *msgCache) DeleteMessages(ctx context.Context, conversationID string, seqs []int64) error {
+	if config.Config.Redis.EnablePipeline {
+		return c.PipeDeleteMessages(ctx, conversationID, seqs)
+	}
+
+	return c.ParallelDeleteMessages(ctx, conversationID, seqs)
+}
+
+func (c *msgCache) ParallelDeleteMessages(ctx context.Context, conversationID string, seqs []int64) error {
+	wg := errgroup.Group{}
+	wg.SetLimit(concurrentLimit)
+
 	for _, seq := range seqs {
-		if err := c.rdb.Del(ctx, c.getMessageCacheKey(conversationID, seq)).Err(); err != nil {
+		seq := seq
+		wg.Go(func() error {
+			err := c.rdb.Del(ctx, c.getMessageCacheKey(conversationID, seq)).Err()
+			if err != nil {
+				return errs.Wrap(err)
+			}
+			return nil
+		})
+	}
+
+	return wg.Wait()
+}
+
+func (c *msgCache) PipeDeleteMessages(ctx context.Context, conversationID string, seqs []int64) error {
+	pipe := c.rdb.Pipeline()
+	for _, seq := range seqs {
+		_ = pipe.Del(ctx, c.getMessageCacheKey(conversationID, seq))
+	}
+
+	results, err := pipe.Exec(ctx)
+	if err != nil {
+		return errs.Wrap(err, "pipe.del")
+	}
+
+	for _, res := range results {
+		if res.Err() != nil {
 			return errs.Wrap(err)
 		}
 	}
+
 	return nil
-	//pipe := c.rdb.Pipeline()
-	//for _, seq := range seqs {
-	//	if err := pipe.Del(ctx, c.getMessageCacheKey(conversationID, seq)).Err(); err != nil {
-	//		return errs.Wrap(err)
-	//	}
-	//}
-	//_, err := pipe.Exec(ctx)
-	//return errs.Wrap(err)
 }
 
 func (c *msgCache) CleanUpOneConversationAllMsg(ctx context.Context, conversationID string) error {
@@ -596,14 +671,6 @@ func (c *msgCache) CleanUpOneConversationAllMsg(ctx context.Context, conversatio
 		}
 	}
 	return nil
-	//pipe := c.rdb.Pipeline()
-	//for _, v := range vals {
-	//	if err := pipe.Del(ctx, v).Err(); err != nil {
-	//		return errs.Wrap(err)
-	//	}
-	//}
-	//_, err = pipe.Exec(ctx)
-	//return errs.Wrap(err)
 }
 
 func (c *msgCache) DelMsgFromCache(ctx context.Context, userID string, seqs []int64) error {
@@ -662,15 +729,15 @@ func (c *msgCache) GetSendMsgStatus(ctx context.Context, id string) (int32, erro
 }
 
 func (c *msgCache) SetFcmToken(ctx context.Context, account string, platformID int, fcmToken string, expireTime int64) (err error) {
-	return errs.Wrap(c.rdb.Set(ctx, fcmToken+account+":"+strconv.Itoa(platformID), fcmToken, time.Duration(expireTime)*time.Second).Err())
+	return errs.Wrap(c.rdb.Set(ctx, FCM_TOKEN+account+":"+strconv.Itoa(platformID), fcmToken, time.Duration(expireTime)*time.Second).Err())
 }
 
 func (c *msgCache) GetFcmToken(ctx context.Context, account string, platformID int) (string, error) {
-	return utils.Wrap2(c.rdb.Get(ctx, fcmToken+account+":"+strconv.Itoa(platformID)).Result())
+	return utils.Wrap2(c.rdb.Get(ctx, FCM_TOKEN+account+":"+strconv.Itoa(platformID)).Result())
 }
 
 func (c *msgCache) DelFcmToken(ctx context.Context, account string, platformID int) error {
-	return errs.Wrap(c.rdb.Del(ctx, fcmToken+account+":"+strconv.Itoa(platformID)).Err())
+	return errs.Wrap(c.rdb.Del(ctx, FCM_TOKEN+account+":"+strconv.Itoa(platformID)).Err())
 }
 
 func (c *msgCache) IncrUserBadgeUnreadCountSum(ctx context.Context, userID string) (int, error) {

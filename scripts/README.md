@@ -39,7 +39,7 @@ scripts/
 ├── demo.sh                             # Demonstration or example script.
 ├── docker-check-service.sh             # Docker script to check services' status.
 ├── docker-start-all.sh                 # Docker script to start all containers/services.
-├── ensure_tag.sh                       # Ensure correct tags or labeling.
+├── ensure-tag.sh                       # Ensure correct tags or labeling.
 ├── env_check.sh                        # Environment verification and checking.
 ├── gen-swagger-docs.sh                 # Script to generate Swagger documentation.
 ├── genconfig.sh                        # Generate configuration files.
@@ -51,7 +51,7 @@ scripts/
 ├── golangci.yml                        # Configuration for GolangCI linting.
 ├── init-config.sh                      # Initialize configurations.
 ├── init-env.sh                         # Initialize the environment.
-├── init_pwd.sh                         # Initialize or set password.
+├── init-pwd.sh                         # Initialize or set password.
 ├── install                             # Installation scripts directory.
 │   ├── README.md                       # Installation documentation.
 │   ├── common.sh                       # Common utilities for installation.
@@ -123,7 +123,7 @@ Each directory and script in the structure should be understood as a part of a l
 
 **PATH:** `scripts/lib/logging.sh`
 
-+ [log details](../docs/conversions/bash_log.md)
++ [log details](../docs/contrib/bash-log.md)
 
 ## Supported platforms
 
@@ -154,7 +154,7 @@ $ make demo
 
 More about `make` read:
 
-+ [makefile](../docs/conversions/go_code.md)
++ [makefile](../docs/contrib/go-code.md)
 
 Instructions for producing the demo movie:
 
