@@ -91,11 +91,12 @@ func (c *clubServer) SetGroupCategoryOrder(ctx context.Context, req *pbclub.SetG
 		return nil, err
 	}
 
-	for i, groupCategory := range groupCategorys {
+	for _, groupCategory := range groupCategorys {
 		if groupCategory.ServerID != req.ServerID {
 			return nil, errs.ErrArgs.Wrap("serverID and categoryID not match")
 		}
 		if groupCategory.CategoryType != constant.DefaultCategoryType {
+			i := utils.IndexOf(groupCategory.CategoryID, req.CategoryIDs...)
 			data := UpdateGroupCategoryInfoMap(ctx, "", int32(i+1))
 			err := c.ClubDatabase.UpdateGroupCategory(ctx, req.ServerID, groupCategory.CategoryID, data)
 			if err != nil {
