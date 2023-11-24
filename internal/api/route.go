@@ -59,6 +59,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 	conversationRpc := rpcclient.NewConversation(discov)
 	authRpc := rpcclient.NewAuth(discov)
 	thirdRpc := rpcclient.NewThird(discov)
+	clubRpc := rpcclient.NewClub(discov)
 
 	u := NewUserApi(*userRpc)
 	m := NewMessageApi(messageRpc, userRpc)
@@ -129,7 +130,6 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		groupRouterGroup.POST("/save_group", g.SaveGroup)
 		groupRouterGroup.POST("/unsave_group", g.UnsaveGroup)
 		groupRouterGroup.POST("/get_saved_group_list", g.GetSavedGroupList)
-
 	}
 	superGroupRouterGroup := r.Group("/super_group", ParseToken)
 	{
@@ -210,6 +210,63 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		statisticsGroup.POST("/user/active", m.GetActiveUser)
 		statisticsGroup.POST("/group/create", g.GroupCreateCount)
 		statisticsGroup.POST("/group/active", m.GetActiveGroup)
+	}
+
+	//club
+	clubGroup := r.Group("/club", ParseToken)
+	{
+		c := NewClubApi(*clubRpc)
+		clubGroup.POST("/create_server", c.CreateServer)
+		clubGroup.POST("/set_server_info", c.SetServerInfo)
+		clubGroup.POST("/join_server", c.JoinServer)
+		clubGroup.POST("/quit_server", c.QuitServer)
+		clubGroup.POST("/transfer_server", c.TransferServerOwner)
+		clubGroup.POST("/get_server_recommended_list", c.GetServerRecommendedList)
+		clubGroup.POST("/get_joined_server_list", c.GetJoinedServerList)
+		clubGroup.POST("/get_servers_info", c.GetServersInfo)
+		clubGroup.POST("/dismiss_server", c.DismissServer)
+		clubGroup.POST("/search_server", c.SearchServer)
+		clubGroup.POST("/mute_server", c.MuteServer)
+		clubGroup.POST("/cancel_mute_server", c.CancelMuteServer)
+
+		clubGroup.POST("/create_category", c.CreateGroupCategory)
+		clubGroup.POST("/set_category_info", c.SetGroupCategoryInfo)
+		clubGroup.POST("/delete_category", c.DeleteGroupCategory)
+		clubGroup.POST("/set_category_order", c.SetGroupCategoryOrder)
+
+		clubGroup.POST("/get_server_role_list", c.GetServerRoleList)
+		clubGroup.POST("/get_server_roles_info", c.GetServerRolesInfo)
+		clubGroup.POST("/create_server_role", nil)
+		clubGroup.POST("/set_server_role_info", nil)
+		clubGroup.POST("/delete_server_role", nil)
+
+		clubGroup.POST("/get_server_black_list", c.GetServerBlackList)
+		clubGroup.POST("/ban_server_member", c.BanServerMember)
+		clubGroup.POST("/cancel_ban_server_member", c.CancelBanServerMember)
+
+		clubGroup.POST("/get_joined_server_group_list", c.GetJoinedServerGroupList)
+		clubGroup.POST("/get_server_groups_info", c.GetServerGroupsInfo)
+		clubGroup.POST("/create_server_group", c.CreateServerGroup)
+		clubGroup.POST("/set_server_group_info", c.SetServerGroupInfo)
+		clubGroup.POST("/set_server_group_order", c.SetServerGroupOrder)
+		clubGroup.POST("/delete_server_group", c.DeleteServerGroup)
+		clubGroup.POST("/mute_server_group", c.MuteServerGroup)
+		clubGroup.POST("/cancel_mute_server_group", c.CancelMuteServerGroup)
+		clubGroup.POST("/get_server_group_members_info", c.GetServerGroupMembersInfo)
+
+		clubGroup.POST("/get_server_members_info", c.GetServerMembersInfo)
+		clubGroup.POST("/get_server_member_list", c.GetServerMemberList)
+		clubGroup.POST("/kick_server_member", c.KickServerMember)
+		clubGroup.POST("/mute_server_member", c.MuteServerMember)
+		clubGroup.POST("/get_server_mute_records", c.GetServerMuteRecords)
+		clubGroup.POST("/cancel_mute_server_member", c.CancelMuteServerMember)
+		clubGroup.POST("/set_server_member_info", c.SetServerMemberInfo)
+		clubGroup.POST("/get_server_mute_list", nil)
+
+		clubGroup.POST("/server_application_response", c.ApplicationServerResponse)
+		clubGroup.POST("/get_recv_server_application_list", c.GetRecvServerApplicationList)
+		clubGroup.POST("/get_user_req_server_application_list", c.GetUserReqServerApplicationList)
+		clubGroup.POST("/get_server_users_req_application_list", c.GetServerUsersReqApplicationList)
 	}
 	return r
 }

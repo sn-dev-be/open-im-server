@@ -34,8 +34,11 @@ deployments/charts/generated-configs/
 ### OpenIM Config ###
 config/config.yaml
 ./config/config.yaml
+config/config_bak.yaml
 .env
 ./.env
+.DS_Store
+config/.DS_Store
 
 ### OpenIM deploy ###
 deployments/openim-server/charts
@@ -392,3 +395,4 @@ dist/
 .env
 config/config.yaml
 .air.toml
+p

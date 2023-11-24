@@ -64,7 +64,7 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 		utils.JsonStringToStruct(string(msg.Content), &elem)
 		elem.Status = req.Status
 
-		err = m.MsgDatabase.RenewRedPacketMsg(ctx, req.ConversationID, req.Seq, utils.StructToJsonString(&elem))
+		err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, req.Seq, utils.StructToJsonString(&elem))
 		if err != nil {
 			return nil, err
 		}

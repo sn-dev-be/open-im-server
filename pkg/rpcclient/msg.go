@@ -95,6 +95,12 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.RedPacketClaimedByUserNotification: {IsSendMsg: true, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.RedPacketClaimedNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.RedPacketExpiredNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+		// server
+		constant.JoinServerApplicationNotification:     config.Config.Notification.JoinServerApplication,
+		constant.ServerApplicationAcceptedNotification: config.Config.Notification.ServerApplicationAccepted,
+		constant.ServerApplicationRejectedNotification: config.Config.Notification.ServerApplicationRejected,
+		// modifyMsg
+		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 	}
 }
 
@@ -140,6 +146,10 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ConversationPrivateChatNotification: constant.SingleChatType,
 		// delete
 		constant.DeleteMsgsNotification: constant.SingleChatType,
+		// server
+		constant.JoinServerApplicationNotification:     constant.SingleChatType,
+		constant.ServerApplicationAcceptedNotification: constant.SingleChatType,
+		constant.ServerApplicationRejectedNotification: constant.SingleChatType,
 	}
 }
 
@@ -190,6 +200,11 @@ func (m *MessageRpcClient) GetConversationMaxSeq(ctx context.Context, conversati
 		return 0, err
 	}
 	return resp.MaxSeq, nil
+}
+
+func (m *MessageRpcClient) ModifyMsg(ctx context.Context, req *msg.ModifyMsgReq) (*msg.ModifyMsgResp, error) {
+	resp, err := m.Client.ModifyMsg(ctx, req)
+	return resp, err
 }
 
 type NotificationSender struct {

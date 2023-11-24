@@ -74,6 +74,11 @@ func (c *ConversationRpcClient) GroupChatFirstCreateConversation(ctx context.Con
 	return err
 }
 
+func (c *ConversationRpcClient) ServerGroupChatFirstCreateConversation(ctx context.Context, groupID string, userIDs []string) error {
+	_, err := c.Client.CreateServerGroupChatConversations(ctx, &pbconversation.CreateGroupChatConversationsReq{UserIDs: userIDs, GroupID: groupID})
+	return err
+}
+
 func (c *ConversationRpcClient) SetConversationMaxSeq(ctx context.Context, ownerUserIDs []string, conversationID string, maxSeq int64) error {
 	_, err := c.Client.SetConversationMaxSeq(ctx, &pbconversation.SetConversationMaxSeqReq{OwnerUserID: ownerUserIDs, ConversationID: conversationID, MaxSeq: maxSeq})
 	return err

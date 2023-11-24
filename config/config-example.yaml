@@ -173,6 +173,7 @@ rpcPort:
   openImPushPort: [ 10170 ]
   openImConversationPort: [ 10180 ]
   openImThirdPort: [ 10190 ]
+  openImClubPort: [ 10200 ]
 
 ###################### RPC Register Name Configuration ######################
 # RPC service names for registration, it's not recommended to modify these
@@ -405,3 +406,5 @@ prometheus:
   rtcPrometheusPort: [ 21300 ]
   thirdPrometheusPort: [ 21301 ]
   messageTransferPrometheusPort: [ 21400, 21401, 21402, 21403 ] # List of ports
+
+

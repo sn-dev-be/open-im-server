@@ -73,8 +73,8 @@ type CommonMsgDatabase interface {
 	// 物理删除消息置空
 	DeleteMsgsPhysicalBySeqs(ctx context.Context, conversationID string, seqs []int64) error
 
-	// 重设红包消息
-	RenewRedPacketMsg(ctx context.Context, conversationID string, seq int64, content string) error
+	// 修改消息
+	ModifyMsgBySeq(ctx context.Context, conversationID string, seq int64, content string) error
 
 	SetMaxSeq(ctx context.Context, conversationID string, maxSeq int64) error
 	GetMaxSeqs(ctx context.Context, conversationIDs []string) (map[string]int64, error)
@@ -968,7 +968,7 @@ func (db *commonMsgDatabase) ConvertMsgsDocLen(ctx context.Context, conversation
 	db.msgDocDatabase.ConvertMsgsDocLen(ctx, conversationIDs)
 }
 
-func (db *commonMsgDatabase) RenewRedPacketMsg(ctx context.Context, conversationID string, seq int64, content string) error {
+func (db *commonMsgDatabase) ModifyMsgBySeq(ctx context.Context, conversationID string, seq int64, content string) error {
 	docID := db.msg.GetDocID(conversationID, seq)
 	index := db.msg.GetMsgIndex(seq)
 	err := db.msgDocDatabase.UpdateMsgContent(ctx, docID, index, content)

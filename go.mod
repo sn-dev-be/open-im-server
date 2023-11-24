@@ -45,6 +45,7 @@ require (
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.45
 	gopkg.in/src-d/go-git.v4 v4.13.1
+	gorm.io/datatypes v1.2.0
 )
 
 require (
@@ -152,3 +153,5 @@ require (
 	golang.org/x/crypto v0.14.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
+
+replace github.com/OpenIMSDK/protocol => github.com/sn-dev-be/protocol v0.10.2

@@ -39,6 +39,7 @@ const (
 	SuperGroupMemberIDsKey = "SUPER_GROUP_MEMBER_IDS:"
 	joinedGroupsKey        = "JOIN_GROUPS_KEY:"
 	groupMemberNumKey      = "GROUP_MEMBER_NUM_CACHE:"
+	groupCategoryKey       = "GROUP_CATEGORY_INFO:"
 )
 
 type GroupCache interface {

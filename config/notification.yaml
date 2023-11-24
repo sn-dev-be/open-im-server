@@ -405,3 +405,34 @@ signalingClosed:
     title: ""
     desc: ""
     ext: ""
+
+# server
+joinServerApplication:
+  isSendMsg: true
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "joinGroupApplication title"
+    desc: "joinGroupApplication desc"
+    ext: "joinGroupApplication ext"
+
+serverApplicationAccepted:
+  isSendMsg: true
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverApplicationAccepted title"
+    desc: "serverApplicationAccepted desc"
+    ext: "serverApplicationAccepted ext"
+
+serverApplicationRejected:
+  isSendMsg: true
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: " title"
+    desc: " desc"
+    ext: " ext"

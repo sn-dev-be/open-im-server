@@ -81,12 +81,14 @@ type OnlineHistoryRedisConsumerHandler struct {
 	msgDatabase           controller.CommonMsgDatabase
 	conversationRpcClient *rpcclient.ConversationRpcClient
 	groupRpcClient        *rpcclient.GroupRpcClient
+	clubRpcClient         *rpcclient.ClubRpcClient
 }
 
 func NewOnlineHistoryRedisConsumerHandler(
 	database controller.CommonMsgDatabase,
 	conversationRpcClient *rpcclient.ConversationRpcClient,
 	groupRpcClient *rpcclient.GroupRpcClient,
+	clubRpcClient *rpcclient.ClubRpcClient,
 ) *OnlineHistoryRedisConsumerHandler {
 	var och OnlineHistoryRedisConsumerHandler
 	och.msgDatabase = database
@@ -98,6 +100,7 @@ func NewOnlineHistoryRedisConsumerHandler(
 	}
 	och.conversationRpcClient = conversationRpcClient
 	och.groupRpcClient = groupRpcClient
+	och.clubRpcClient = clubRpcClient
 	och.historyConsumerGroup = kafka.NewMConsumerGroup(&kafka.MConsumerGroupConfig{
 		KafkaVersion:   sarama.V2_0_0_0,
 		OffsetsInitial: sarama.OffsetNewest, IsReturnErr: false,
@@ -296,6 +299,17 @@ func (och *OnlineHistoryRedisConsumerHandler) handleMsg(
 						storageList[0].GroupID, userIDs); err != nil {
 						log.ZWarn(ctx, "single chat first create conversation error", err,
 							"conversationID", conversationID)
+					}
+				}
+			case constant.ServerGroupChatType:
+				log.ZInfo(ctx, "server group chat first create conversation", "conversationID", conversationID)
+				userIDs, err := och.clubRpcClient.GetServerGroupMemberIDs(ctx, storageList[0].GroupID)
+				if err != nil {
+					log.ZWarn(ctx, "get server group member ids error", err, "conversationID", conversationID)
+				} else {
+					if err := och.conversationRpcClient.ServerGroupChatFirstCreateConversation(ctx,
+						storageList[0].GroupID, userIDs); err != nil {
+						log.ZWarn(ctx, "server group chat first create conversation error", err, "conversationID", conversationID)
 					}
 				}
 			case constant.SingleChatType, constant.NotificationChatType:
