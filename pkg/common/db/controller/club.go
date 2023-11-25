@@ -378,18 +378,24 @@ func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, server
 
 func (c *clubDatabase) CreateGroupCategory(ctx context.Context, categories []*relationtb.GroupCategoryModel) error {
 	if err := c.tx.Transaction(func(tx any) error {
+
+		serverID := categories[0].ServerID
+		server, err := c.cache.GetServerInfo(ctx, serverID)
+		if err != nil {
+			return err
+		}
+
+		//order
+		for i, category := range categories {
+			category.ReorderWeight = int32(server.CategoryNumber + uint32(i))
+		}
 		if err := c.groupCategoryDB.NewTx(tx).Create(ctx, categories); err != nil {
 			return err
 		}
 
-		serverID := categories[0].ServerID
-		sm, err := c.cache.GetServerInfo(ctx, serverID)
-		if err != nil {
-			return err
-		}
-		sm.CategoryNumber += uint32(len(categories))
+		server.CategoryNumber += uint32(len(categories))
 		data := make(map[string]any)
-		data["category_number"] = sm.CategoryNumber
+		data["category_number"] = server.CategoryNumber
 		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverID, data)
 		if err != nil {
 			return err
@@ -476,7 +482,17 @@ func (c *clubDatabase) TakeGroup(ctx context.Context, groupID string) (group *re
 func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error {
 	cache := c.cache.NewCache()
 	if err := c.tx.Transaction(func(tx any) error {
+
+		serverIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.ServerID })
+		sm, err := c.cache.GetServerInfo(ctx, serverIDs[0])
+		if err != nil {
+			return err
+		}
+
 		if len(groups) > 0 {
+			for i, group := range groups {
+				group.ReorderWeight = int32(sm.GroupNumber + uint32(i))
+			}
 			if err := c.groupDB.NewTx(tx).Create(ctx, groups); err != nil {
 				return err
 			}
@@ -490,13 +506,7 @@ func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relation
 			return group.GroupID
 		})
 
-		serverIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.ServerID })
 		//维护servers group_number
-		sm, err := c.cache.GetServerInfo(ctx, serverIDs[0])
-		if err != nil {
-			return err
-		}
-
 		data := make(map[string]any)
 		data["group_number"] = sm.GroupNumber + uint32(len(groups))
 		err = c.serverDB.NewTx(tx).UpdateMap(ctx, serverIDs[0], data)

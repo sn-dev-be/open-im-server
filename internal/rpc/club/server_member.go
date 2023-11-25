@@ -77,6 +77,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		if err != nil {
 			return nil, err
 		}
+		return resp, nil
 	}
 	serverRequest := relationtb.ServerRequestModel{
 		UserID:      req.InviterUserID,
