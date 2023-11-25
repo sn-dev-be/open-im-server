@@ -40,10 +40,6 @@ func (o *ClubApi) GetServerRecommendedList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerRecommendedList, o.Client, c)
 }
 
-func (o *ClubApi) GetJoinedServerList(c *gin.Context) {
-	a2r.Call(club.ClubClient.GetJoinedServerList, o.Client, c)
-}
-
 func (o *ClubApi) GetServersInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServersInfo, o.Client, c)
 }
@@ -174,6 +170,14 @@ func (o *ClubApi) GetServerMuteRecords(c *gin.Context) {
 
 func (o *ClubApi) SetServerMemberInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.SetServerMemberInfo, o.Client, c)
+}
+
+func (o *ClubApi) GetJoinedServerList(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetJoinedServerList, o.Client, c)
+}
+
+func (o *ClubApi) SetJoinedServersOrder(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetJoinedServersOrder, o.Client, c)
 }
 
 // /groupCategory

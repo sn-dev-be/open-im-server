@@ -34,6 +34,7 @@ type ServerMemberModel struct {
 	JoinSource     int32     `gorm:"column:join_source"                                    json:"joinSource"`
 	InviterUserID  string    `gorm:"column:inviter_user_id;size:64"                        json:"inviterUserID"`
 	OperatorUserID string    `gorm:"column:operator_user_id;size:64"`
+	ReorderWeight  int32     `gorm:"column:reorder_weight;default:0"                                 json:"reorder_weight"`
 	MuteEndTime    time.Time `gorm:"column:mute_end_time"                                  json:"muteEndTime"`
 	Ex             string    `gorm:"column:ex;size:255"                                    json:"ex"`
 	JoinTime       time.Time `gorm:"column:join_time;index:join_time;autoCreateTime"       json:"joinTime"`
@@ -75,4 +76,5 @@ type ServerMemberModelInterface interface {
 	FindUsersJoinedServerID(ctx context.Context, userIDs []string) (map[string][]string, error)
 	FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error)
 	FindManageRoleUser(ctx context.Context, serverID string, roleIDs []string) (serverMembers []*ServerMemberModel, err error)
+	FindLastestJoinedServerMember(ctx context.Context, serverID string, showNumber int32) (serverMembers []*ServerMemberModel, err error)
 }

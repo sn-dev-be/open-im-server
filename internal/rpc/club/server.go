@@ -13,7 +13,6 @@ import (
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
-	pbuser "github.com/OpenIMSDK/protocol/user"
 
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
@@ -107,27 +106,28 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 // 获取所有热门部落
 func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.GetServerRecommendedListReq) (*pbclub.GetServerRecommendecListResp, error) {
 	resp := &pbclub.GetServerRecommendecListResp{}
-
-	servers, err := s.ClubDatabase.GetServerRecommendedList(ctx)
+	respServerRecommendeds := []*sdkws.ServerRecommendedInfo{}
+	serverRecommendeds, err := s.ClubDatabase.GetServerRecommendedList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	respServers := utils.Batch(convert.Db2PbServerFullInfo, servers)
+	servers := utils.Batch(convert.DB2PbServerInfo, serverRecommendeds)
 	if err != nil {
 		return nil, err
 	}
 
 	var wg sync.WaitGroup
-	for _, server := range respServers {
+	for _, server := range servers {
 		wg.Add(1)
-		go func(m *sdkws.ServerFullInfo) {
+		go func(m *sdkws.ServerInfo) {
 			defer wg.Done()
-			s.genClubMembersAvatar(ctx, m)
+			serverRecommended, _ := s.genClubMembersAvatar(ctx, m)
+			respServerRecommendeds = append(respServerRecommendeds, serverRecommended)
 		}(server)
 	}
 	wg.Wait()
 
-	resp.Servers = respServers
+	resp.Servers = respServerRecommendeds
 	return resp, nil
 }
 
@@ -148,6 +148,12 @@ func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersI
 		if err != nil {
 			return nil, err
 		}
+
+		num, err := s.ClubDatabase.FindServerMemberNum(ctx, serverID)
+		if err != nil {
+			return nil, err
+		}
+		server.MemberNumber = num
 		serverPb := convert.DB2PbServerInfo(server)
 		if err != nil {
 			return nil, err
@@ -242,28 +248,41 @@ func (s *clubServer) GenServerID(ctx context.Context, serverID *string) error {
 	return errs.ErrData.Wrap("server id gen error")
 }
 
-func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerFullInfo) error {
-	_, members, err := s.ClubDatabase.PageGetServerMember(ctx, server.ServerInfo.ServerID, 1, 3)
-	if err == nil {
-		userIDs := []string{}
-		for _, member := range members {
-			userIDs = append(userIDs, member.UserID)
-		}
-		getDesignateUsersReq := &pbuser.GetDesignateUsersReq{
-			UserIDs: userIDs,
-		}
-		getDesignateUsersResp, err := s.User.Client.GetDesignateUsers(ctx, getDesignateUsersReq)
-		if err != nil {
-			return err
-		}
+func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerInfo) (*sdkws.ServerRecommendedInfo, error) {
+	serverRecommended := &sdkws.ServerRecommendedInfo{}
+	serverRecommended.ServerInfo = server
 
+	members, err := s.ClubDatabase.GetLastestJoinedServerMember(ctx, server.ServerID)
+	if err == nil {
 		userAvatarList := []string{}
-		for _, user := range getDesignateUsersResp.UsersInfo {
-			userAvatarList = append(userAvatarList, user.FaceURL)
+		for _, member := range members {
+			member, err := s.TakeServerMember(ctx, member.ServerID, member.UserID)
+			if err == nil {
+				userAvatarList = append(userAvatarList, member.FaceURL)
+			}
 		}
-		server.MemberAvatarList = userAvatarList
+		serverRecommended.MemberAvatarList = userAvatarList
 	}
-	return nil
+
+	// _, members, err := s.ClubDatabase.PageGetServerMember(ctx, server.ServerID, 1, 3)
+	// if err == nil {
+	// 	userIDs := []string{}
+	// 	for _, member := range members {
+	// 		userIDs = append(userIDs, member.UserID)
+	// 	}
+	// 	getDesignateUsersReq := &pbuser.GetDesignateUsersReq{
+	// 		UserIDs: userIDs,
+	// 	}
+	// 	getDesignateUsersResp, err := s.User.Client.GetDesignateUsers(ctx, getDesignateUsersReq)
+	// 	if err == nil {
+	// 		userAvatarList := []string{}
+	// 		for _, user := range getDesignateUsersResp.UsersInfo {
+	// 			userAvatarList = append(userAvatarList, user.FaceURL)
+	// 		}
+	// 		serverRecommended.MemberAvatarList = userAvatarList
+	// 	}
+	// }
+	return serverRecommended, nil
 }
 
 func (s *clubServer) genCreateServerGroupReq(ctx context.Context, serverID, categoryID, groupName, ownerUserID, faceURL string) *relationtb.GroupModel {

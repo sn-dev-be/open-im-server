@@ -30,16 +30,17 @@ import (
 )
 
 const (
-	groupExpireTime        = time.Second * 60 * 60 * 12
-	groupInfoKey           = "GROUP_INFO:"
-	groupMemberIDsKey      = "GROUP_MEMBER_IDS:"
-	groupMembersHashKey    = "GROUP_MEMBERS_HASH2:"
-	groupMemberInfoKey     = "GROUP_MEMBER_INFO:"
-	joinedSuperGroupsKey   = "JOIN_SUPER_GROUPS:"
-	SuperGroupMemberIDsKey = "SUPER_GROUP_MEMBER_IDS:"
-	joinedGroupsKey        = "JOIN_GROUPS_KEY:"
-	groupMemberNumKey      = "GROUP_MEMBER_NUM_CACHE:"
-	groupCategoryKey       = "GROUP_CATEGORY_INFO:"
+	groupExpireTime              = time.Second * 60 * 60 * 12
+	groupInfoKey                 = "GROUP_INFO:"
+	groupMemberIDsKey            = "GROUP_MEMBER_IDS:"
+	groupMembersHashKey          = "GROUP_MEMBERS_HASH2:"
+	groupMemberInfoKey           = "GROUP_MEMBER_INFO:"
+	joinedSuperGroupsKey         = "JOIN_SUPER_GROUPS:"
+	SuperGroupMemberIDsKey       = "SUPER_GROUP_MEMBER_IDS:"
+	joinedGroupsKey              = "JOIN_GROUPS_KEY:"
+	groupMemberNumKey            = "GROUP_MEMBER_NUM_CACHE:"
+	groupCategoryKey             = "GROUP_CATEGORY_INFO:"
+	lastestJoinedServerMemberKey = "LATEST_JOINED_SERVER_MEMBER:"
 )
 
 type GroupCache interface {

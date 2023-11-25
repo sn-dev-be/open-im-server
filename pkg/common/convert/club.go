@@ -22,6 +22,7 @@ func Db2PbServerInfo(m *relation.ServerModel, ownerUserID string, memberCount ui
 		UserMutualAccessible: m.UserMutualAccessible,
 		CategoryNumber:       m.CategoryNumber,
 		GroupNumber:          m.GroupNumber,
+		DappID:               m.DappID,
 		CreateTime:           m.CreateTime.UnixMilli(),
 	}
 }
@@ -48,29 +49,29 @@ func DB2PbServerInfo(m *relation.ServerModel) *sdkws.ServerInfo {
 	}
 }
 
-func Db2PbServerFullInfo(m *relation.ServerModel) *sdkws.ServerFullInfo {
+// func Db2PbServerFullInfo(m *relation.ServerModel) *sdkws.ServerFullInfo {
 
-	return &sdkws.ServerFullInfo{
-		ServerInfo: &sdkws.ServerInfo{
-			ServerID:             m.ServerID,
-			ServerName:           m.ServerName,
-			GroupNumber:          m.GroupNumber,
-			MemberNumber:         m.MemberNumber,
-			Icon:                 m.Icon,
-			Description:          m.Description,
-			ApplyMode:            m.ApplyMode,
-			InviteMode:           m.InviteMode,
-			Searchable:           m.Searchable,
-			Status:               m.Status,
-			Banner:               m.Banner,
-			UserMutualAccessible: m.UserMutualAccessible,
-			CategoryNumber:       m.CategoryNumber,
-			OwnerUserID:          m.OwnerUserID,
-			CreateTime:           m.CreateTime.UnixMilli(),
-			Ex:                   m.Ex,
-		},
-	}
-}
+// 	return &sdkws.ServerFullInfo{
+// 		ServerInfo: &sdkws.ServerInfo{
+// 			ServerID:             m.ServerID,
+// 			ServerName:           m.ServerName,
+// 			GroupNumber:          m.GroupNumber,
+// 			MemberNumber:         m.MemberNumber,
+// 			Icon:                 m.Icon,
+// 			Description:          m.Description,
+// 			ApplyMode:            m.ApplyMode,
+// 			InviteMode:           m.InviteMode,
+// 			Searchable:           m.Searchable,
+// 			Status:               m.Status,
+// 			Banner:               m.Banner,
+// 			UserMutualAccessible: m.UserMutualAccessible,
+// 			CategoryNumber:       m.CategoryNumber,
+// 			OwnerUserID:          m.OwnerUserID,
+// 			CreateTime:           m.CreateTime.UnixMilli(),
+// 			Ex:                   m.Ex,
+// 		},
+// 	}
+// }
 
 func Db2PbServerAbstractInfo(
 	serverID string,

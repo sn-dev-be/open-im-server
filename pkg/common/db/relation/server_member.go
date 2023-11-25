@@ -160,7 +160,7 @@ func (g *ServerMemberGorm) FindMemberUserID(ctx context.Context, serverID string
 }
 
 func (g *ServerMemberGorm) FindUserJoinedServerID(ctx context.Context, userID string) (serverIDs []string, err error) {
-	return serverIDs, utils.Wrap(g.db(ctx).Where("user_id = ?", userID).Pluck("server_id", &serverIDs).Error, "")
+	return serverIDs, utils.Wrap(g.db(ctx).Where("user_id = ?", userID).Order("reorder_weight asc, join_time desc").Pluck("server_id", &serverIDs).Error, "")
 }
 
 func (g *ServerMemberGorm) TakeServerMemberNum(ctx context.Context, serverID string) (count int64, err error) {
@@ -198,4 +198,13 @@ func (g *ServerMemberGorm) FindUserManagedServerID(ctx context.Context, userID s
 
 func (g *ServerMemberGorm) FindManageRoleUser(ctx context.Context, serverID string, roleIDs []string) (serverMembers []*relation.ServerMemberModel, err error) {
 	return serverMembers, utils.Wrap(g.db(ctx).Where("server_id = ? and server_role_id in (?)", serverID, roleIDs).Find(&serverMembers).Error, "")
+}
+
+func (g *ServerMemberGorm) FindLastestJoinedServerMember(ctx context.Context, serverID string, showNumber int32) (serverMembers []*relation.ServerMemberModel, err error) {
+	_, serverMembers, err = ormutil.GormPage[relation.ServerMemberModel](
+		g.db(ctx).Where("server_id = ?", serverID).Order("join_time desc"),
+		1,
+		showNumber,
+	)
+	return
 }

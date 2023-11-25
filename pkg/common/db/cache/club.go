@@ -30,6 +30,7 @@ import (
 
 const (
 	serverExpireTime     = time.Second * 60 * 60 * 12
+	halfHourExpireTime   = time.Second * 60 * 30
 	serverInfoKey        = "SERVER_INFO:"
 	serverMemberIDsKey   = "SERVER_MEMBER_IDS:"
 	serverMembersHashKey = "SERVER_MEMBERS_HASH2:"
@@ -75,6 +76,7 @@ type ClubCache interface {
 	GetServerMembersInfo(ctx context.Context, serverID string, userID []string) (serverMembers []*relationtb.ServerMemberModel, err error)
 	GetAllServerMembersInfo(ctx context.Context, serverID string) (serverMembers []*relationtb.ServerMemberModel, err error)
 	GetServerMembersPage(ctx context.Context, serverID string, userID []string, showNumber, pageNumber int32) (total uint32, serverMembers []*relationtb.ServerMemberModel, err error)
+	GetLastestJoinedServerMember(ctx context.Context, serverID string) (serverMember []*relationtb.ServerMemberModel, err error)
 
 	DelServerMembersInfo(serverID string, userID ...string) ClubCache
 
@@ -180,6 +182,10 @@ func (c *ClubCacheRedis) getServerMemberInfoKey(serverID, userID string) string 
 
 func (c *ClubCacheRedis) getServerMemberNumKey(serverID string) string {
 	return serverMemberNumKey + serverID
+}
+
+func (c *ClubCacheRedis) GetLastestJoinedServerMemberKey(serverID string) string {
+	return lastestJoinedServerMemberKey + serverID
 }
 
 func (c *ClubCacheRedis) getServerBlackInfoKey(serverID string) string {
@@ -455,6 +461,12 @@ func (c *ClubCacheRedis) DelServersMemberNum(serverID ...string) ClubCache {
 	cache.AddKeys(keys...)
 
 	return cache
+}
+
+func (c *ClubCacheRedis) GetLastestJoinedServerMember(ctx context.Context, serverID string) (serverMember []*relationtb.ServerMemberModel, err error) {
+	return getCache(ctx, c.rcClient, c.GetLastestJoinedServerMemberKey(serverID), halfHourExpireTime, func(ctx context.Context) ([]*relationtb.ServerMemberModel, error) {
+		return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
+	})
 }
 
 // //////server_blacks////////////

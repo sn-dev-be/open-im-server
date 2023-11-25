@@ -96,6 +96,7 @@ type ClubDatabase interface {
 	FindServerMemberByRole(ctx context.Context, serverID, role string) ([]*relationtb.ServerMemberModel, error)
 
 	PageGetJoinServer(ctx context.Context, userID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
+	SetJoinServersOrder(ctx context.Context, userID string, serverIDs []string) (err error)
 	PageGetServerMember(ctx context.Context, serverID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
 	SearchServerMember(ctx context.Context, keyword string, serverIDs []string, userIDs []string, roleLevels []int32, pageNumber, showNumber int32) (uint32, []*relationtb.ServerMemberModel, error)
 	HandlerServerRequest(ctx context.Context, serverID string, userID string, handledMsg string, handleResult int32, member *relationtb.ServerMemberModel) error
@@ -105,6 +106,7 @@ type ClubDatabase interface {
 	TransferServerOwner(ctx context.Context, serverID string, oldOwner, newOwner *relationtb.ServerMemberModel, roleLevel int32) error // 转让群
 	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
 	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
+	GetLastestJoinedServerMember(ctx context.Context, serverID string) (members []*relationtb.ServerMemberModel, err error)
 
 	//mute_record
 	FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*relationtb.MuteRecordModel, total int64, err error)
@@ -277,6 +279,10 @@ func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []
 	} else {
 		return nil, err
 	}
+}
+
+func (c *clubDatabase) GetLastestJoinedServerMember(ctx context.Context, serverID string) (members []*relationtb.ServerMemberModel, err error) {
+	return c.cache.GetLastestJoinedServerMember(ctx, serverID)
 }
 
 // /serverRole
@@ -713,6 +719,21 @@ func (c *clubDatabase) PageGetJoinServer(
 	return uint32(len(serverIDs)), totalServerMembers, nil
 }
 
+func (c *clubDatabase) SetJoinServersOrder(ctx context.Context, userID string, serverIDs []string) (err error) {
+	return c.tx.Transaction(func(tx any) error {
+		for i, serverID := range serverIDs {
+			data := make(map[string]any)
+			data["reorder_weight"] = i
+			err := c.serverMemberDB.NewTx(tx).Update(ctx, serverID, userID, data)
+			if err != nil {
+				return err
+			}
+		}
+		c.cache.DelJoinedServerID(userID).ExecDel(ctx)
+		return nil
+	})
+}
+
 func (c *clubDatabase) PageGetServerMember(
 	ctx context.Context,
 	serverID string,
@@ -760,7 +781,8 @@ func (c *clubDatabase) HandlerServerRequest(
 			if err := c.serverMemberDB.NewTx(tx).Create(ctx, []*relationtb.ServerMemberModel{member}); err != nil {
 				return err
 			}
-			if err := c.cache.NewCache().DelServerMembersHash(serverID).DelServerMembersInfo(serverID, member.UserID).DelServerMemberIDs(serverID).DelServersMemberNum(serverID).DelJoinedServerID(member.UserID).ExecDel(ctx); err != nil {
+
+			if err := c.cache.NewCache().DelServersInfo(serverID).DelServerMembersHash(serverID).DelServerMembersInfo(serverID, member.UserID).DelServerMemberIDs(serverID).DelServersMemberNum(serverID).DelJoinedServerID(member.UserID).ExecDel(ctx); err != nil {
 				return err
 			}
 		}

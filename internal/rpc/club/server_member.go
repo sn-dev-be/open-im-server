@@ -375,6 +375,19 @@ func (c *clubServer) GetJoinedServerList(ctx context.Context, req *pbclub.GetJoi
 	return resp, nil
 }
 
+func (c *clubServer) SetJoinedServersOrder(ctx context.Context, req *pbclub.SetJoinedServersOrderReq) (*pbclub.SetJoinedServersOrderResp, error) {
+	resp := &pbclub.SetJoinedServersOrderResp{}
+	opUserID := mcontext.GetOpUserID(ctx)
+	if opUserID != req.UserID {
+		return nil, errs.ErrArgs.Wrap("userID and token unmatched")
+	}
+	err := c.ClubDatabase.SetJoinServersOrder(ctx, req.UserID, req.ServerIDs)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *clubServer) GetServerMembersCMS(ctx context.Context, req *pbclub.GetServerMembersCMSReq) (*pbclub.GetServerMembersCMSResp, error) {
 	resp := &pbclub.GetServerMembersCMSResp{}
 	total, members, err := c.ClubDatabase.SearchServerMember(ctx, req.UserName, []string{req.ServerID}, nil, nil, req.Pagination.PageNumber, req.Pagination.ShowNumber)
