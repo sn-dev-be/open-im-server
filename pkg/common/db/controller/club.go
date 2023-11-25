@@ -836,15 +836,12 @@ func (c *clubDatabase) UpdateServerMember(
 		mute_end_time, ok := data["mute_end_time"].(time.Time)
 		if ok {
 			mrm, err := c.muteRecordDB.Take(ctx, userID, serverID)
-			if err != nil && !errs.ErrRecordNotFound.Is(utils.Unwrap(err)) {
+			if err != nil && errs.Unwrap(err) != gorm.ErrRecordNotFound {
 				return err
 			}
-			if err != nil {
-				if mute_end_time.IsZero() {
-					//cancel_mute
-					err = c.muteRecordDB.NewTx(tx).Delete(ctx, []*relationtb.MuteRecordModel{mrm})
-				} else {
-					//mute
+			if mute_end_time != time.Unix(0, 0) {
+				if err != nil {
+					//muteszzz
 					mrm = &relationtb.MuteRecordModel{
 						ServerID:       serverID,
 						BlockUserID:    userID,
@@ -853,7 +850,13 @@ func (c *clubDatabase) UpdateServerMember(
 						MuteEndTime:    mute_end_time,
 					}
 					err = c.muteRecordDB.NewTx(tx).Create(ctx, []*relationtb.MuteRecordModel{mrm})
+					if err != nil {
+						return err
+					}
 				}
+			} else {
+				//cancel_mute
+				err = c.muteRecordDB.NewTx(tx).Delete(ctx, []*relationtb.MuteRecordModel{mrm})
 				if err != nil {
 					return err
 				}

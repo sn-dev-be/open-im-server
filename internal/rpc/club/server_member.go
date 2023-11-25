@@ -708,8 +708,8 @@ func (c *clubServer) deleteMemberAndSetConversationSeq(ctx context.Context, serv
 	return nil
 }
 
-func (c *clubServer) GetServerMuteRecordList(ctx context.Context, req *pbclub.GetServerMuteRecordListReq) (*pbclub.GetServerMuteRecordListResp, error) {
-	resp := &pbclub.GetServerMuteRecordListResp{}
+func (c *clubServer) GetServerMuteRecords(ctx context.Context, req *pbclub.GetServerMuteRecordsReq) (*pbclub.GetServerMuteRecordsResp, error) {
+	resp := &pbclub.GetServerMuteRecordsResp{}
 	records, total, err := c.ClubDatabase.FindServerMuteRecords(ctx, req.ServerID, req.Pagination.PageNumber, req.Pagination.ShowNumber)
 	if err != nil {
 		return nil, err
@@ -731,6 +731,15 @@ func (c *clubServer) GetServerMuteRecordList(ctx context.Context, req *pbclub.Ge
 	}
 	resp.Records = utils.Slice(records, func(e *relationtb.MuteRecordModel) *sdkws.ServerMuteRecord {
 		record := &sdkws.ServerMuteRecord{}
+		record.MuteRecord = &sdkws.MuteRecord{
+			ServerID:       e.ServerID,
+			BlockUserID:    e.BlockUserID,
+			OperatorUserID: e.OperatorUserID,
+			CreateTime:     e.CreateTime.UnixMilli(),
+			MuteEndTime:    e.MuteEndTime.UnixMilli(),
+			AddSource:      e.AddSource,
+			Ex:             e.Ex,
+		}
 		if userInfo, ok := publicUserInfoMap[e.OperatorUserID]; ok {
 			record.OperatorUser = &sdkws.UserInfo{
 				UserID:   userInfo.UserID,

@@ -169,7 +169,7 @@ func (o *ClubApi) CancelMuteServerMember(c *gin.Context) {
 }
 
 func (o *ClubApi) GetServerMuteRecords(c *gin.Context) {
-	a2r.Call(club.ClubClient.GetServerMuteRecordList, o.Client, c)
+	a2r.Call(club.ClubClient.GetServerMuteRecords, o.Client, c)
 }
 
 func (o *ClubApi) SetServerMemberInfo(c *gin.Context) {
