@@ -158,4 +158,4 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/OpenIMSDK/protocol => github.com/sn-dev-be/protocol v0.10.3
+replace github.com/OpenIMSDK/protocol => /Users/dogelee/work/go_project/protocol

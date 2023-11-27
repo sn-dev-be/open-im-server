@@ -31,7 +31,7 @@ envs:
 # Zookeeper password
 zookeeper:
   schema: openim
-  address: [ 192.168.2.222:2181 ]
+  address: [ localhost:2181 ]
   username: ''
   password: ''
 
@@ -89,7 +89,7 @@ redis:
 kafka:
   username: ''
   password: ''
-  addr: [ 192.168.2.222:9092 ]
+  addr: [ localhost:9092 ]
   latestMsgToRedis:
     topic: "latestMsgToRedis"
   offlineMsgToMongo:
@@ -135,7 +135,7 @@ api:
 # minio.signEndpoint is minio public network address
 object:
   enable: "minio"
-  apiURL: "http://192.168.2.199:10002"
+  apiURL: "http://localhost:10002"
   minio:
     bucket: "openim"
     endpoint: "http://192.168.2.222:10005"
@@ -251,8 +251,8 @@ push:
 # Built-in app manager user IDs
 # Built-in app manager nicknames
 manager:
-  userID: [ "openIM123456", "openIM654321", "openIMAdmin", "interactionAdmin", "payAdmin", "tribeAdmin" ]
-  nickname: [ "system1", "system2", "system3", "interactionAdmin", "payAdmin", "tribeAdmin" ]
+  userID: [ "openIM123456", "openIM654321", "openIMAdmin", "interactionAdmin", "payAdmin", "clubAdmin" ]
+  nickname: [ "system1", "system2", "system3", "interactionAdmin", "payAdmin", "clubAdmin" ]
 
 # Multi-platform login policy
 # For each platform(Android, iOS, Windows, Mac, web), only one can be online at a time
@@ -393,7 +393,6 @@ callback:
 # The number of ports needs to be consistent with msg_transfer_service_num in script/path_info.sh
 prometheus:
   enable: false
-  prometheusUrl: "https://openim.prometheus"
   apiPrometheusPort: [20100]
   userPrometheusPort: [ 20110 ]
   friendPrometheusPort: [ 20120 ]

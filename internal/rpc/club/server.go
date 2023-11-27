@@ -111,6 +111,13 @@ func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.G
 	if err != nil {
 		return nil, err
 	}
+	for _, serverRecommended := range serverRecommendeds {
+		num, err := s.ClubDatabase.FindServerMemberNum(ctx, serverRecommended.ServerID)
+		if err != nil {
+			return nil, err
+		}
+		serverRecommended.MemberNumber = num
+	}
 	servers := utils.Batch(convert.DB2PbServerInfo, serverRecommendeds)
 	if err != nil {
 		return nil, err
