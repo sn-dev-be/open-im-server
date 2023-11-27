@@ -91,6 +91,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		return nil, err
 	}
 	c.Notification.JoinServerApplicationNotification(ctx, req)
+	CallbackAfterRemarkServerMember(ctx, req.ServerID, req.InviterUserID, user.Nickname)
 	return resp, nil
 }
 
@@ -122,6 +123,7 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	go func() {
 		c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID})
 	}()
+	CallbackAfterQuitServer(ctx, req.ServerID, req.UserID, "")
 
 	return resp, nil
 }
@@ -289,6 +291,10 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 	if err := c.ClubDatabase.DeleteServerMember(ctx, server.ServerID, req.KickedUserIDs); err != nil {
 		return nil, err
 	}
+	for _, userID := range req.KickedUserIDs {
+		CallbackAfterQuitServer(ctx, req.ServerID, userID, "")
+	}
+
 	// tips := &sdkws.MemberKickedTips{
 	// 	Server: &sdkws.ServerInfo{
 	// 		ServerID:     server.ServerID,
@@ -628,6 +634,10 @@ func (c *clubServer) SetServerMemberInfo(ctx context.Context, req *pbclub.SetSer
 			case constant.ServerOrdinaryUsers:
 				// c.Notification.ServerMemberSetToOrdinaryUserNotification(ctx, member.ServerID, member.UserID)
 			}
+		}
+
+		if member.Nickname != nil {
+			CallbackAfterRemarkServerMember(ctx, member.ServerID, member.UserID, member.Nickname.Value)
 		}
 		// if member.Nickname != nil || member.FaceURL != nil || member.Ex != nil {
 		// 	log.ZDebug(ctx, "setServerMemberInfo notification", "member", member.UserID)

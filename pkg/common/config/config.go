@@ -269,6 +269,10 @@ type configStruct struct {
 		CallbackBeforeCreateGroup          CallBackConfig `yaml:"beforeCreateGroup"`
 		CallbackBeforeMemberJoinGroup      CallBackConfig `yaml:"beforeMemberJoinGroup"`
 		CallbackBeforeSetGroupMemberInfo   CallBackConfig `yaml:"beforeSetGroupMemberInfo"`
+		CallbackZapBusinessUrl             string         `yaml:"zapBusinessUr"`
+		CallbackAfterRemarkServerMember    CallBackConfig `yaml:"callbackAfterRemarkServerMember"`
+		CallbackAfterQuitServer            CallBackConfig `yaml:"callbackAfterQuitServer"`
+		CallbackAfterChangefriendRelation  CallBackConfig `yaml:"callbackAfterChangefriendRelation"`
 	} `yaml:"callback"`
 
 	Prometheus struct {

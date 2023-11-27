@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
@@ -123,16 +122,40 @@ func (s *clubServer) GetServerRecommendedList(ctx context.Context, req *pbclub.G
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
-	for _, server := range servers {
-		wg.Add(1)
-		go func(m *sdkws.ServerInfo) {
-			defer wg.Done()
-			serverRecommended, _ := s.genClubMembersAvatar(ctx, m)
-			respServerRecommendeds = append(respServerRecommendeds, serverRecommended)
-		}(server)
+	serverIDs := utils.Slice(servers, func(s *sdkws.ServerInfo) string { return s.ServerID })
+
+	latestJoinedServerMemberMap, err := s.ClubDatabase.GetLastestJoinedServerMember(ctx, serverIDs)
+	if err != nil {
+		return nil, err
 	}
-	wg.Wait()
+
+	for _, server := range servers {
+		serverRecommended := &sdkws.ServerRecommendedInfo{
+			ServerInfo: server,
+		}
+
+		if serverMembers, ok := latestJoinedServerMemberMap[server.ServerID]; ok {
+			userAvatarList := []string{}
+			for _, serverMember := range serverMembers {
+				if serverMember, err := s.TakeServerMember(ctx, serverMember.ServerID, serverMember.UserID); err == nil {
+					userAvatarList = append(userAvatarList, serverMember.FaceURL)
+				}
+			}
+			serverRecommended.MemberAvatarList = userAvatarList
+		}
+		respServerRecommendeds = append(respServerRecommendeds, serverRecommended)
+	}
+
+	// var wg sync.WaitGroup
+	// for _, server := range servers {
+	// 	wg.Add(1)
+	// 	go func(m *sdkws.ServerInfo) {
+	// 		defer wg.Done()
+	// 		serverRecommended, _ := s.genClubMembersAvatar(ctx, m)
+	// 		respServerRecommendeds = append(respServerRecommendeds, serverRecommended)
+	// 	}(server)
+	// }
+	// wg.Wait()
 
 	resp.Servers = respServerRecommendeds
 	return resp, nil
@@ -255,21 +278,22 @@ func (s *clubServer) GenServerID(ctx context.Context, serverID *string) error {
 	return errs.ErrData.Wrap("server id gen error")
 }
 
-func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.ServerInfo) (*sdkws.ServerRecommendedInfo, error) {
-	serverRecommended := &sdkws.ServerRecommendedInfo{}
-	serverRecommended.ServerInfo = server
+func (s *clubServer) batchGetClubMembersAvatar(ctx context.Context, serverIDs []string) (map[string][]*relationtb.ServerMemberModel, error) {
+	// serverRecommended := &sdkws.ServerRecommendedInfo{}
+	// serverRecommended.ServerInfo = server
 
-	members, err := s.ClubDatabase.GetLastestJoinedServerMember(ctx, server.ServerID)
-	if err == nil {
-		userAvatarList := []string{}
-		for _, member := range members {
-			member, err := s.TakeServerMember(ctx, member.ServerID, member.UserID)
-			if err == nil {
-				userAvatarList = append(userAvatarList, member.FaceURL)
-			}
-		}
-		serverRecommended.MemberAvatarList = userAvatarList
-	}
+	return s.ClubDatabase.GetLastestJoinedServerMember(ctx, serverIDs)
+	//return nil, err
+	// if err == nil {
+	// 	userAvatarList := []string{}
+	// 	for _, member := range members {
+	// 		member, err := s.TakeServerMember(ctx, member.ServerID, member.UserID)
+	// 		if err == nil {
+	// 			userAvatarList = append(userAvatarList, member.FaceURL)
+	// 		}
+	// 	}
+	// 	serverRecommended.MemberAvatarList = userAvatarList
+	// }
 
 	// _, members, err := s.ClubDatabase.PageGetServerMember(ctx, server.ServerID, 1, 3)
 	// if err == nil {
@@ -289,7 +313,7 @@ func (s *clubServer) genClubMembersAvatar(ctx context.Context, server *sdkws.Ser
 	// 		serverRecommended.MemberAvatarList = userAvatarList
 	// 	}
 	// }
-	return serverRecommended, nil
+	//return serverRecommended, nil
 }
 
 func (s *clubServer) genCreateServerGroupReq(ctx context.Context, serverID, categoryID, groupName, ownerUserID, faceURL string) *relationtb.GroupModel {

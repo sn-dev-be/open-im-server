@@ -386,6 +386,19 @@ callback:
     enable: false
     timeout: 5
     failedContinue: true
+  zapBusinessUr: http://192.168.2.195:3004
+  callbackAfterRemarkServerMember:
+    enable: true
+    timeout: 5
+    failedContinue: true
+  callbackAfterQuitServer:
+    enable: true
+    timeout: 5
+    failedContinue: true
+  callbackAfterChangefriendRelation:
+    enable: true
+    timeout: 5
+    failedContinue: true
 
 ###################### Prometheus ######################
 # Prometheus configuration for various services

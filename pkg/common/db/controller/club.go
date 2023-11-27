@@ -106,7 +106,7 @@ type ClubDatabase interface {
 	TransferServerOwner(ctx context.Context, serverID string, oldOwner, newOwner *relationtb.ServerMemberModel, roleLevel int32) error // 转让群
 	UpdateServerMember(ctx context.Context, serverID string, userID string, data map[string]any) error
 	UpdateServerMembers(ctx context.Context, data []*relationtb.BatchUpdateGroupMember) error
-	GetLastestJoinedServerMember(ctx context.Context, serverID string) (members []*relationtb.ServerMemberModel, err error)
+	GetLastestJoinedServerMember(ctx context.Context, serverIDs []string) (members map[string][]*relationtb.ServerMemberModel, err error)
 
 	//mute_record
 	FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*relationtb.MuteRecordModel, total int64, err error)
@@ -281,8 +281,8 @@ func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []
 	}
 }
 
-func (c *clubDatabase) GetLastestJoinedServerMember(ctx context.Context, serverID string) (members []*relationtb.ServerMemberModel, err error) {
-	return c.cache.GetLastestJoinedServerMember(ctx, serverID)
+func (c *clubDatabase) GetLastestJoinedServerMember(ctx context.Context, serverIDs []string) (members map[string][]*relationtb.ServerMemberModel, err error) {
+	return c.cache.GetLastestJoinedServerMember(ctx, serverIDs)
 }
 
 // /serverRole

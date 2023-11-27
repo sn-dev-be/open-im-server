@@ -23,6 +23,7 @@ import (
 
 	"github.com/OpenIMSDK/tools/log"
 
+	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
@@ -120,6 +121,10 @@ func (s *friendServer) ApplyToAddFriend(
 		return nil, err
 	}
 
+	if config.Config.SingleFriend {
+		CallbackAfterAddFriend(ctx, req.FromUserID, req.ToUserID, "")
+	}
+
 	s.notificationSender.FriendApplicationAddNotification(ctx, req)
 	return resp, nil
 }
@@ -178,6 +183,7 @@ func (s *friendServer) RespondFriendApply(
 			return nil, err
 		}
 		s.notificationSender.FriendApplicationAgreedNotification(ctx, req)
+		CallbackAfterAddFriend(ctx, req.ToUserID, req.FromUserID, "")
 		return resp, nil
 	}
 	if req.HandleResult == constant.FriendResponseRefuse {
@@ -209,6 +215,7 @@ func (s *friendServer) DeleteFriend(
 		return nil, err
 	}
 	s.notificationSender.FriendDeletedNotification(ctx, req)
+	CallbackAfterDeleteFriend(ctx, req.OwnerUserID, req.FriendUserID, "")
 	return resp, nil
 }
 
@@ -230,6 +237,7 @@ func (s *friendServer) SetFriendRemark(
 		return nil, err
 	}
 	s.notificationSender.FriendRemarkSetNotification(ctx, req.OwnerUserID, req.FriendUserID)
+	CallbackAfterAddFriend(ctx, req.OwnerUserID, req.FriendUserID, req.Remark)
 	return resp, nil
 }
 

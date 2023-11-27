@@ -59,11 +59,11 @@ func Get(url string) (response []byte, err error) {
 }
 
 func Post(ctx context.Context, url string, header map[string]string, data interface{}, timeout int) (content []byte, err error) {
-	if timeout > 0 {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, time.Second*time.Duration(timeout))
-		defer cancel()
-	}
+	// if timeout > 0 {
+	// 	var cancel func()
+	// 	ctx, cancel = context.WithTimeout(ctx, time.Second*time.Duration(timeout))
+	// 	defer cancel()
+	// }
 
 	jsonStr, err := json.Marshal(data)
 	if err != nil {

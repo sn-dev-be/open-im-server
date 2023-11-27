@@ -76,7 +76,7 @@ type ClubCache interface {
 	GetServerMembersInfo(ctx context.Context, serverID string, userID []string) (serverMembers []*relationtb.ServerMemberModel, err error)
 	GetAllServerMembersInfo(ctx context.Context, serverID string) (serverMembers []*relationtb.ServerMemberModel, err error)
 	GetServerMembersPage(ctx context.Context, serverID string, userID []string, showNumber, pageNumber int32) (total uint32, serverMembers []*relationtb.ServerMemberModel, err error)
-	GetLastestJoinedServerMember(ctx context.Context, serverID string) (serverMember []*relationtb.ServerMemberModel, err error)
+	GetLastestJoinedServerMember(ctx context.Context, serverIDs []string) (serverMember map[string][]*relationtb.ServerMemberModel, err error)
 
 	DelServerMembersInfo(serverID string, userID ...string) ClubCache
 
@@ -463,10 +463,36 @@ func (c *ClubCacheRedis) DelServersMemberNum(serverID ...string) ClubCache {
 	return cache
 }
 
-func (c *ClubCacheRedis) GetLastestJoinedServerMember(ctx context.Context, serverID string) (serverMember []*relationtb.ServerMemberModel, err error) {
-	return getCache(ctx, c.rcClient, c.GetLastestJoinedServerMemberKey(serverID), halfHourExpireTime, func(ctx context.Context) ([]*relationtb.ServerMemberModel, error) {
+func (c *ClubCacheRedis) GetLastestJoinedServerMember(ctx context.Context, serverIDs []string) (members map[string][]*relationtb.ServerMemberModel, err error) {
+	// return getCache(ctx, c.rcClient, c.GetLastestJoinedServerMemberKey(serverID), halfHourExpireTime, func(ctx context.Context) ([]*relationtb.ServerMemberModel, error) {
+	// 	return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
+	// })
+
+	res, err := batchGetCache2(ctx, c.rcClient, c.expireTime, serverIDs, func(serverID string) string {
+		return c.GetLastestJoinedServerMemberKey(serverID)
+	}, func(ctx context.Context, serverID string) ([]*relationtb.ServerMemberModel, error) {
 		return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
 	})
+
+	serverMembersMap := make(map[string][]*relationtb.ServerMemberModel)
+
+	for _, result := range res {
+		// if result == Redis.nil {
+		// 	// 处理错误，例如记录日志或返回错误
+		// 	continue
+		// }
+		if len(result) == 0 {
+			continue
+		}
+		serverID := result[0].ServerID
+		// 将结果添加到 map 中
+		serverMembersMap[serverID] = result
+	}
+
+	return serverMembersMap, err
+	// return getCache(ctx, c.rcClient, c.GetLastestJoinedServerMemberKey(serverID), halfHourExpireTime, func(ctx context.Context) ([]*relationtb.ServerMemberModel, error) {
+	// 	return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
+	// })
 }
 
 // //////server_blacks////////////
