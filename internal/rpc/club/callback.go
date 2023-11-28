@@ -33,7 +33,7 @@ const (
 func CallbackAfterRemarkServerMember(ctx context.Context, serverID, userID, nickname string) error {
 	remarkServerMemberUri := config.Config.Callback.CallbackZapBusinessUrl + RemarkServerMemberURI
 
-	if !config.Config.Callback.CallbackAfterRemarkServerMember.Enable {
+	if !config.Config.Callback.CallbackAfterSetServerMember.Enable {
 		return nil
 	}
 
@@ -46,21 +46,7 @@ func CallbackAfterRemarkServerMember(ctx context.Context, serverID, userID, nick
 		ClubServerUser: *ClubServerUser,
 	}
 
-	// 启动goroutine，异步执行http.Post
-	// go func() {
-	// 	defer func() {
-	// 		if err := recover(); err != nil {
-	// 			// 处理 panic（如果有）
-	// 			log.ZError(ctx, "Recovered from panic in goroutine:", err.(error))
-	// 		}
-	// 	}()
-
-	// 	if _, err := http.Post(ctx, remarkServerMemberUri, nil, cbReq, config.Config.Callback.CallbackAfterRemarkServerMember.CallbackTimeOut); err != nil {
-	// 		log.ZInfo(ctx, "CallbackAfterRemarkServerMember", utils.Unwrap(err))
-	// 	}
-	// }()
-
-	if _, err := http.Post(ctx, remarkServerMemberUri, nil, cbReq, config.Config.Callback.CallbackAfterRemarkServerMember.CallbackTimeOut); err != nil {
+	if _, err := http.Post(ctx, remarkServerMemberUri, nil, cbReq, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
 		log.ZInfo(ctx, "CallbackAfterRemarkServerMember", utils.Unwrap(err))
 	}
 
@@ -70,7 +56,7 @@ func CallbackAfterRemarkServerMember(ctx context.Context, serverID, userID, nick
 func CallbackAfterQuitServer(ctx context.Context, serverID, userID, nickname string) error {
 	deleteServerMemberURI := config.Config.Callback.CallbackZapBusinessUrl + DeleteServerMemberURI
 
-	if !config.Config.Callback.CallbackAfterQuitServer.Enable {
+	if !config.Config.Callback.CallbackAfterSetServerMember.Enable {
 		return nil
 	}
 
@@ -83,20 +69,7 @@ func CallbackAfterQuitServer(ctx context.Context, serverID, userID, nickname str
 		ClubServerUser: *ClubServerUser,
 	}
 
-	// go func() {
-	// 	defer func() {
-	// 		if err := recover(); err != nil {
-	// 			// 处理 panic（如果有）
-	// 			log.ZError(ctx, "Recovered from panic in goroutine:", err.(error))
-	// 		}
-	// 	}()
-
-	// 	if _, err := http.Post(ctx, deleteServerMemberURI, nil, cbReq, config.Config.Callback.CallbackAfterQuitServer.CallbackTimeOut); err != nil {
-	// 		log.ZError(ctx, "CallbackAfterQuitServer", utils.Unwrap(err))
-	// 	}
-	// }()
-
-	if _, err := http.Post(ctx, deleteServerMemberURI, nil, cbReq, config.Config.Callback.CallbackAfterQuitServer.CallbackTimeOut); err != nil {
+	if _, err := http.Post(ctx, deleteServerMemberURI, nil, cbReq, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
 		log.ZError(ctx, "CallbackAfterQuitServer", utils.Unwrap(err))
 	}
 

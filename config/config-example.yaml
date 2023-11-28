@@ -386,12 +386,8 @@ callback:
     enable: false
     timeout: 5
     failedContinue: true
-  zapBusinessUr: http://192.168.2.195:3004
-  callbackAfterRemarkServerMember:
-    enable: true
-    timeout: 5
-    failedContinue: true
-  callbackAfterQuitServer:
+  zapBusinessUrl: http://192.168.2.197:3004
+  callbackAfterSetServerMember:
     enable: true
     timeout: 5
     failedContinue: true

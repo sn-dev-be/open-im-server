@@ -69,22 +69,10 @@ func CallbackAfterAddFriend(ctx context.Context, fromUserID, targetUserID, remar
 	cbReq := &cbapi.CallbackAfterFriendRelationChangedReq{
 		UserRelation: *userRelation,
 	}
-	// 启动goroutine，异步执行http.Post
-	// go func() {
-	// 	defer func() {
-	// 		if err := recover(); err != nil {
-	// 			// 处理 panic（如果有）
-	// 			log.ZError(ctx, "Recovered from panic in goroutine:", err.(error))
-	// 		}
-	// 	}()
-
-	// 	if _, err := http.Post(ctx, addFriendUri, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
-	// 		log.ZInfo(ctx, "CallbackAfterAddFriend", utils.Unwrap(err))
-	// 	}
-	// }()
 	if _, err := http.Post(ctx, addFriendUri, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
 		log.ZInfo(ctx, "CallbackAfterAddFriend", utils.Unwrap(err))
 	}
+
 	return nil
 }
 
@@ -102,21 +90,10 @@ func CallbackAfterDeleteFriend(ctx context.Context, fromUserID, targetUserID, re
 	cbReq := &cbapi.CallbackAfterFriendRelationChangedReq{
 		UserRelation: *userRelation,
 	}
-	// 启动goroutine，异步执行http.Post
-	// go func() {
-	// 	defer func() {
-	// 		if err := recover(); err != nil {
-	// 			// 处理 panic（如果有）
-	// 			log.ZError(ctx, "Recovered from panic in goroutine:", err.(error))
-	// 		}
-	// 	}()
 
-	// 	if _, err := http.Post(ctx, deleteFriendURI, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
-	// 		log.ZInfo(ctx, "CallbackAfterDeleteFriend", utils.Unwrap(err))
-	// 	}
-	// }()
 	if _, err := http.Post(ctx, deleteFriendURI, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
 		log.ZInfo(ctx, "CallbackAfterDeleteFriend", utils.Unwrap(err))
 	}
+
 	return nil
 }
