@@ -88,10 +88,10 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 	}
 
 	var recvID string
-	if msg.SessionType == constant.SuperGroupChatType {
-		recvID = msg.GroupID
-	} else {
+	if msg.SessionType == constant.SingleChatType {
 		recvID = msg.RecvID
+	} else {
+		recvID = msg.GroupID
 	}
 	if err := m.notificationSender.NotificationWithSesstionType(ctx, req.UserID, recvID, req.ContentType, msg.SessionType, &tips, rpcclient.WithRpcGetUserName()); err != nil {
 		return nil, err

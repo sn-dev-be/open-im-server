@@ -414,6 +414,5 @@ prometheus:
   conversationPrometheusPort: [ 20230 ]
   rtcPrometheusPort: [ 21300 ]
   thirdPrometheusPort: [ 21301 ]
+  clubPrometheusPort: [ 20180 ]
   messageTransferPrometheusPort: [ 21400, 21401, 21402, 21403 ] # List of ports
-
-

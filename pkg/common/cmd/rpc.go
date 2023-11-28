@@ -113,6 +113,13 @@ func (a *RpcCmd) GetPortFromConfig(portType string) int {
 		if portType == constant.FlagPrometheusPort {
 			return config2.Config.Prometheus.UserPrometheusPort[0]
 		}
+	case RpcClubServer:
+		if portType == constant.FlagPort {
+			return config2.Config.RpcPort.OpenImClubPort[0]
+		}
+		if portType == constant.FlagPrometheusPort {
+			return config2.Config.Prometheus.ClubPrometheusPort[0]
+		}
 	}
 	return 0
 }
