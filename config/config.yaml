@@ -386,6 +386,15 @@ callback:
     enable: false
     timeout: 5
     failedContinue: true
+  zapBusinessUrl: http://192.168.2.197:3004
+  callbackAfterSetServerMember:
+    enable: true
+    timeout: 5
+    failedContinue: true
+  callbackAfterChangefriendRelation:
+    enable: true
+    timeout: 5
+    failedContinue: true
 
 ###################### Prometheus ######################
 # Prometheus configuration for various services
@@ -405,3 +414,4 @@ prometheus:
   rtcPrometheusPort: [ 21300 ]
   thirdPrometheusPort: [ 21301 ]
   messageTransferPrometheusPort: [ 21400, 21401, 21402, 21403 ] # List of ports
+
