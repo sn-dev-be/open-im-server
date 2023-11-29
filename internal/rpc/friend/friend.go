@@ -122,7 +122,12 @@ func (s *friendServer) ApplyToAddFriend(
 	}
 
 	if config.Config.SingleFriend {
-		CallbackAfterAddFriend(ctx, req.FromUserID, req.ToUserID, "")
+		go func() {
+			asyncCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			CallbackAfterAddFriend(asyncCtx, req.FromUserID, req.ToUserID, "")
+		}()
 	}
 
 	s.notificationSender.FriendApplicationAddNotification(ctx, req)
