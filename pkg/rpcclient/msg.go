@@ -284,7 +284,7 @@ func (s *NotificationSender) NotificationWithSesstionType(ctx context.Context, s
 	msg.MsgFrom = constant.SysMsgType
 	msg.ContentType = contentType
 	msg.SessionType = sesstionType
-	if msg.SessionType == constant.SuperGroupChatType {
+	if msg.SessionType == constant.SuperGroupChatType || msg.SessionType == constant.ServerGroupChatType {
 		msg.GroupID = recvID
 	}
 	msg.CreateTime = utils.GetCurrentTimestampByMill()
