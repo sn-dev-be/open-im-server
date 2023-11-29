@@ -24,10 +24,10 @@ const (
 )
 
 type ServerRecommendedModel struct {
-	ID             int32     `gorm:"column:id;primary_key;AUTO_INCREMENT"                	   json:"id"`
+	ID             int32     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
 	ServerID       string    `gorm:"column:server_id;size:255"                                 json:"serverID"`
-	ReorderWeight  string    `gorm:"column:reorder_weight;size:255"                            json:"reorderWeight"`
-	OperatedUserID string    `gorm:"column:operated_user_id;size:255" 						   json:"operatedUserID"`
+	ReorderWeight  int32     `gorm:"column:reorder_weight;default:0" json:"reorderWeight"`
+	OperatedUserID string    `gorm:"column:operated_user_id;size:255" json:"operatedUserID"`
 	CreateTime     time.Time `gorm:"column:create_time;index:create_time;autoCreateTime"       json:"createTime"`
 }
 

@@ -58,7 +58,8 @@ type ClubCache interface {
 	GetGroupCategoryInfo(ctx context.Context, categoryID string) (category *relationtb.GroupCategoryModel, err error)
 	DelGroupCategoriesInfo(categoryIDs ...string) ClubCache
 
-	GetGroupDappInfo(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error)
+	GetGroupDappInfo(ctx context.Context, groupIDs []string) (groupDapps []*relationtb.GroupDappModel, err error)
+	DelGroupDappInfo(ctx context.Context, groupIDs ...string) ClubCache
 
 	GetServerMembersHash(ctx context.Context, serverID string) (hashCode uint64, err error)
 	GetServerMemberHashMap(ctx context.Context, serverIDs []string) (map[string]*relationtb.GroupSimpleUserID, error)
@@ -303,10 +304,26 @@ func (c *ClubCacheRedis) DelGroupsInfo(groupIDs ...string) ClubCache {
 }
 
 // groupDapp
-func (c *ClubCacheRedis) GetGroupDappInfo(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error) {
-	return getCache(ctx, c.rcClient, c.getGroupDappInfoKey(groupID), c.expireTime, func(ctx context.Context) (*relationtb.GroupDappModel, error) {
+func (c *ClubCacheRedis) GetGroupDappInfo(ctx context.Context, groupIDs []string) (groupDapps []*relationtb.GroupDappModel, err error) {
+	// return getCache(ctx, c.rcClient, c.getGroupDappInfoKey(groupID), c.expireTime, func(ctx context.Context) (*relationtb.GroupDappModel, error) {
+	// 	return c.groupDappDB.TakeGroupDapp(ctx, groupID)
+	// })
+
+	return batchGetCache2(ctx, c.rcClient, c.expireTime, groupIDs, func(groupID string) string {
+		return c.getGroupDappInfoKey(groupID)
+	}, func(ctx context.Context, groupID string) (*relationtb.GroupDappModel, error) {
 		return c.groupDappDB.TakeGroupDapp(ctx, groupID)
 	})
+}
+
+func (c *ClubCacheRedis) DelGroupDappInfo(ctx context.Context, groupIDs ...string) ClubCache {
+	newClubCache := c.NewCache()
+	keys := make([]string, 0, len(groupIDs))
+	for _, groupID := range groupIDs {
+		keys = append(keys, c.getGroupDappInfoKey(groupID))
+	}
+	newClubCache.AddKeys(keys...)
+	return newClubCache
 }
 
 // /serverMemberInfo

@@ -529,7 +529,11 @@ func (c *clubDatabase) CreateServerGroup(ctx context.Context, groups []*relation
 }
 
 func (c *clubDatabase) TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error) {
-	return c.cache.GetGroupDappInfo(ctx, groupID)
+	groupDapps, err := c.cache.GetGroupDappInfo(ctx, []string{groupID})
+	if err != nil {
+		return nil, err
+	}
+	return groupDapps[0], nil
 }
 
 func (c *clubDatabase) DeleteServerGroup(ctx context.Context, serverID string, groupIDs []string) error {
@@ -616,7 +620,7 @@ func (c *clubDatabase) UpdateServerGroup(ctx context.Context, groupID string, da
 		if err := c.groupDB.NewTx(tx).UpdateMap(ctx, groupID, data); err != nil {
 			return err
 		}
-		return c.cache.DelGroupsInfo(groupID).ExecDel(ctx)
+		return c.cache.DelGroupsInfo(groupID).DelGroupDappInfo(ctx, groupID).ExecDel(ctx)
 	})
 }
 
