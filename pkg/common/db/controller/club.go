@@ -794,6 +794,8 @@ func (c *clubDatabase) DeleteServerMember(ctx context.Context, serverID string, 
 	if err := c.serverMemberDB.Delete(ctx, serverID, userIDs); err != nil {
 		return err
 	}
+	c.muteRecordDB.DeleteByUserIDs(ctx, serverID, userIDs)
+
 	return c.cache.DelServerMembersHash(serverID).
 		DelServerMemberIDs(serverID).
 		DelServersMemberNum(serverID).
@@ -972,6 +974,9 @@ func (c *clubDatabase) CreateServerBlack(ctx context.Context, blacks []*relation
 			if err := c.serverMemberDB.NewTx(tx).Delete(ctx, serverID, kickMembers); err != nil {
 				return err
 			}
+
+			c.muteRecordDB.DeleteByUserIDs(ctx, serverID, kickMembers)
+
 			c.cache.DelServerMemberIDs(serverID).DelServerMembersHash(serverID).DelServerMembersInfo(serverID, kickMembers...).DelServersMemberNum(serverID).DelServersInfo(serverID).ExecDel(ctx)
 		}
 
@@ -986,6 +991,7 @@ func (c *clubDatabase) DeleteServerBlack(ctx context.Context, blacks []*relation
 	if err := c.serverBlackDB.Delete(ctx, blacks); err != nil {
 		return err
 	}
+
 	return c.deleteBlackIDsCache(ctx, blacks)
 }
 

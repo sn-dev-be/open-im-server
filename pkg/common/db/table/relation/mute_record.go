@@ -41,6 +41,7 @@ type MuteRecordModelInterface interface {
 	NewTx(tx any) MuteRecordModelInterface
 	Create(ctx context.Context, mute_records []*MuteRecordModel) (err error)
 	Delete(ctx context.Context, mute_records []*MuteRecordModel) (err error)
+	DeleteByUserIDs(ctx context.Context, serverID string, userIDs []string) (err error)
 	Take(ctx context.Context, blockUserID string, serverID string) (muteRecord *MuteRecordModel, err error)
 	FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*MuteRecordModel, total int64, err error)
 }

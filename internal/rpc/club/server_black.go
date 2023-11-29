@@ -83,6 +83,7 @@ func (c *clubServer) GetServerBlackList(ctx context.Context, req *pbclub.GetServ
 	emptyUserIDs := make(map[string]struct{})
 	for _, member := range blacks {
 		emptyUserIDs[member.BlockUserID] = struct{}{}
+		emptyUserIDs[member.OperatorUserID] = struct{}{}
 	}
 	if len(emptyUserIDs) > 0 {
 		users, err := c.User.GetPublicUserInfoMap(ctx, utils.Keys(emptyUserIDs), true)

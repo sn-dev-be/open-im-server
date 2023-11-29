@@ -67,3 +67,7 @@ func (b *MuteRecordGorm) FindServerMuteRecords(
 	total = int64(totalUint32)
 	return
 }
+
+func (b *MuteRecordGorm) DeleteByUserIDs(ctx context.Context, serverID string, userIDs []string) (err error) {
+	return utils.Wrap(b.db(ctx).Where("server_id = ? and block_user_id in ?", serverID, userIDs).Delete(&relation.MuteRecordModel{}).Error, "")
+}
