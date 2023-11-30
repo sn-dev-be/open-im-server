@@ -32,6 +32,10 @@ import (
 	// "google.golang.org/protobuf/proto".
 )
 
+const (
+	SuperGroupDesignateMaxRecvID = 5
+)
+
 func newContentTypeConf() map[int32]config.NotificationConf {
 	return map[int32]config.NotificationConf{
 		// group
@@ -92,7 +96,7 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.SignalingMicphoneStatusChangedNotification: {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingSpeakStatusChangedNotification:    {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
 		// redPacket
-		constant.RedPacketClaimedByUserNotification: {IsSendMsg: true, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+		constant.RedPacketClaimedByUserNotification: config.Config.Notification.RedPacketClaimedByUser,
 		constant.RedPacketClaimedNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		constant.RedPacketExpiredNotification:       {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 		// server
@@ -243,7 +247,8 @@ func NewNotificationSender(opts ...NotificationSenderOptions) *NotificationSende
 }
 
 type notificationOpt struct {
-	WithRpcGetUsername bool
+	WithRpcGetUsername  bool
+	WithDesignateUserID []string
 }
 
 type NotificationOptions func(*notificationOpt)
@@ -251,6 +256,12 @@ type NotificationOptions func(*notificationOpt)
 func WithRpcGetUserName() NotificationOptions {
 	return func(opt *notificationOpt) {
 		opt.WithRpcGetUsername = true
+	}
+}
+
+func WithDesignateUserID(userID ...string) NotificationOptions {
+	return func(opt *notificationOpt) {
+		opt.WithDesignateUserID = userID
 	}
 }
 
@@ -276,6 +287,9 @@ func (s *NotificationSender) NotificationWithSesstionType(ctx context.Context, s
 			msg.SenderNickname = userInfo.Nickname
 			msg.SenderFaceURL = userInfo.FaceURL
 		}
+	}
+	if len(notificationOpt.WithDesignateUserID) < SuperGroupDesignateMaxRecvID {
+		msg.RecvIDList = notificationOpt.WithDesignateUserID
 	}
 	var offlineInfo sdkws.OfflinePushInfo
 	msg.SendID = sendID

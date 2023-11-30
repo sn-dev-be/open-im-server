@@ -334,6 +334,7 @@ func (db *commonMsgDatabase) BatchInsertChat2DB(ctx context.Context, conversatio
 			AtUserIDList:     msg.AtUserIDList,
 			AttachedInfo:     msg.AttachedInfo,
 			Ex:               msg.Ex,
+			RecvIDList:       msg.RecvIDList,
 		}
 	}
 	return db.BatchInsertBlock(ctx, conversationID, msgs, updateKeyMsg, msgList[0].Seq)

@@ -77,6 +77,7 @@ type MsgDataModel struct {
 	AtUserIDList     []string          `bson:"at_user_id_list"`
 	AttachedInfo     string            `bson:"attached_info"`
 	Ex               string            `bson:"ex"`
+	RecvIDList       []string          `bson:"recv_id_list"`
 }
 
 type MsgInfoModel struct {

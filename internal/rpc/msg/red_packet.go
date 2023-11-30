@@ -79,12 +79,15 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 		ContentType:    req.ContentType,
 	}
 
+	notificationOptions := []rpcclient.NotificationOptions{rpcclient.WithRpcGetUserName()}
+
 	if req.ContentType == constant.RedPacketClaimedByUserNotification {
 		user, err := m.User.GetPublicUserInfo(ctx, req.ClaimUserID)
 		if err != nil {
 			return nil, err
 		}
 		tips.ClaimUser = user
+		notificationOptions = append(notificationOptions, rpcclient.WithDesignateUserID(req.UserID, req.ClaimUserID))
 	}
 
 	var recvID string
@@ -93,7 +96,7 @@ func (m *msgServer) SetRedPacketMsgStatus(ctx context.Context, req *msgv3.SetRed
 	} else {
 		recvID = msg.GroupID
 	}
-	if err := m.notificationSender.NotificationWithSesstionType(ctx, req.UserID, recvID, req.ContentType, msg.SessionType, &tips, rpcclient.WithRpcGetUserName()); err != nil {
+	if err := m.notificationSender.NotificationWithSesstionType(ctx, req.UserID, recvID, req.ContentType, msg.SessionType, &tips, notificationOptions...); err != nil {
 		return nil, err
 	}
 	return &msgv3.SetRedPacketMsgStatusResp{}, nil

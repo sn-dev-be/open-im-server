@@ -406,9 +406,20 @@ signalingClosed:
     desc: ""
     ext: ""
 
+# redPacket
+redPacketClaimedByUser:
+  isSendMsg: true
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
 # server
 joinServerApplication:
-  isSendMsg: true
+  isSendMsg: false
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
@@ -418,7 +429,7 @@ joinServerApplication:
     ext: "joinGroupApplication ext"
 
 serverApplicationAccepted:
-  isSendMsg: true
+  isSendMsg: false
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
@@ -428,7 +439,7 @@ serverApplicationAccepted:
     ext: "serverApplicationAccepted ext"
 
 serverApplicationRejected:
-  isSendMsg: true
+  isSendMsg: false
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:

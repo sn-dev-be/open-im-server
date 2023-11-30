@@ -150,7 +150,9 @@ func (p *Pusher) Push2SuperGroup(ctx context.Context, groupID string, msg *sdkws
 	if err = callbackBeforeSuperGroupOnlinePush(ctx, groupID, msg, &pushToUserIDs); err != nil {
 		return err
 	}
-
+	if len(msg.RecvIDList) > 0 {
+		pushToUserIDs = msg.RecvIDList
+	}
 	if len(pushToUserIDs) == 0 {
 		pushToUserIDs, err = p.groupLocalCache.GetGroupMemberIDs(ctx, groupID)
 		if err != nil {
@@ -287,6 +289,9 @@ func (p *Pusher) Push2ServerGroup(ctx context.Context, groupID string, msg *sdkw
 	// if err := callbackBeforeSuperGroupOnlinePush(ctx, groupID, msg, &pushToUserIDs); err != nil {
 	// 	return err
 	// }
+	if len(msg.RecvIDList) > 0 {
+		pushToUserIDs = msg.RecvIDList
+	}
 	if len(pushToUserIDs) == 0 {
 		pushToUserIDs, err = p.serverLocalCache.GetServerMemberIDs(ctx, groupID)
 		if err != nil {
