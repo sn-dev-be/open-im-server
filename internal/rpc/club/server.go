@@ -202,9 +202,7 @@ func (s *clubServer) GetServersInfo(ctx context.Context, req *pbclub.GetServersI
 						if category.CategoryID == group.GroupCategoryID {
 							pbGroupInfo := convert.Db2PbServerGroupInfo(group)
 							if group.GroupMode == constant.AppGroupMode {
-								if serverDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, group.GroupID); err != nil {
-									return nil, err
-								} else {
+								if serverDapp, err := s.ClubDatabase.TakeGroupDapp(ctx, group.GroupID); err == nil {
 									pbGroupDapp := convert.Db2PbGroupDapp(serverDapp)
 									pbGroupInfo.Dapp = pbGroupDapp
 								}

@@ -533,6 +533,9 @@ func (c *clubDatabase) TakeGroupDapp(ctx context.Context, groupID string) (group
 	if err != nil {
 		return nil, err
 	}
+	if len(groupDapps) == 0 {
+		return nil, errs.ErrRecordNotFound
+	}
 	return groupDapps[0], nil
 }
 
