@@ -241,7 +241,7 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 
 	data := sdkws.PaymentNotificationTips{}
 	switch {
-	case req.ContentType >= constant.TransferSuccessNotification && req.ContentType <= constant.TransferReceivedNotification:
+	case req.ContentType >= constant.TransferSuccessNotification && req.ContentType <= constant.PayNotificationEnd:
 		err := utils.JsonStringToStruct(req.Content, &data)
 
 		if err != nil {
