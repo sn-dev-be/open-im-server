@@ -182,7 +182,7 @@ func (c *clubServer) SetServerGroupOrder(ctx context.Context, req *pbclub.SetSer
 				}
 				data["reorder_weight"] = i
 				data["group_category_id"] = category.CategoryInfo.CategoryID
-				err := c.ClubDatabase.UpdateServerGroup(ctx, group.GroupID, data)
+				err := c.ClubDatabase.UpdateServerGroupOrder(ctx, group.GroupID, data)
 				if err != nil {
 					return nil, err
 				}

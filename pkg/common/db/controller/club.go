@@ -79,6 +79,7 @@ type ClubDatabase interface {
 	CreateServerGroup(ctx context.Context, groups []*relationtb.GroupModel, group_dapps []*relationtb.GroupDappModel) error
 	DeleteServerGroup(ctx context.Context, serverID string, groupIDs []string) error
 	UpdateServerGroup(ctx context.Context, groupID string, data map[string]any) error
+	UpdateServerGroupOrder(ctx context.Context, groupID string, data map[string]any) error
 
 	//groupDapp
 	TakeGroupDapp(ctx context.Context, groupID string) (groupDapp *relationtb.GroupDappModel, err error)
@@ -549,6 +550,11 @@ func (c *clubDatabase) DeleteServerGroup(ctx context.Context, serverID string, g
 				return err
 			}
 			dbGroupIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string { return e.GroupID })
+			groupMap := utils.SliceToMapAny(groups, func(g *relationtb.GroupModel) (string, *relationtb.GroupModel) {
+				return g.GroupID, g
+			})
+
+			deleteGroupApps := []string{}
 
 			deleteGroupNum := 0
 			for _, groupID := range groupIDs {
@@ -556,9 +562,20 @@ func (c *clubDatabase) DeleteServerGroup(ctx context.Context, serverID string, g
 					if err := c.groupDB.NewTx(tx).UpdateStatus(ctx, groupID, constant.GroupStatusDismissed); err != nil {
 						return err
 					}
+
+					if group, ok := groupMap[groupID]; ok {
+						if group.GroupMode == constant.AppGroupMode {
+							deleteGroupApps = append(deleteGroupApps, groupID)
+						}
+					}
+
 					deleteGroupNum++
 					cache = cache.DelGroupsInfo(groupID)
 				}
+			}
+
+			if len(deleteGroupApps) > 0 {
+				c.groupDappDB.DeleteByGroup(ctx, deleteGroupApps)
 			}
 
 			//维护servers group_number
@@ -620,6 +637,15 @@ func (c *clubDatabase) UpdateServerGroup(ctx context.Context, groupID string, da
 			}
 		}
 		delete(data, "dapp_id")
+		if err := c.groupDB.NewTx(tx).UpdateMap(ctx, groupID, data); err != nil {
+			return err
+		}
+		return c.cache.DelGroupsInfo(groupID).DelGroupDappInfo(ctx, groupID).ExecDel(ctx)
+	})
+}
+
+func (c *clubDatabase) UpdateServerGroupOrder(ctx context.Context, groupID string, data map[string]any) error {
+	return c.tx.Transaction(func(tx any) error {
 		if err := c.groupDB.NewTx(tx).UpdateMap(ctx, groupID, data); err != nil {
 			return err
 		}
