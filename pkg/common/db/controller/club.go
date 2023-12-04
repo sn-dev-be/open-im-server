@@ -749,6 +749,13 @@ func (c *clubDatabase) PageGetJoinServer(
 		}
 		totalServerMembers = append(totalServerMembers, groupMembers...)
 	}
+	// for i := 0; i < len(serverIDs); i++ {
+	// 	groupMembers, err := c.cache.GetServerMembersInfo(ctx, serverIDs[i], []string{userID})
+	// 	if err != nil {
+	// 		return 0, nil, err
+	// 	}
+	// 	totalServerMembers = append(totalServerMembers, groupMembers...)
+	// }
 	return uint32(len(serverIDs)), totalServerMembers, nil
 }
 

@@ -99,6 +99,7 @@ func (s *ServerBlackGorm) FindServerBlackInfos(ctx context.Context, serverID str
 	err = utils.Wrap(
 		s.db(ctx).
 			Where("server_id = ? ", serverID).
+			Order("create_time desc").
 			Limit(int(showNumber)).
 			Offset(int((pageNumber-1)*showNumber)).
 			Find(&blacks).
