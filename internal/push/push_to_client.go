@@ -35,6 +35,7 @@ import (
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/dummy"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/fcm"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/getui"
+	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/gorush"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/jpush"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/cache"
@@ -85,6 +86,8 @@ func NewOfflinePusher(cache cache.MsgModel) offlinepush.OfflinePusher {
 		offlinePusher = fcm.NewClient(cache)
 	case "jpush":
 		offlinePusher = jpush.NewClient()
+	case "gorush":
+		offlinePusher = gorush.NewClient(cache)
 	default:
 		offlinePusher = dummy.NewClient()
 	}

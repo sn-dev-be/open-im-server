@@ -245,6 +245,9 @@ push:
     masterSecret: ''
     pushUrl: ''
     pushIntent: ''
+  gorush:
+    pushUrl: 'http://192.168.2.222:7088/api/push'
+    bundleID: 'org.park.mimo'
 
 # App manager configuration
 #
