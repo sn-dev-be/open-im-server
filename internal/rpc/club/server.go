@@ -19,13 +19,16 @@ import (
 	"github.com/OpenIMSDK/tools/mw/specialerror"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 )
 
 func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerReq) (*pbclub.CreateServerResp, error) {
-	if req.OwnerUserID == "" {
+	opUserID := mcontext.GetOpUserID(ctx)
+
+	if req.OwnerUserID == "" || opUserID != req.OwnerUserID {
 		return nil, errs.ErrArgs.Wrap("no club owner")
 	}
 	if req.ServerName == "" {
@@ -41,7 +44,6 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		return nil, err
 	}
 
-	opUserID := mcontext.GetOpUserID(ctx)
 	serverDB := &relation.ServerModel{
 		ServerName:           req.ServerName,
 		Icon:                 req.Icon,
@@ -50,7 +52,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		InviteMode:           constant.ServerInvitedDenied,
 		Searchable:           constant.ServerSearchableDenied,
 		Status:               constant.ServerOk,
-		Banner:               req.Banner,
+		Banner:               config.Config.RandomBannerURL(),
 		UserMutualAccessible: req.UserMutualAccessible,
 		OwnerUserID:          req.OwnerUserID,
 		CreateTime:           time.Now(),

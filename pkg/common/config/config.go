@@ -16,6 +16,8 @@ package config
 
 import (
 	"bytes"
+	"math/rand"
+	"time"
 
 	"github.com/OpenIMSDK/tools/discoveryregistry"
 	"gopkg.in/yaml.v3"
@@ -345,6 +347,24 @@ type notification struct {
 	JoinServerApplication     NotificationConf `yaml:"joinServerApplication"`
 	ServerApplicationAccepted NotificationConf `yaml:"serverApplicationAccepted"`
 	ServerApplicationRejected NotificationConf `yaml:"serverApplicationRejected"`
+}
+
+var BannerURLs = []string{
+	"https://download.imimo.xyz/clubbanner/1.png",
+	"https://download.imimo.xyz/clubbanner/2.png",
+	"https://download.imimo.xyz/clubbanner/3.png",
+	"https://download.imimo.xyz/clubbanner/4.png",
+}
+
+func (c *configStruct) RandomBannerURL() string {
+	// Seed the random number generator with the current time
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random index to select a URL
+	randomIndex := rand.Intn(len(BannerURLs))
+
+	// Return the randomly selected URL
+	return BannerURLs[randomIndex]
 }
 
 func (c *configStruct) GetServiceNames() []string {
