@@ -29,6 +29,8 @@ var (
 )
 
 const (
+	pushURL = "/api/push"
+
 	SinglePushCountLimit = 1000
 
 	pushSuccess = "ok"
@@ -62,7 +64,7 @@ func (g *Gorush) Push(ctx context.Context, userIDs []string, title, content stri
 
 func (g *Gorush) request(ctx context.Context, req interface{}) error {
 	resp := &Resp{}
-	err := http2.PostReturn(ctx, config.Config.Push.Gorush.PushUrl, nil, req, resp, 5)
+	err := http2.PostReturn(ctx, config.Config.Push.Gorush.PushUrl+pushURL, nil, req, resp, 5)
 	if err != nil {
 		return err
 	}
