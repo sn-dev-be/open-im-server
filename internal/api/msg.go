@@ -280,6 +280,16 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 		},
 	}
 
+	if req.OfflinePushInfo != nil {
+		sendMsgReq.MsgData.OfflinePushInfo = &sdkws.OfflinePushInfo{
+			Title:         req.OfflinePushInfo.Title,
+			Desc:          req.OfflinePushInfo.Desc,
+			Ex:            req.OfflinePushInfo.Ex,
+			IOSPushSound:  req.OfflinePushInfo.IOSPushSound,
+			IOSBadgeCount: req.OfflinePushInfo.IOSBadgeCount,
+		}
+	}
+
 	respPb, err := m.Client.SendMsg(c, &sendMsgReq)
 	if err != nil {
 		apiresp.GinError(c, err)
