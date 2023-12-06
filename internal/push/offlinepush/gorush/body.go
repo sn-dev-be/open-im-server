@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/OpenIMSDK/protocol/constant"
-	"github.com/OpenIMSDK/tools/utils/splitter"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 )
 
@@ -43,6 +42,7 @@ type Notification struct {
 	Topic     string    `json:"topic,omitempty"`
 	Retry     uint32    `json:"retry,omitempty"`
 	SoundNmae string    `json:"name,omitempty"`
+	Badge     int       `json:"badge,omitempty"`
 	Data      *Payload  `json:"data,omitempty"`
 }
 
@@ -50,27 +50,23 @@ type Notifications struct {
 	Notifications []*Notification `json:"notifications"`
 }
 
-func NewNotifications(
+func NewNotification(
 	tokens []string,
 	platform int,
 	title, message, conversationID string,
-) []*Notification {
-	var notifications []*Notification
-	maxNum := 100
-	s := splitter.NewSplitter(maxNum, tokens)
-	for _, v := range s.GetSplitResult() {
-		n := &Notification{
-			Tokens:   &v.Item,
-			Platform: platform,
-			Message:  message,
-			Title:    title,
-			Data:     &Payload{ConversationID: conversationID},
-		}
-		if platform == constant.IOSPlatformID {
-			n.Topic = config.Config.Push.Gorush.BundleID
-			n.SoundNmae = IOSSoundName
-		}
-		notifications = append(notifications, n)
+	badge int,
+) *Notification {
+	n := &Notification{
+		Tokens:   &tokens,
+		Platform: platform,
+		Message:  message,
+		Title:    title,
+		Data:     &Payload{ConversationID: conversationID},
 	}
-	return notifications
+	if platform == constant.IOSPlatformID {
+		n.Topic = config.Config.Push.Gorush.BundleID
+		n.SoundNmae = IOSSoundName
+		n.Badge = badge
+	}
+	return n
 }

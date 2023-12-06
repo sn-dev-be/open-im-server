@@ -433,8 +433,8 @@ serverApplicationAccepted:
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
-    enable: false
-    title: ""
+    enable: true
+    title: "你的部落申请被通过了"
     desc: ""
     ext: ""
 
@@ -443,7 +443,7 @@ serverApplicationRejected:
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
-    enable: false
-    title: ""
+    enable: true
+    title: "你的部落申请被拒绝了"
     desc: ""
     ext: ""

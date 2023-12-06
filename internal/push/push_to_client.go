@@ -524,35 +524,67 @@ func (p *Pusher) getOfflinePushInfos(conversationID string, msg *sdkws.MsgData) 
 	if msg.OfflinePushInfo != nil {
 		title = msg.OfflinePushInfo.Title
 		content = msg.OfflinePushInfo.Desc
+	} else {
+		title, content = p.getOfflinePushI18nMsg(conversationID, msg)
 	}
-	if title == "" {
-		switch msg.ContentType {
-		case constant.Text:
-			fallthrough
-		case constant.Picture:
-			fallthrough
-		case constant.Voice:
-			fallthrough
-		case constant.Video:
-			fallthrough
-		case constant.File:
-			title = constant.ContentType2PushContent[int64(msg.ContentType)]
-		case constant.AtText:
-			ac := atContent{}
-			_ = utils.JsonStringToStruct(string(msg.Content), &ac)
-			if utils.IsContain(conversationID, ac.AtUserList) {
-				title = constant.ContentType2PushContent[constant.AtText] + constant.ContentType2PushContent[constant.Common]
-			} else {
-				title = constant.ContentType2PushContent[constant.GroupMsg]
-			}
-		case constant.SignalingNotification:
-			title = constant.ContentType2PushContent[constant.SignalMsg]
-		default:
-			title = constant.ContentType2PushContent[constant.Common]
-		}
-	}
-	if content == "" {
-		content = title
+	// if title == "" {
+	// 	switch msg.ContentType {
+	// 	case constant.Text:
+	// 		fallthrough
+	// 	case constant.Picture:
+	// 		fallthrough
+	// 	case constant.Voice:
+	// 		fallthrough
+	// 	case constant.Video:
+	// 		fallthrough
+	// 	case constant.Transfer:
+	// 		fallthrough
+	// 	case constant.RedPacket:
+	// 		fallthrough
+	// 	case constant.File:
+	// 		title = constant.ContentType2PushContent[int64(msg.ContentType)]
+	// 	case constant.AtText:
+	// 		ac := atContent{}
+	// 		_ = utils.JsonStringToStruct(string(msg.Content), &ac)
+	// 		if utils.IsContain(conversationID, ac.AtUserList) {
+	// 			title = constant.ContentType2PushContent[constant.AtText] + constant.ContentType2PushContent[constant.Common]
+	// 		} else {
+	// 			title = constant.ContentType2PushContent[constant.GroupMsg]
+	// 		}
+	// 	case constant.SignalingNotification:
+	// 		title = constant.ContentType2PushContent[constant.SignalMsg]
+	// 	default:
+	// 		title = constant.ContentType2PushContent[constant.Common]
+	// 	}
+	// }
+	// if content == "" {
+	// 	content = title
+	// }
+	return
+}
+
+func (p *Pusher) getOfflinePushI18nMsg(conversationID string, msg *sdkws.MsgData) (title, content string) {
+	switch msg.ContentType {
+	case constant.Text:
+		fallthrough
+	case constant.Picture:
+		fallthrough
+	case constant.Voice:
+		fallthrough
+	case constant.Video:
+		fallthrough
+	case constant.File:
+		fallthrough
+	case constant.SignalingNotification:
+		title = constant.ContentType2PushContentI18n[int64(msg.ContentType)]
+	case constant.Transfer:
+		title = constant.ContentType2PushContentI18n[constant.Transfer]
+	case constant.RedPacket:
+		title = constant.ContentType2PushContentI18n[constant.RedPacket]
+	case constant.AtText:
+		title = constant.ContentType2PushContentI18n[constant.AtText]
+	default:
+		title = constant.ContentType2PushContentI18n[constant.Common]
 	}
 	return
 }
