@@ -54,7 +54,7 @@ func (g *Gorush) Push(ctx context.Context, userIDs []string, title, content stri
 				platformTokens = append(platformTokens, token)
 			}
 		}
-		n = append(n, NewNotifications(platformTokens, platform, title, content)...)
+		n = append(n, NewNotifications(platformTokens, platform, title, content, opts.ConversationID)...)
 	}
 	if len(n) > 0 {
 		return g.request(ctx, Notifications{Notifications: n})

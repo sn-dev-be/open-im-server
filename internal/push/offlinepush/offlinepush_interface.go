@@ -25,10 +25,11 @@ type OfflinePusher interface {
 
 // Opts opts.
 type Opts struct {
-	Signal        *Signal
-	IOSPushSound  string
-	IOSBadgeCount bool
-	Ex            string
+	Signal         *Signal
+	IOSPushSound   string
+	IOSBadgeCount  bool
+	Ex             string
+	ConversationID string
 }
 
 // Signal message id.

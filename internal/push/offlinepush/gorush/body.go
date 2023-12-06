@@ -31,6 +31,10 @@ type RespI interface {
 	parseError() error
 }
 
+type Payload struct {
+	ConversationID string `json:"conversationID,omitempty"`
+}
+
 type Notification struct {
 	Tokens    *[]string `json:"tokens,omitempty"`
 	Platform  int       `json:"platform,omitempty"`
@@ -39,6 +43,7 @@ type Notification struct {
 	Topic     string    `json:"topic,omitempty"`
 	Retry     uint32    `json:"retry,omitempty"`
 	SoundNmae string    `json:"name,omitempty"`
+	Data      *Payload  `json:"data,omitempty"`
 }
 
 type Notifications struct {
@@ -48,7 +53,7 @@ type Notifications struct {
 func NewNotifications(
 	tokens []string,
 	platform int,
-	title, message string,
+	title, message, conversationID string,
 ) []*Notification {
 	var notifications []*Notification
 	maxNum := 100
@@ -59,6 +64,7 @@ func NewNotifications(
 			Platform: platform,
 			Message:  message,
 			Title:    title,
+			Data:     &Payload{ConversationID: conversationID},
 		}
 		if platform == constant.IOSPlatformID {
 			n.Topic = config.Config.Push.Gorush.BundleID

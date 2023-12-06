@@ -219,9 +219,9 @@ friendApplicationApproved:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "Someone applies to add your friend application"
-    desc: "Someone applies to add your friend application"
-    ext: "Someone applies to add your friend application"
+    title: "通过了你的好友申请"
+    desc: ""
+    ext: ""
 
 friendApplicationRejected:
   isSendMsg: false
@@ -423,10 +423,10 @@ joinServerApplication:
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
-    enable: false
-    title: "joinGroupApplication title"
-    desc: "joinGroupApplication desc"
-    ext: "joinGroupApplication ext"
+    enable: true
+    title: "收到一条部落申请"
+    desc: ""
+    ext: ""
 
 serverApplicationAccepted:
   isSendMsg: true
@@ -434,9 +434,9 @@ serverApplicationAccepted:
   unreadCount: false
   offlinePush:
     enable: false
-    title: "serverApplicationAccepted title"
-    desc: "serverApplicationAccepted desc"
-    ext: "serverApplicationAccepted ext"
+    title: ""
+    desc: ""
+    ext: ""
 
 serverApplicationRejected:
   isSendMsg: true
@@ -444,6 +444,6 @@ serverApplicationRejected:
   unreadCount: false
   offlinePush:
     enable: false
-    title: " title"
-    desc: " desc"
-    ext: " ext"
+    title: ""
+    desc: ""
+    ext: ""
