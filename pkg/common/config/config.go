@@ -223,7 +223,12 @@ type configStruct struct {
 			PushUrl      string `yaml:"pushUrl"`
 			PushIntent   string `yaml:"pushIntent"`
 		} `yaml:"jpns"`
+		Gorush struct {
+			PushUrl  string `yaml:"pushUrl"`
+			BundleID string `yaml:"bundleID"`
+		} `yaml:"gorush"`
 	}
+
 	Manager struct {
 		UserID   []string `yaml:"userID"`
 		Nickname []string `yaml:"nickname"`
