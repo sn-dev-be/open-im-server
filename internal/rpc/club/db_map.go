@@ -25,17 +25,17 @@ import (
 
 func UpdateServerInfoMap(ctx context.Context, server *sdkws.ServerInfoForSet) map[string]any {
 	m := make(map[string]any)
-	if server.ServerName != "" {
-		m["name"] = server.ServerName
+	if server.ServerName != nil {
+		m["name"] = server.ServerName.Value
 	}
-	if server.Icon != "" {
-		m["icon"] = server.Icon
+	if server.Icon != nil {
+		m["icon"] = server.Icon.Value
 	}
-	if server.Description != "" {
-		m["description"] = server.Description
+	if server.Description != nil {
+		m["description"] = server.Description.Value
 	}
-	if server.Banner != "" {
-		m["banner"] = server.Banner
+	if server.Banner != nil {
+		m["banner"] = server.Banner.Value
 	}
 	if server.ApplyMode != nil {
 		m["apply_mode"] = server.ApplyMode.Value

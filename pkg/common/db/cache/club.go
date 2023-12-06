@@ -481,11 +481,7 @@ func (c *ClubCacheRedis) DelServersMemberNum(serverID ...string) ClubCache {
 }
 
 func (c *ClubCacheRedis) GetLastestJoinedServerMember(ctx context.Context, serverIDs []string) (members map[string][]*relationtb.ServerMemberModel, err error) {
-	// return getCache(ctx, c.rcClient, c.GetLastestJoinedServerMemberKey(serverID), halfHourExpireTime, func(ctx context.Context) ([]*relationtb.ServerMemberModel, error) {
-	// 	return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
-	// })
-
-	res, err := batchGetCache2(ctx, c.rcClient, c.expireTime, serverIDs, func(serverID string) string {
+	res, err := batchGetCache2(ctx, c.rcClient, halfHourExpireTime, serverIDs, func(serverID string) string {
 		return c.GetLastestJoinedServerMemberKey(serverID)
 	}, func(ctx context.Context, serverID string) ([]*relationtb.ServerMemberModel, error) {
 		return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
@@ -494,10 +490,6 @@ func (c *ClubCacheRedis) GetLastestJoinedServerMember(ctx context.Context, serve
 	serverMembersMap := make(map[string][]*relationtb.ServerMemberModel)
 
 	for _, result := range res {
-		// if result == Redis.nil {
-		// 	// 处理错误，例如记录日志或返回错误
-		// 	continue
-		// }
 		if len(result) == 0 {
 			continue
 		}
@@ -507,9 +499,6 @@ func (c *ClubCacheRedis) GetLastestJoinedServerMember(ctx context.Context, serve
 	}
 
 	return serverMembersMap, err
-	// return getCache(ctx, c.rcClient, c.GetLastestJoinedServerMemberKey(serverID), halfHourExpireTime, func(ctx context.Context) ([]*relationtb.ServerMemberModel, error) {
-	// 	return c.serverMemberDB.FindLastestJoinedServerMember(ctx, serverID, 3)
-	// })
 }
 
 // //////server_blacks////////////
