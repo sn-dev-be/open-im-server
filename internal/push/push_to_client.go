@@ -472,7 +472,7 @@ func (p *Pusher) GetConnsAndOnlinePush(ctx context.Context, msg *sdkws.MsgData, 
 }
 
 func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
-	title, content, opts, err := p.getOfflinePushInfos(conversationID, msg)
+	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg)
 	if err != nil {
 		return err
 	}
@@ -484,8 +484,15 @@ func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg 
 	return nil
 }
 
-func (p *Pusher) GetOfflinePushOpts(msg *sdkws.MsgData) (opts *offlinepush.Opts, err error) {
-	opts = &offlinepush.Opts{Signal: &offlinepush.Signal{}, ConversationID: msgprocessor.GetConversationIDByMsg(msg)}
+func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (opts *offlinepush.Opts, err error) {
+	opts = &offlinepush.Opts{
+		Signal: &offlinepush.Signal{},
+		Server: &offlinepush.Server{},
+		Msg: &offlinepush.Msg{
+			ConversationID: msgprocessor.GetConversationIDByMsg(msg),
+			ContentType:    msg.ContentType,
+		},
+	}
 	// if msg.ContentType > constant.SignalingNotificationBegin && msg.ContentType < constant.SignalingNotificationEnd {
 	// 	req := &sdkws.SignalReq{}
 	// 	if err := proto.Unmarshal(msg.Content, req); err != nil {
@@ -496,6 +503,13 @@ func (p *Pusher) GetOfflinePushOpts(msg *sdkws.MsgData) (opts *offlinepush.Opts,
 	// 		opts.Signal = &offlinepush.Signal{ClientMsgID: msg.ClientMsgID}
 	// 	}
 	// }
+	if msg.SessionType == constant.ServerGroupChatType {
+		group, err := p.groupRpcClient.GetGroupInfo(ctx, msg.RecvID)
+		if err == nil {
+			opts.Server.ServerID = group.ServerID
+		}
+	}
+
 	if msg.OfflinePushInfo != nil {
 		opts.IOSBadgeCount = msg.OfflinePushInfo.IOSBadgeCount
 		opts.IOSPushSound = msg.OfflinePushInfo.IOSPushSound
@@ -504,7 +518,7 @@ func (p *Pusher) GetOfflinePushOpts(msg *sdkws.MsgData) (opts *offlinepush.Opts,
 	return opts, nil
 }
 
-func (p *Pusher) getOfflinePushInfos(conversationID string, msg *sdkws.MsgData) (title, content string, opts *offlinepush.Opts, err error) {
+func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string, msg *sdkws.MsgData) (title, content string, opts *offlinepush.Opts, err error) {
 	if p.offlinePusher == nil {
 		err = errNoOfflinePusher
 		return
@@ -516,7 +530,7 @@ func (p *Pusher) getOfflinePushInfos(conversationID string, msg *sdkws.MsgData) 
 		IsAtSelf   bool     `json:"isAtSelf"`
 	}
 
-	opts, err = p.GetOfflinePushOpts(msg)
+	opts, err = p.GetOfflinePushOpts(ctx, msg)
 	if err != nil {
 		return
 	}

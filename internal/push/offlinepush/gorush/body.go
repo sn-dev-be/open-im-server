@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 )
 
@@ -32,6 +33,8 @@ type RespI interface {
 
 type Payload struct {
 	ConversationID string `json:"conversationID,omitempty"`
+	ServerID       string `json:"serverID,omitempty"`
+	ContentType    int32  `json:"contentType,omitempty"`
 }
 
 type Notification struct {
@@ -53,7 +56,8 @@ type Notifications struct {
 func NewNotification(
 	tokens []string,
 	platform int,
-	title, message, conversationID string,
+	title, message string,
+	opts *offlinepush.Opts,
 	badge int,
 ) *Notification {
 	n := &Notification{
@@ -61,12 +65,18 @@ func NewNotification(
 		Platform: platform,
 		Message:  message,
 		Title:    title,
-		Data:     &Payload{ConversationID: conversationID},
+		Data: &Payload{
+			ConversationID: opts.Msg.ConversationID,
+			ContentType:    opts.Msg.ContentType,
+		},
 	}
 	if platform == constant.IOSPlatformID {
 		n.Topic = config.Config.Push.Gorush.BundleID
 		n.SoundNmae = IOSSoundName
 		n.Badge = badge
+	}
+	if opts.Server != nil {
+		n.Data.ServerID = opts.Server.ServerID
 	}
 	return n
 }

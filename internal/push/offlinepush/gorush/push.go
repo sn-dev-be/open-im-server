@@ -61,7 +61,7 @@ func (g *Gorush) Push(ctx context.Context, userIDs []string, title, content stri
 			} else if err == redis.Nil || unreadCountSum == 0 {
 				badge = 1
 			}
-			notification := NewNotification([]string{token}, v, title, content, opts.ConversationID, badge)
+			notification := NewNotification([]string{token}, v, title, content, opts, badge)
 			notifications = append(notifications, notification)
 		}
 	}
