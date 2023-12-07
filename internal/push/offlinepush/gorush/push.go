@@ -18,10 +18,12 @@ import (
 	"context"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/tools/log"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/cache"
 	http2 "github.com/openimsdk/open-im-server/v3/pkg/common/http"
+	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -31,9 +33,9 @@ var (
 const (
 	pushURL = "/api/push"
 
-	SinglePushCountLimit = 1000
-
 	pushSuccess = "ok"
+
+	chunkSize = 300
 )
 
 type Gorush struct {
@@ -45,19 +47,34 @@ func NewClient(cache cache.MsgModel) *Gorush {
 }
 
 func (g *Gorush) Push(ctx context.Context, userIDs []string, title, content string, opts *offlinepush.Opts) error {
-	var n []*Notification
-	for _, platform := range Terminal {
-		var platformTokens []string
-		for _, account := range userIDs {
-			token, err := g.cache.GetFcmToken(ctx, account, platform)
-			if err == nil {
-				platformTokens = append(platformTokens, token)
+	var notifications []*Notification
+	for _, userID := range userIDs {
+		for _, v := range Terminal {
+			token, err := g.cache.GetFcmToken(ctx, userID, v)
+			if err != nil {
+				continue
 			}
+			badge := 0
+			unreadCountSum, err := g.cache.GetUserBadgeUnreadCountSum(ctx, userID)
+			if err == nil && unreadCountSum != 0 {
+				badge = unreadCountSum
+			} else if err == redis.Nil || unreadCountSum == 0 {
+				badge = 1
+			}
+			notification := NewNotification([]string{token}, v, title, content, opts.ConversationID, badge)
+			notifications = append(notifications, notification)
 		}
-		n = append(n, NewNotifications(platformTokens, platform, title, content, opts.ConversationID)...)
 	}
-	if len(n) > 0 {
-		return g.request(ctx, Notifications{Notifications: n})
+	for i := 0; i < len(notifications); i += chunkSize {
+		end := i + chunkSize
+		if end > len(notifications) {
+			end = len(notifications)
+		}
+		chunk := notifications[i:end]
+		if err := g.request(ctx, Notifications{Notifications: chunk}); err != nil {
+			log.ZError(ctx, "gorush push notifications failed", err, "notifications length", len(chunk), "title", title)
+			continue
+		}
 	}
 	return nil
 }
