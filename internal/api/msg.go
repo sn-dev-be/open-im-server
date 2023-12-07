@@ -255,13 +255,7 @@ func (m *MessageApi) SendBusinessNotification(c *gin.Context) {
 		return
 	}
 
-	// if err := m.validate.Struct(data); err != nil {
-	// 	apiresp.GinError(c, errs.ErrArgs.Wrap("unknown content struct"))
-	// 	return
-	// }
-
 	msgElem := &sdkws.NotificationElem{Detail: utils.StructToJsonString(&data)}
-
 	sendMsgReq := msg.SendMsgReq{
 		MsgData: &sdkws.MsgData{
 			SendID:      req.SendID,

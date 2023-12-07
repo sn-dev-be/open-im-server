@@ -82,16 +82,16 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	groups := []*relationtb.GroupModel{}
 	if categoryA, err := s.genGroupCategoryByDefault(ctx, serverDB.ServerID, "", constant.DefaultCategoryType, 0); err == nil {
 		categories = append(categories, categoryA)
-		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryA.CategoryID, "公告栏", opUserID, "https://download.imimo.xyz/image/notice.png"))
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryA.CategoryID, "公告栏", opUserID, "https://download.imimo.xyz/image/notice.png", constant.GroupStatusMuted))
 	}
 	if categoryB, err := s.genGroupCategoryByDefault(ctx, serverDB.ServerID, "文字房间", constant.SysCategoryType, 1); err == nil {
 		categories = append(categories, categoryB)
-		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryB.CategoryID, "日常聊天", opUserID, "https://download.imimo.xyz/image/topic.png"))
-		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryB.CategoryID, "资讯互动", opUserID, "https://download.imimo.xyz/image/topic.png"))
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryB.CategoryID, "日常聊天", opUserID, "https://download.imimo.xyz/image/topic.png", constant.GroupOk))
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryB.CategoryID, "资讯互动", opUserID, "https://download.imimo.xyz/image/topic.png", constant.GroupOk))
 	}
 	if categoryC, err := s.genGroupCategoryByDefault(ctx, serverDB.ServerID, "部落管理", constant.SysCategoryType, 2); err == nil {
 		categories = append(categories, categoryC)
-		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryC.CategoryID, "部落事务讨论", opUserID, "https://download.imimo.xyz/image/service.png"))
+		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryC.CategoryID, "部落事务讨论", opUserID, "https://download.imimo.xyz/image/service.png", constant.GroupOk))
 	}
 
 	members := []*relationtb.ServerMemberModel{}
@@ -272,13 +272,13 @@ func (s *clubServer) GenServerID(ctx context.Context, serverID *string) error {
 	return errs.ErrData.Wrap("server id gen error")
 }
 
-func (s *clubServer) genCreateServerGroupReq(ctx context.Context, serverID, categoryID, groupName, ownerUserID, faceURL string) *relationtb.GroupModel {
+func (s *clubServer) genCreateServerGroupReq(ctx context.Context, serverID, categoryID, groupName, ownerUserID, faceURL string, status int32) *relationtb.GroupModel {
 	//req := &pbclub.CreateServerGroupReq{}
 
 	groupInfo := &relationtb.GroupModel{
 		GroupName:              groupName,
 		FaceURL:                faceURL,
-		Status:                 constant.GroupOk,
+		Status:                 status,
 		CreatorUserID:          ownerUserID,
 		GroupType:              constant.ServerGroup,
 		ConditionType:          1,
