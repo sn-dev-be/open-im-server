@@ -524,7 +524,9 @@ func (p *Pusher) getOfflinePushInfos(conversationID string, msg *sdkws.MsgData) 
 	if msg.OfflinePushInfo != nil {
 		title = msg.OfflinePushInfo.Title
 		content = msg.OfflinePushInfo.Desc
-	} else {
+	}
+
+	if title == "" {
 		title, content = p.getOfflinePushI18nMsg(conversationID, msg)
 	}
 	// if title == "" {
@@ -585,6 +587,9 @@ func (p *Pusher) getOfflinePushI18nMsg(conversationID string, msg *sdkws.MsgData
 		title = constant.ContentType2PushContentI18n[constant.AtText]
 	default:
 		title = constant.ContentType2PushContentI18n[constant.Common]
+	}
+	if content == "" {
+		content = title
 	}
 	return
 }
