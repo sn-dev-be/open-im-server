@@ -35,7 +35,6 @@ func (h SingleChatMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*Off
 	default:
 		info.Content = constant.ContentType2PushContentI18n[constant.Common]
 	}
-
 	return info, nil
 }
 
@@ -43,7 +42,8 @@ func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineM
 	info := &OfflineMsg{}
 	groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
 	if err != nil {
-		log.ZError(ctx, "get group from Redis", err)
+		log.ZError(ctx, "offline info GetGroupInfo failed", err)
+		return nil, err
 	}
 	info.Title = groupInfo.GroupName
 	switch msg.ContentType {
@@ -54,7 +54,6 @@ func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineM
 	default:
 		info.Content = constant.ContentType2PushContentI18n[constant.Common]
 	}
-
 	return info, nil
 }
 
@@ -62,9 +61,9 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*Of
 	info := &OfflineMsg{}
 	groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
 	if err != nil {
-		log.ZError(ctx, "get group from Redis", err)
+		log.ZError(ctx, "offline info GetGroupInfo failed", err)
+		return nil, err
 	}
-
 	switch msg.ContentType {
 	case constant.RedPacket:
 		info.Title = groupInfo.GroupName
@@ -73,6 +72,5 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*Of
 		info.Title = groupInfo.GroupName
 		info.Content = constant.ContentType2PushContentI18n[constant.Common]
 	}
-
 	return info, nil
 }

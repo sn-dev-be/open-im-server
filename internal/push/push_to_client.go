@@ -542,9 +542,11 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string,
 	}
 
 	if title == "" {
-		offlineMsg, err := offlineinfo.GetOfflineInfo(ctx, msg, p.groupRpcClient)
+		var offlineMsg *offlineinfo.OfflineMsg
+		offlineMsg, err = offlineinfo.GetOfflineInfo(ctx, msg, p.groupRpcClient)
 		if err != nil {
-			log.ZDebug(ctx, "getOfflinePushInfos", err)
+			log.ZError(ctx, "getOfflineInfo failed", err, "contentType", msg.ContentType)
+			return
 		}
 		title = offlineMsg.Title
 		content = offlineMsg.Content
