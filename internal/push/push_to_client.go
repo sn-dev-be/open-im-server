@@ -31,6 +31,7 @@ import (
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 
+	"github.com/openimsdk/open-im-server/v3/internal/push/offlineinfo"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/dummy"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush/fcm"
@@ -504,7 +505,7 @@ func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (op
 	// 	}
 	// }
 	if msg.SessionType == constant.ServerGroupChatType {
-		group, err := p.groupRpcClient.GetGroupInfo(ctx, msg.RecvID)
+		group, err := p.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
 		if err == nil {
 			opts.Server.ServerID = group.ServerID
 		}
@@ -541,7 +542,12 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string,
 	}
 
 	if title == "" {
-		title, content = p.getOfflinePushI18nMsg(conversationID, msg)
+		offlineMsg, err := offlineinfo.GetOfflineInfo(ctx, msg, p.groupRpcClient)
+		if err != nil {
+			log.ZDebug(ctx, "getOfflinePushInfos", err)
+		}
+		title = offlineMsg.Title
+		content = offlineMsg.Content
 	}
 	// if title == "" {
 	// 	switch msg.ContentType {

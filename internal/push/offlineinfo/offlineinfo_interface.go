@@ -19,6 +19,7 @@ import (
 
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
+	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 )
 
 type OfflineMsg struct {
@@ -26,19 +27,28 @@ type OfflineMsg struct {
 	Content string
 }
 
-type OfflineInfo interface {
-	Msg(ctx context.Context, conversationID string, msg *sdkws.MsgData) (*OfflineMsg, error)
+type rpc struct {
+	groupRpcClient *rpcclient.GroupRpcClient
 }
 
-func GetOfflineInfo(ctx context.Context, conversationID string, msg *sdkws.MsgData) (*OfflineMsg, error) {
+type OfflineInfo interface {
+	Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error)
+}
+
+func GetOfflineInfo(ctx context.Context, msg *sdkws.MsgData, groupRpcClient *rpcclient.GroupRpcClient) (*OfflineMsg, error) {
 	var info OfflineInfo
-	switch msg.ContentType {
-	case constant.Text:
-		info = TextMsgHandler{}
-	case constant.Voice:
-		info = VoiceMsgHandler{}
-	default:
-		info = CommonMsgHandler{}
+	rpc := rpc{
+		groupRpcClient: groupRpcClient,
 	}
-	return info.Msg(ctx, conversationID, msg)
+	switch msg.SessionType {
+	case constant.SingleChatType:
+		info = SingleChatMsgHandler{}
+	case constant.SuperGroupChatType:
+		info = GroupMsgHandler{rpc}
+	case constant.ServerGroupChatType:
+		info = ServerGroupMsgHandler{rpc}
+	default:
+		info = SingleChatMsgHandler{}
+	}
+	return info.Msg(ctx, msg)
 }

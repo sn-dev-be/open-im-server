@@ -424,8 +424,8 @@ joinServerApplication:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "收到一条部落申请"
-    desc: ""
+    title: "部落通知"
+    desc: "收到一条部落申请"
     ext: ""
 
 serverApplicationAccepted:
@@ -434,8 +434,8 @@ serverApplicationAccepted:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "你的部落申请被通过了"
-    desc: ""
+    title: "部落通知"
+    desc: "你的部落申请被通过了"
     ext: ""
 
 serverApplicationRejected:
@@ -444,6 +444,6 @@ serverApplicationRejected:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "你的部落申请被拒绝了"
-    desc: ""
+    title: "部落通知"
+    desc: "你的部落申请被拒绝了"
     ext: ""

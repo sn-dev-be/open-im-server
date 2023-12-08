@@ -90,12 +90,12 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 	if err := c.ClubDatabase.CreateServerRequest(ctx, []*relationtb.ServerRequestModel{&serverRequest}); err != nil {
 		return nil, err
 	}
+
 	c.Notification.JoinServerApplicationNotification(ctx, req)
 
 	go func() {
 		asyncCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-
 		CallbackAfterRemarkServerMember(asyncCtx, req.ServerID, req.InviterUserID, user.Nickname)
 	}()
 

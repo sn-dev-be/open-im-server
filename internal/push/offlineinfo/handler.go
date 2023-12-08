@@ -17,21 +17,62 @@ package offlineinfo
 import (
 	"context"
 
+	"github.com/OpenIMSDK/tools/log"
+
+	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
 )
 
-type CommonMsgHandler struct{}
-type TextMsgHandler struct{}
-type VoiceMsgHandler struct{}
+type SingleChatMsgHandler struct{}
+type GroupMsgHandler struct{ rpc }
+type ServerGroupMsgHandler struct{ rpc }
 
-func (h CommonMsgHandler) Msg(ctx context.Context, conversationID string, msg *sdkws.MsgData) (*OfflineMsg, error) {
-	return &OfflineMsg{}, nil
+func (h SingleChatMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
+	info := &OfflineMsg{Title: msg.SenderNickname}
+	switch msg.ContentType {
+	case constant.RedPacket:
+		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
+	default:
+		info.Content = constant.ContentType2PushContentI18n[constant.Common]
+	}
+
+	return info, nil
 }
 
-func (h TextMsgHandler) Msg(ctx context.Context, conversationID string, msg *sdkws.MsgData) (*OfflineMsg, error) {
-	return &OfflineMsg{}, nil
+func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
+	info := &OfflineMsg{}
+	groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
+	if err != nil {
+		log.ZError(ctx, "get group from Redis", err)
+	}
+	info.Title = groupInfo.GroupName
+	switch msg.ContentType {
+	case constant.RedPacket:
+		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
+	case constant.AtText:
+		info.Content = constant.ContentType2PushContentI18n[constant.AtText]
+	default:
+		info.Content = constant.ContentType2PushContentI18n[constant.Common]
+	}
+
+	return info, nil
 }
 
-func (h VoiceMsgHandler) Msg(ctx context.Context, conversationID string, msg *sdkws.MsgData) (*OfflineMsg, error) {
-	return &OfflineMsg{}, nil
+func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
+	info := &OfflineMsg{}
+	groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
+	if err != nil {
+		log.ZError(ctx, "get group from Redis", err)
+	}
+
+	switch msg.ContentType {
+	case constant.RedPacket:
+		info.Title = groupInfo.GroupName
+		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
+	default:
+		info.Title = groupInfo.GroupName
+		info.Content = constant.ContentType2PushContentI18n[constant.Common]
+	}
+
+	return info, nil
 }
