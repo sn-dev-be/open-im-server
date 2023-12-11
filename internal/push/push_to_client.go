@@ -57,6 +57,7 @@ type Pusher struct {
 	msgRpcClient           *rpcclient.MessageRpcClient
 	conversationRpcClient  *rpcclient.ConversationRpcClient
 	groupRpcClient         *rpcclient.GroupRpcClient
+	offlineInfoParse       *offlineinfo.OfflineInfoParse
 }
 
 var errNoOfflinePusher = errors.New("no offlinePusher is configured")
@@ -75,6 +76,7 @@ func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offl
 		msgRpcClient:           msgRpcClient,
 		conversationRpcClient:  conversationRpcClient,
 		groupRpcClient:         groupRpcClient,
+		offlineInfoParse:       offlineinfo.NewOfflineInfoParse(groupRpcClient),
 	}
 }
 
@@ -473,7 +475,7 @@ func (p *Pusher) GetConnsAndOnlinePush(ctx context.Context, msg *sdkws.MsgData, 
 }
 
 func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
-	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg)
+	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
 	if err != nil {
 		return err
 	}
@@ -519,7 +521,7 @@ func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (op
 	return opts, nil
 }
 
-func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string, msg *sdkws.MsgData) (title, content string, opts *offlinepush.Opts, err error) {
+func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) (title, content string, opts *offlinepush.Opts, err error) {
 	if p.offlinePusher == nil {
 		err = errNoOfflinePusher
 		return
@@ -543,7 +545,7 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string,
 
 	if title == "" {
 		var offlineMsg *offlineinfo.OfflineMsg
-		offlineMsg, err = offlineinfo.GetOfflineInfo(ctx, msg, p.groupRpcClient)
+		offlineMsg, err = p.offlineInfoParse.GetOfflineInfo(ctx, msg)
 		if err != nil {
 			log.ZError(ctx, "getOfflineInfo failed", err, "contentType", msg.ContentType)
 			return
@@ -584,34 +586,5 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string,
 	// if content == "" {
 	// 	content = title
 	// }
-	return
-}
-
-func (p *Pusher) getOfflinePushI18nMsg(conversationID string, msg *sdkws.MsgData) (title, content string) {
-	switch msg.ContentType {
-	case constant.Text:
-		fallthrough
-	case constant.Picture:
-		fallthrough
-	case constant.Voice:
-		fallthrough
-	case constant.Video:
-		fallthrough
-	case constant.File:
-		fallthrough
-	case constant.SignalingNotification:
-		title = constant.ContentType2PushContentI18n[int64(msg.ContentType)]
-	case constant.Transfer:
-		title = constant.ContentType2PushContentI18n[constant.Transfer]
-	case constant.RedPacket:
-		title = constant.ContentType2PushContentI18n[constant.RedPacket]
-	case constant.AtText:
-		title = constant.ContentType2PushContentI18n[constant.AtText]
-	default:
-		title = constant.ContentType2PushContentI18n[constant.Common]
-	}
-	if content == "" {
-		content = title
-	}
 	return
 }

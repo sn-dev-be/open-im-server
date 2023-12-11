@@ -35,10 +35,20 @@ type OfflineInfo interface {
 	Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error)
 }
 
-func GetOfflineInfo(ctx context.Context, msg *sdkws.MsgData, groupRpcClient *rpcclient.GroupRpcClient) (*OfflineMsg, error) {
+type OfflineInfoParse struct {
+	groupRpcClient *rpcclient.GroupRpcClient
+}
+
+func NewOfflineInfoParse(groupRpcClient *rpcclient.GroupRpcClient) *OfflineInfoParse {
+	return &OfflineInfoParse{
+		groupRpcClient: groupRpcClient,
+	}
+}
+
+func (o *OfflineInfoParse) GetOfflineInfo(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
 	var info OfflineInfo
 	rpc := rpc{
-		groupRpcClient: groupRpcClient,
+		groupRpcClient: o.groupRpcClient,
 	}
 	switch msg.SessionType {
 	case constant.SingleChatType:
