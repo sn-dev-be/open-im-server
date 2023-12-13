@@ -55,6 +55,12 @@ func (g *Gorush) Push(ctx context.Context, userIDs []string, title, content stri
 				continue
 			}
 			badge := 0
+			if v == constant.IOSPlatformID {
+				unreadCountSum, err := g.cache.IncrUserBadgeUnreadCountSum(ctx, userID)
+				if err == nil {
+					badge = unreadCountSum
+				}
+			}
 			unreadCountSum, err := g.cache.GetUserBadgeUnreadCountSum(ctx, userID)
 			if err == nil && unreadCountSum != 0 {
 				badge = unreadCountSum

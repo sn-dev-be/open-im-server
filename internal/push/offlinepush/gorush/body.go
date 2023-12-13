@@ -8,7 +8,10 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 )
 
-const IOSSoundName = "default"
+const (
+	IOSSoundName     = "default"
+	IOSBadgeMaxCount = 99
+)
 
 type Resp struct {
 	Code    int    `json:"code"`
@@ -74,6 +77,9 @@ func NewNotification(
 		n.Topic = config.Config.Push.Gorush.BundleID
 		n.SoundNmae = IOSSoundName
 		n.Badge = badge
+		if badge >= IOSBadgeMaxCount {
+			n.Badge = IOSBadgeMaxCount
+		}
 	}
 	if opts.Server != nil {
 		n.Data.ServerID = opts.Server.ServerID
