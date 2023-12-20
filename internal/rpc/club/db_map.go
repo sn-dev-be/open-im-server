@@ -52,6 +52,15 @@ func UpdateServerInfoMap(ctx context.Context, server *sdkws.ServerInfoForSet) ma
 	if server.DappID != nil {
 		m["dapp_id"] = server.DappID.Value
 	}
+	if server.CommunityName != nil {
+		m["community_name"] = server.CommunityName.Value
+	}
+	if server.CommunityBanner != nil {
+		m["community_banner"] = server.CommunityBanner.Value
+	}
+	if server.CommunityViewMode != nil {
+		m["community_view_mode"] = server.CommunityViewMode.Value
+	}
 	return m
 }
 

@@ -280,6 +280,7 @@ type configStruct struct {
 		CallbackZapBusinessUrl             string         `yaml:"zapBusinessUrl"`
 		CallbackAfterSetServerMember       CallBackConfig `yaml:"callbackAfterSetServerMember"`
 		CallbackAfterChangefriendRelation  CallBackConfig `yaml:"callbackAfterChangefriendRelation"`
+		CallbackAfterServerChanged         CallBackConfig `yaml:"callbackAfterServerChanged"`
 	} `yaml:"callback"`
 
 	Prometheus struct {

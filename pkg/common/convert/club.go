@@ -24,6 +24,9 @@ func Db2PbServerInfo(m *relation.ServerModel, ownerUserID string, memberCount ui
 		GroupNumber:          m.GroupNumber,
 		DappID:               m.DappID,
 		CreateTime:           m.CreateTime.UnixMilli(),
+		CommunityName:        m.CommunityName,
+		CommunityBanner:      m.CommunityBanner,
+		CommunityViewMode:    m.CommunityViewMode,
 	}
 }
 
@@ -46,6 +49,9 @@ func DB2PbServerInfo(m *relation.ServerModel) *sdkws.ServerInfo {
 		DappID:               m.DappID,
 		CreateTime:           m.CreateTime.UnixMilli(),
 		Ex:                   m.Ex,
+		CommunityName:        m.CommunityName,
+		CommunityBanner:      m.CommunityBanner,
+		CommunityViewMode:    m.CommunityViewMode,
 	}
 }
 

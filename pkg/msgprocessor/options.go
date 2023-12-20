@@ -44,7 +44,8 @@ func NewOptions(opts ...OptionsOpt) Options {
 func NewMsgOptions() Options {
 	options := make(map[string]bool, 11)
 	options[constant.IsOfflinePush] = false
-	return make(map[string]bool)
+	return options
+	//return make(map[string]bool)
 }
 
 func WithOptions(options Options, opts ...OptionsOpt) Options {

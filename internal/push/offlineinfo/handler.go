@@ -18,6 +18,9 @@ import (
 	"context"
 
 	"github.com/OpenIMSDK/tools/log"
+	"github.com/OpenIMSDK/tools/mcontext"
+	"github.com/OpenIMSDK/tools/utils"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
@@ -32,6 +35,8 @@ func (h SingleChatMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*Off
 	switch msg.ContentType {
 	case constant.RedPacket:
 		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
+	case constant.FriendApplicationApprovedNotification:
+		info.Content = config.Config.Notification.FriendApplicationApproved.OfflinePush.Desc
 	default:
 		info.Content = constant.ContentType2PushContentI18n[constant.Common]
 	}
@@ -68,8 +73,14 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*Of
 	case constant.RedPacket:
 		info.Title = groupInfo.GroupName
 		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
+	case constant.AtText:
+		info.Title = groupInfo.GroupName + "[部落]"
+		loginUserID := mcontext.GetOpUserID(ctx)
+		if utils.IsContain(loginUserID, msg.AtUserIDList) {
+			info.Content = constant.ContentType2PushContentI18n[constant.AtText]
+		}
 	default:
-		info.Title = groupInfo.GroupName
+		info.Title = groupInfo.GroupName + "[部落]"
 		info.Content = constant.ContentType2PushContentI18n[constant.Common]
 	}
 	return info, nil

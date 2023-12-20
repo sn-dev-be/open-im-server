@@ -38,6 +38,17 @@ type CallbackAfterFriendRelationChangedResp struct {
 	CommonCallbackResp
 }
 
+type CallbackAfterServerChangedReq struct {
+	ServerID        string `json:"club_server_id" `
+	CommunityName   string `json:"name"`
+	CommunityBanner string `json:"banner"`
+	IsPublic        bool   `json:"is_public"`
+}
+
+type CallbackAfterServerChangedResp struct {
+	CommonCallbackResp
+}
+
 type ClubServerUserStruct struct {
 	ServerID string `json:"server_id" `
 	UserID   string `json:"user_id"`

@@ -479,6 +479,24 @@ func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg 
 	if err != nil {
 		return err
 	}
+
+	if msg.ContentType == constant.AtText && len(msg.AtUserIDList) > 0 {
+		normalOfflinePushUserIDs := utils.SliceSub(offlinePushUserIDs, msg.AtUserIDList)
+		err = p.offlinePusher.Push(ctx, normalOfflinePushUserIDs, title, constant.ContentType2PushContentI18n[constant.Common], opts)
+		if err != nil {
+			prommetrics.MsgOfflinePushFailedCounter.Inc()
+			return err
+		}
+
+		err = p.offlinePusher.Push(ctx, msg.AtUserIDList, title, constant.ContentType2PushContentI18n[constant.AtText], opts)
+		if err != nil {
+			prommetrics.MsgOfflinePushFailedCounter.Inc()
+			return err
+		}
+
+		return nil
+	}
+
 	err = p.offlinePusher.Push(ctx, offlinePushUserIDs, title, content, opts)
 	if err != nil {
 		prommetrics.MsgOfflinePushFailedCounter.Inc()

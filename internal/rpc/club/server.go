@@ -19,6 +19,7 @@ import (
 	"github.com/OpenIMSDK/tools/mw/specialerror"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
+	cbapi "github.com/openimsdk/open-im-server/v3/pkg/callbackstruct"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -56,6 +57,8 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		UserMutualAccessible: req.UserMutualAccessible,
 		OwnerUserID:          req.OwnerUserID,
 		CreateTime:           time.Now(),
+		CommunityName:        "部落社区",
+		CommunityViewMode:    constant.ServerCommunityPrivate,
 		Ex:                   req.Ex,
 	}
 	serverDB.OwnerUserID = opUserID
@@ -100,6 +103,18 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	if err := s.ClubDatabase.CreateServer(ctx, []*relationtb.ServerModel{serverDB}, roles, categories, groups, members); err != nil {
 		return nil, err
 	}
+
+	go func() {
+		asyncCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		cbreq := &cbapi.CallbackAfterServerChangedReq{
+			ServerID:        serverDB.ServerID,
+			CommunityName:   serverDB.CommunityName,
+			CommunityBanner: serverDB.CommunityBanner,
+			IsPublic:        false,
+		}
+		CallbackAfterServerChanged(asyncCtx, cbreq)
+	}()
 
 	return &pbclub.CreateServerResp{ServerID: serverDB.ServerID}, nil
 }
@@ -236,6 +251,14 @@ func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServe
 	if err := s.ClubDatabase.DismissServer(ctx, req.ServerID); err != nil {
 		return nil, err
 	}
+	go func() {
+		asyncCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		cbreq := &cbapi.CallbackAfterServerChangedReq{
+			ServerID: req.ServerID,
+		}
+		CallbackAfterServerDelete(asyncCtx, cbreq)
+	}()
 	return resp, nil
 }
 
@@ -360,6 +383,22 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 	// default:
 	// 	s.Notification.ServerInfoSetNotification(ctx, tips)
 	// }
+
+	go func() {
+		asyncCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		cbreq := &cbapi.CallbackAfterServerChangedReq{
+			ServerID:        server.ServerID,
+			CommunityName:   server.CommunityName,
+			CommunityBanner: server.CommunityBanner,
+			IsPublic:        false,
+		}
+		if server.CommunityViewMode == 1 {
+			cbreq.IsPublic = true
+		}
+		CallbackAfterServerChanged(asyncCtx, cbreq)
+	}()
+
 	return resp, nil
 }
 

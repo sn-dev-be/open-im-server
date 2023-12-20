@@ -26,8 +26,10 @@ import (
 )
 
 const (
-	RemarkServerMemberURI = "/openim-callback/club-server-user"
-	DeleteServerMemberURI = "/openim-callback/club-server-user/delete"
+	RemarkServerMemberURI    = "/openim-callback/club-server-user"
+	DeleteServerMemberURI    = "/openim-callback/club-server-user/delete"
+	ServerChangedCallbackURI = "/openim-callback/club-server"
+	ServerDeleteCallbackURI  = "/openim-callback/club-server/delete"
 )
 
 func CallbackAfterRemarkServerMember(ctx context.Context, serverID, userID, nickname string) error {
@@ -37,13 +39,13 @@ func CallbackAfterRemarkServerMember(ctx context.Context, serverID, userID, nick
 		return nil
 	}
 
-	ClubServerUser := &cbapi.ClubServerUserStruct{
+	clubServerUser := &cbapi.ClubServerUserStruct{
 		ServerID: serverID,
 		UserID:   userID,
 		Nickname: nickname,
 	}
 	cbReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-		ClubServerUser: *ClubServerUser,
+		ClubServerUser: *clubServerUser,
 	}
 
 	if _, err := http.Post(ctx, remarkServerMemberUri, nil, cbReq, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
@@ -60,17 +62,44 @@ func CallbackAfterQuitServer(ctx context.Context, serverID, userID, nickname str
 		return nil
 	}
 
-	ClubServerUser := &cbapi.ClubServerUserStruct{
+	clubServerUser := &cbapi.ClubServerUserStruct{
 		ServerID: serverID,
 		UserID:   userID,
 		Nickname: nickname,
 	}
 	cbReq := &cbapi.CallbackQuitServerReq{
-		ClubServerUser: *ClubServerUser,
+		ClubServerUser: *clubServerUser,
 	}
 
 	if _, err := http.Post(ctx, deleteServerMemberURI, nil, cbReq, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
 		log.ZError(ctx, "CallbackAfterQuitServer", utils.Unwrap(err))
+	}
+
+	return nil
+}
+
+func CallbackAfterServerChanged(ctx context.Context, req *cbapi.CallbackAfterServerChangedReq) error {
+	serverChangedCallbackURI := config.Config.Callback.CallbackZapBusinessUrl + ServerChangedCallbackURI
+
+	if !config.Config.Callback.CallbackAfterServerChanged.Enable {
+		return nil
+	}
+
+	if _, err := http.Post(ctx, serverChangedCallbackURI, nil, req, config.Config.Callback.CallbackAfterServerChanged.CallbackTimeOut); err != nil {
+		log.ZError(ctx, "CallbackAfterServerChanged", utils.Unwrap(err))
+	}
+
+	return nil
+}
+
+func CallbackAfterServerDelete(ctx context.Context, req *cbapi.CallbackAfterServerChangedReq) error {
+	serverChangedCallbackURI := config.Config.Callback.CallbackZapBusinessUrl + ServerDeleteCallbackURI
+
+	if !config.Config.Callback.CallbackAfterServerChanged.Enable {
+		return nil
+	}
+	if _, err := http.Post(ctx, serverChangedCallbackURI, nil, req, config.Config.Callback.CallbackAfterServerChanged.CallbackTimeOut); err != nil {
+		log.ZError(ctx, "CallbackAfterServerDelete", utils.Unwrap(err))
 	}
 
 	return nil
