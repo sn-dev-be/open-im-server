@@ -16,6 +16,7 @@ package notification
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
@@ -260,6 +261,41 @@ func (c *ClubNotificationSender) ServerApplicationRejectedNotification(ctx conte
 	err = c.Notification(ctx, c.getNotificationAdminUserID(), req.FromUserID, constant.ServerApplicationRejectedNotification, tips)
 	if err != nil {
 		log.ZError(ctx, "failed", err)
+	}
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerCreatedNotification(ctx context.Context, tips *sdkws.ServerCreatedTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	if err := c.fillOpUser(ctx, &tips.OpUser, tips.Server.ServerID); err != nil {
+		return err
+	}
+
+	if tips.ServerGroupList != nil && len(tips.ServerGroupList) > 0 {
+		groupIDs := utils.Slice(tips.ServerGroupList, func(g *sdkws.GroupInfo) string { return g.GroupID })
+		c.sendNotificationToServerGroups(ctx, mcontext.GetOpUserID(ctx), groupIDs, constant.ServerCreatedNotification, tips)
+
+	}
+	// for _, group := range tips.ServerGroupList {
+	// 	c.Notification(ctx, mcontext.GetOpUserID(ctx), group.GroupID, constant.ServerCreatedNotification, tips)
+	// }
+
+	return nil
+}
+
+func (c *ClubNotificationSender) sendNotificationToServerGroups(ctx context.Context, opUserID string, groupIDs []string, notificationType int32, tips interface{}) error {
+	for _, groupID := range groupIDs {
+		switch v := tips.(type) {
+		case *sdkws.ServerCreatedTips:
+			c.Notification(ctx, mcontext.GetOpUserID(ctx), groupID, notificationType, v)
+		default:
+			return utils.Wrap(errors.New("unsupported tips type"), "")
+		}
 	}
 	return nil
 }

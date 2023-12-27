@@ -26,6 +26,7 @@ import (
 	"github.com/OpenIMSDK/protocol/conversation"
 	"github.com/OpenIMSDK/protocol/msggateway"
 	"github.com/OpenIMSDK/protocol/sdkws"
+	"github.com/OpenIMSDK/protocol/user"
 	"github.com/OpenIMSDK/tools/discoveryregistry"
 	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
@@ -58,13 +59,14 @@ type Pusher struct {
 	conversationRpcClient  *rpcclient.ConversationRpcClient
 	groupRpcClient         *rpcclient.GroupRpcClient
 	offlineInfoParse       *offlineinfo.OfflineInfoParse
+	userRpcClient          *rpcclient.UserRpcClient
 }
 
 var errNoOfflinePusher = errors.New("no offlinePusher is configured")
 
 func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offlinepush.OfflinePusher, database controller.PushDatabase,
 	groupLocalCache *localcache.GroupLocalCache, conversationLocalCache *localcache.ConversationLocalCache, serverLocalCache *localcache.ServerLocalCache,
-	conversationRpcClient *rpcclient.ConversationRpcClient, groupRpcClient *rpcclient.GroupRpcClient, msgRpcClient *rpcclient.MessageRpcClient,
+	conversationRpcClient *rpcclient.ConversationRpcClient, groupRpcClient *rpcclient.GroupRpcClient, msgRpcClient *rpcclient.MessageRpcClient, userRpcClient *rpcclient.UserRpcClient,
 ) *Pusher {
 	return &Pusher{
 		discov:                 discov,
@@ -77,6 +79,7 @@ func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offl
 		conversationRpcClient:  conversationRpcClient,
 		groupRpcClient:         groupRpcClient,
 		offlineInfoParse:       offlineinfo.NewOfflineInfoParse(groupRpcClient),
+		userRpcClient:          userRpcClient,
 	}
 }
 
@@ -132,6 +135,8 @@ func (p *Pusher) Push2User(ctx context.Context, userIDs []string, msg *sdkws.Msg
 				return err
 			}
 
+			//newMsgPushMode
+			//p.userRpcClient.Client.GetUserSetting()
 			err = p.offlinePushMsg(ctx, msg.SendID, msg, []string{v.UserID})
 			if err != nil {
 				return err
@@ -393,6 +398,9 @@ func (p *Pusher) Push2ServerGroup(ctx context.Context, groupID string, msg *sdkw
 			}
 			needOfflinePushUserIDs = utils.SliceSub(needOfflinePushUserIDs, notNotificationUserIDs)
 		}
+
+		//filter users who set newMsgPushMode false
+
 		// Use offline push messaging
 		if len(needOfflinePushUserIDs) > 0 {
 			var offlinePushUserIDs []string
@@ -474,33 +482,67 @@ func (p *Pusher) GetConnsAndOnlinePush(ctx context.Context, msg *sdkws.MsgData, 
 	return wsResults, nil
 }
 
+// func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
+// 	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	for _, userID := range offlinePushUserIDs {
+// 		// 根据每个用户ID检查推送设置
+// 		go func() {
+// 			asyncCtx, cancel := context.WithCancel(context.Background())
+// 			defer cancel()
+// 			p.offlinePushMsgToUser(asyncCtx, conversationID, msg, userID, title, content, opts)
+// 		}()
+
+// 	}
+// 	return nil
+// }
+
+func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string, msg *sdkws.MsgData, userID, title, content string, opts *offlinepush.Opts) error {
+	//todo  设置推送是否展示消息内容
+	if msg.ContentType == constant.AtText {
+		if utils.Contain(userID, msg.AtUserIDList...) {
+			content = constant.ContentType2PushContentI18n[constant.AtText]
+		}
+		err := p.offlinePusher.Push(ctx, []string{userID}, title, constant.ContentType2PushContentI18n[constant.Common], opts)
+
+		if err != nil {
+			prommetrics.MsgOfflinePushFailedCounter.Inc()
+			return err
+		}
+		return nil
+	}
+
+	err := p.offlinePusher.Push(ctx, []string{userID}, title, content, opts)
+	if err != nil {
+		prommetrics.MsgOfflinePushFailedCounter.Inc()
+		return err
+	}
+	return nil
+}
+
 func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
 	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
 	if err != nil {
 		return err
 	}
 
-	if msg.ContentType == constant.AtText && len(msg.AtUserIDList) > 0 {
-		normalOfflinePushUserIDs := utils.SliceSub(offlinePushUserIDs, msg.AtUserIDList)
-		err = p.offlinePusher.Push(ctx, normalOfflinePushUserIDs, title, constant.ContentType2PushContentI18n[constant.Common], opts)
-		if err != nil {
-			prommetrics.MsgOfflinePushFailedCounter.Inc()
-			return err
-		}
-
-		err = p.offlinePusher.Push(ctx, msg.AtUserIDList, title, constant.ContentType2PushContentI18n[constant.AtText], opts)
-		if err != nil {
-			prommetrics.MsgOfflinePushFailedCounter.Inc()
-			return err
-		}
-
-		return nil
-	}
-
-	err = p.offlinePusher.Push(ctx, offlinePushUserIDs, title, content, opts)
+	//批量获取用户设置
+	userSettingResp, err := p.userRpcClient.Client.GetUserSettingsByUserIDs(ctx, &user.GetUserSettingsByUserIDsReq{UserIDs: offlinePushUserIDs})
 	if err != nil {
-		prommetrics.MsgOfflinePushFailedCounter.Inc()
 		return err
+	}
+	for _, userSetting := range userSettingResp.Settings {
+		//allowed push new msg
+		if userSetting.NewMsgPushMode == 1 {
+			err := p.offlinePushMsgToUser(ctx, conversationID, msg, userSetting.UserID, title, content, opts)
+			if err != nil {
+				prommetrics.MsgOfflinePushFailedCounter.Inc()
+				return err
+			}
+		}
 	}
 	return nil
 }

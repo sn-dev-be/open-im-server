@@ -18,6 +18,7 @@ import (
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
+	cbapi "github.com/openimsdk/open-im-server/v3/pkg/callbackstruct"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
@@ -96,7 +97,17 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 	go func() {
 		asyncCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		CallbackAfterRemarkServerMember(asyncCtx, req.ServerID, req.InviterUserID, user.Nickname)
+
+		clubServerUser := &cbapi.ClubServerUserStruct{
+			ServerID: req.ServerID,
+			UserID:   req.InviterUserID,
+			Nickname: user.Nickname,
+		}
+
+		serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
+			ClubServerUser: *clubServerUser,
+		}
+		CallbackAfterJoinServer(asyncCtx, serverReq)
 	}()
 
 	return resp, nil
@@ -126,13 +137,21 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 
 	//todo 发送notification
 	//_ = c.Notification.MemberQuitNotification(ctx, c.groupMemberDB2PB(info, 0))
+	c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID})
 
 	go func() {
 		asyncCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		c.deleteMemberAndSetConversationSeq(asyncCtx, req.ServerID, []string{req.UserID})
 
-		CallbackAfterQuitServer(asyncCtx, req.ServerID, req.UserID, "")
+		clubServerUser := &cbapi.ClubServerUserStruct{
+			ServerID: req.ServerID,
+			UserID:   req.UserID,
+		}
+
+		serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
+			ClubServerUser: *clubServerUser,
+		}
+		CallbackAfterQuitServer(asyncCtx, serverReq)
 	}()
 
 	return resp, nil
@@ -302,9 +321,24 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 		return nil, err
 	}
 
-	for _, userID := range req.KickedUserIDs {
-		CallbackAfterQuitServer(ctx, req.ServerID, userID, "")
-	}
+	go func() {
+		asyncCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		for _, userID := range req.KickedUserIDs {
+
+			clubServerUser := &cbapi.ClubServerUserStruct{
+				ServerID: req.ServerID,
+				UserID:   userID,
+			}
+
+			serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
+				ClubServerUser: *clubServerUser,
+			}
+
+			CallbackAfterQuitServer(asyncCtx, serverReq)
+		}
+
+	}()
 
 	// tips := &sdkws.MemberKickedTips{
 	// 	Server: &sdkws.ServerInfo{
@@ -648,14 +682,22 @@ func (c *clubServer) SetServerMemberInfo(ctx context.Context, req *pbclub.SetSer
 		}
 
 		if member.Nickname != nil {
-			CallbackAfterRemarkServerMember(ctx, member.ServerID, member.UserID, member.Nickname.Value)
+			go func() {
+				asyncCtx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				clubServerUser := &cbapi.ClubServerUserStruct{
+					ServerID: member.ServerID,
+					UserID:   member.UserID,
+					Nickname: member.Nickname.Value,
+				}
+
+				serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
+					ClubServerUser: *clubServerUser,
+				}
+				CallbackAfterJoinServer(asyncCtx, serverReq)
+			}()
 		}
-		// if member.Nickname != nil || member.FaceURL != nil || member.Ex != nil {
-		// 	log.ZDebug(ctx, "setServerMemberInfo notification", "member", member.UserID)
-		// 	if err := c.Notification.ServerMemberInfoSetNotification(ctx, member.ServerID, member.UserID); err != nil {
-		// 		log.ZError(ctx, "setServerMemberInfo notification failed", err, "member", member.UserID, "serverID", member.ServerID)
-		// 	}
-		// }
 	}
 	return resp, nil
 }
@@ -817,4 +859,8 @@ func mergeAndDeduplicate(slice1, slice2 []string) []string {
 	}
 
 	return result
+}
+
+func (s *clubServer) callbackAfterJoinServer(ctx context.Context, serverDB *relationtb.ServerModel) {
+
 }

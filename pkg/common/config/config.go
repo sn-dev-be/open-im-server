@@ -353,6 +353,7 @@ type notification struct {
 	JoinServerApplication     NotificationConf `yaml:"joinServerApplication"`
 	ServerApplicationAccepted NotificationConf `yaml:"serverApplicationAccepted"`
 	ServerApplicationRejected NotificationConf `yaml:"serverApplicationRejected"`
+	ServerCreated             NotificationConf `yaml:"serverCreated"`
 }
 
 var BannerURLs = []string{

@@ -107,6 +107,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	go func() {
 		asyncCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+
 		cbreq := &cbapi.CallbackAfterServerChangedReq{
 			ServerID:        serverDB.ServerID,
 			CommunityName:   serverDB.CommunityName,
@@ -114,7 +115,31 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 			IsPublic:        false,
 		}
 		CallbackAfterServerChanged(asyncCtx, cbreq)
+
+		clubServerUser := &cbapi.ClubServerUserStruct{
+			ServerID: serverDB.ServerID,
+			UserID:   serverDB.OwnerUserID,
+		}
+
+		serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
+			ClubServerUser: *clubServerUser,
+		}
+		CallbackAfterJoinServer(asyncCtx, serverReq)
+
 	}()
+
+	tips := &sdkws.ServerCreatedTips{
+		Server:        convert.DB2PbServerInfo(serverDB),
+		OperationTime: serverDB.CreateTime.UnixMilli(),
+		OpUser:        convert.Db2PbServerMember(members[0]),
+	}
+	for _, group := range groups {
+		tips.ServerGroupList = append(tips.ServerGroupList, convert.Db2PbGroupInfo(group, opUserID, 1))
+	}
+
+	//tips.ServerGroupList = append(tips.ServerGroupList, s.groupMemberDB2PB(member, userMap[member.UserID].AppMangerLevel))
+
+	s.Notification.ServerCreatedNotification(ctx, tips)
 
 	return &pbclub.CreateServerResp{ServerID: serverDB.ServerID}, nil
 }

@@ -103,6 +103,8 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.JoinServerApplicationNotification:     config.Config.Notification.JoinServerApplication,
 		constant.ServerApplicationAcceptedNotification: config.Config.Notification.ServerApplicationAccepted,
 		constant.ServerApplicationRejectedNotification: config.Config.Notification.ServerApplicationRejected,
+		constant.ServerCreatedNotification:             config.Config.Notification.ServerApplicationRejected,
+
 		// modifyMsg
 		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
 	}
@@ -154,6 +156,7 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.JoinServerApplicationNotification:     constant.SingleChatType,
 		constant.ServerApplicationAcceptedNotification: constant.SingleChatType,
 		constant.ServerApplicationRejectedNotification: constant.SingleChatType,
+		constant.ServerCreatedNotification:             constant.ServerGroupChatType,
 	}
 }
 

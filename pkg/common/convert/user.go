@@ -48,3 +48,15 @@ func UserPb2DB(user *sdkws.UserInfo) *relationtb.UserModel {
 	userDB.GlobalRecvMsgOpt = user.GlobalRecvMsgOpt
 	return &userDB
 }
+
+func UserSettingDB2Pb(user *relationtb.UserSettingModel) (result *sdkws.UserSetting) {
+	var userSettingPb sdkws.UserSetting
+	userSettingPb.UserID = user.UserID
+	userSettingPb.NewMsgPushMode = user.NewMsgPushMode
+	userSettingPb.NewMsgPushDetailMode = user.NewMsgPushDetailMode
+	userSettingPb.NewMsgVoiceMode = user.NewMsgVoiceMode
+	userSettingPb.NewMsgShakeMode = user.NewMsgShakeMode
+	userSettingPb.Ex = user.Ex
+	userSettingPb.CreateTime = user.CreateTime.UnixMilli()
+	return &userSettingPb
+}

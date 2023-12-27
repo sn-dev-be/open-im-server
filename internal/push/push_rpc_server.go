@@ -47,6 +47,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	conversationRpcClient := rpcclient.NewConversationRpcClient(client)
 	clubRpcClient := rpcclient.NewClubRpcClient(client)
 	msgRpcClient := rpcclient.NewMessageRpcClient(client)
+	userRpcClient := rpcclient.NewUserRpcClient(client)
 	pusher := NewPusher(
 		client,
 		offlinePusher,
@@ -57,6 +58,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		&conversationRpcClient,
 		&groupRpcClient,
 		&msgRpcClient,
+		&userRpcClient,
 	)
 	var wg sync.WaitGroup
 	wg.Add(2)

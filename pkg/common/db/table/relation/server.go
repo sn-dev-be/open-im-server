@@ -43,7 +43,7 @@ type ServerModel struct {
 	Ex                   string    `gorm:"column:ex;size:255"                                  json:"ex"`
 	CreateTime           time.Time `gorm:"column:create_time;index:create_time;autoCreateTime" json:"createTime"`
 	CommunityName        string    `gorm:"column:community_name;size:64"					   json:"communityName"`
-	CommunityBanner      string    `gorm:"column:community_banner;size:64"			 		   json:"communityBanner"`
+	CommunityBanner      string    `gorm:"column:community_banner;size:255"			 		   json:"communityBanner"`
 	CommunityViewMode    int32     `gorm:"column:community_view_mode;"					       json:"communityViewMode"`
 }
 

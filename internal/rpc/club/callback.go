@@ -32,46 +32,46 @@ const (
 	ServerDeleteCallbackURI  = "/openim-callback/club-server/delete"
 )
 
-func CallbackAfterRemarkServerMember(ctx context.Context, serverID, userID, nickname string) error {
+func CallbackAfterJoinServer(ctx context.Context, req *cbapi.CallbackAfterRemarkServerMemberReq) error {
 	remarkServerMemberUri := config.Config.Callback.CallbackZapBusinessUrl + RemarkServerMemberURI
 
 	if !config.Config.Callback.CallbackAfterSetServerMember.Enable {
 		return nil
 	}
 
-	clubServerUser := &cbapi.ClubServerUserStruct{
-		ServerID: serverID,
-		UserID:   userID,
-		Nickname: nickname,
-	}
-	cbReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-		ClubServerUser: *clubServerUser,
-	}
+	// clubServerUser := &cbapi.ClubServerUserStruct{
+	// 	ServerID: serverID,
+	// 	UserID:   userID,
+	// 	Nickname: nickname,
+	// }
+	// cbReq := &cbapi.CallbackAfterRemarkServerMemberReq{
+	// 	ClubServerUser: *clubServerUser,
+	// }
 
-	if _, err := http.Post(ctx, remarkServerMemberUri, nil, cbReq, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
+	if _, err := http.Post(ctx, remarkServerMemberUri, nil, req, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
 		log.ZInfo(ctx, "CallbackAfterRemarkServerMember", utils.Unwrap(err))
 	}
 
 	return nil
 }
 
-func CallbackAfterQuitServer(ctx context.Context, serverID, userID, nickname string) error {
+func CallbackAfterQuitServer(ctx context.Context, req *cbapi.CallbackAfterRemarkServerMemberReq) error {
 	deleteServerMemberURI := config.Config.Callback.CallbackZapBusinessUrl + DeleteServerMemberURI
 
 	if !config.Config.Callback.CallbackAfterSetServerMember.Enable {
 		return nil
 	}
 
-	clubServerUser := &cbapi.ClubServerUserStruct{
-		ServerID: serverID,
-		UserID:   userID,
-		Nickname: nickname,
-	}
-	cbReq := &cbapi.CallbackQuitServerReq{
-		ClubServerUser: *clubServerUser,
-	}
+	// clubServerUser := &cbapi.ClubServerUserStruct{
+	// 	ServerID: serverID,
+	// 	UserID:   userID,
+	// 	Nickname: nickname,
+	// }
+	// cbReq := &cbapi.CallbackQuitServerReq{
+	// 	ClubServerUser: *clubServerUser,
+	// }
 
-	if _, err := http.Post(ctx, deleteServerMemberURI, nil, cbReq, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
+	if _, err := http.Post(ctx, deleteServerMemberURI, nil, req, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
 		log.ZError(ctx, "CallbackAfterQuitServer", utils.Unwrap(err))
 	}
 

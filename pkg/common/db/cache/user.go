@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/OpenIMSDK/tools/log"
+	"github.com/OpenIMSDK/tools/utils"
 
 	"github.com/OpenIMSDK/protocol/constant"
 
@@ -43,6 +44,7 @@ const (
 	userOlineStatusExpireTime = time.Second * 60 * 60 * 24
 	statusMod                 = 501
 	platformID                = "_PlatformIDSuffix"
+	settingInfoKey            = "USER_SETTING_INFO:"
 )
 
 type UserCache interface {
@@ -55,39 +57,46 @@ type UserCache interface {
 	DelUsersGlobalRecvMsgOpt(userIDs ...string) UserCache
 	GetUserStatus(ctx context.Context, userIDs []string) ([]*user.OnlineStatus, error)
 	SetUserStatus(ctx context.Context, userID string, status, platformID int32) error
+	GetUserSettingInfo(ctx context.Context, userID string) (*relationtb.UserSettingModel, error)
+	GetUserSettingsInfo(ctx context.Context, userIDs []string) ([]*relationtb.UserSettingModel, error)
+	DelUserSettingsInfo(userIDs ...string) UserCache
 }
 
 type UserCacheRedis struct {
 	metaCache
-	rdb        redis.UniversalClient
-	userDB     relationtb.UserModelInterface
-	expireTime time.Duration
-	rcClient   *rockscache.Client
+	rdb           redis.UniversalClient
+	userDB        relationtb.UserModelInterface
+	userSettingDB relationtb.UserSettingModelInterface
+	expireTime    time.Duration
+	rcClient      *rockscache.Client
 }
 
 func NewUserCacheRedis(
 	rdb redis.UniversalClient,
 	userDB relationtb.UserModelInterface,
+	userSettingDB relationtb.UserSettingModelInterface,
 	options rockscache.Options,
 ) UserCache {
 	rcClient := rockscache.NewClient(rdb, options)
 
 	return &UserCacheRedis{
-		rdb:        rdb,
-		metaCache:  NewMetaCacheRedis(rcClient),
-		userDB:     userDB,
-		expireTime: userExpireTime,
-		rcClient:   rcClient,
+		rdb:           rdb,
+		metaCache:     NewMetaCacheRedis(rcClient),
+		userDB:        userDB,
+		userSettingDB: userSettingDB,
+		expireTime:    userExpireTime,
+		rcClient:      rcClient,
 	}
 }
 
 func (u *UserCacheRedis) NewCache() UserCache {
 	return &UserCacheRedis{
-		rdb:        u.rdb,
-		metaCache:  NewMetaCacheRedis(u.rcClient, u.metaCache.GetPreDelKeys()...),
-		userDB:     u.userDB,
-		expireTime: u.expireTime,
-		rcClient:   u.rcClient,
+		rdb:           u.rdb,
+		metaCache:     NewMetaCacheRedis(u.rcClient, u.metaCache.GetPreDelKeys()...),
+		userDB:        u.userDB,
+		userSettingDB: u.userSettingDB,
+		expireTime:    u.expireTime,
+		rcClient:      u.rcClient,
 	}
 }
 
@@ -97,6 +106,10 @@ func (u *UserCacheRedis) getUserInfoKey(userID string) string {
 
 func (u *UserCacheRedis) getUserGlobalRecvMsgOptKey(userID string) string {
 	return userGlobalRecvMsgOptKey + userID
+}
+
+func (u *UserCacheRedis) getUserSettingInfoKey(userID string) string {
+	return settingInfoKey + userID
 }
 
 func (u *UserCacheRedis) GetUserInfo(ctx context.Context, userID string) (userInfo *relationtb.UserModel, err error) {
@@ -344,4 +357,73 @@ func RemoveRepeatedElementsInList[T Comparable](slc []T) []T {
 	}
 
 	return result
+}
+
+func (u *UserCacheRedis) GetUserSettingInfo(ctx context.Context, userID string) (userSettingInfo *relationtb.UserSettingModel, err error) {
+	return getCache(
+		ctx,
+		u.rcClient,
+		u.getUserSettingInfoKey(userID),
+		u.expireTime,
+		func(ctx context.Context) (*relationtb.UserSettingModel, error) {
+			return u.userSettingDB.Take(ctx, userID)
+		},
+	)
+}
+
+func (u *UserCacheRedis) DelUserSettingsInfo(userIDs ...string) UserCache {
+	keys := make([]string, 0, len(userIDs))
+	for _, userID := range userIDs {
+		keys = append(keys, u.getUserSettingInfoKey(userID))
+	}
+	cache := u.NewCache()
+	cache.AddKeys(keys...)
+
+	return cache
+}
+
+func (u *UserCacheRedis) GetUserSettingsInfo(ctx context.Context, userIDs []string) (userSettings []*relationtb.UserSettingModel, err error) {
+
+	if len(userIDs) == 0 {
+		return userSettings, err
+	}
+
+	pipeline := u.rdb.Pipeline()
+	defer pipeline.Shutdown(ctx)
+
+	keys := []string{}
+	// 设置要批量获取的 key 列表
+	for _, userID := range userIDs {
+		keys = append(keys, u.getUserSettingInfoKey(userID))
+	}
+
+	// 使用 Pipeline 进行批量获取
+	getCmds := make([]*redis.MapStringStringCmd, len(keys))
+
+	for i, key := range keys {
+		getCmds[i] = pipeline.HGetAll(context.Background(), key)
+	}
+
+	// 执行 Pipeline 中的命令
+	_, err = pipeline.Exec(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	// 处理获取到的值
+	for i, _ := range keys {
+		val, err := getCmds[i].Result()
+		if err == redis.Nil {
+			continue
+		} else if err != nil {
+
+			continue
+		} else {
+			data := relationtb.UserSettingModel{}
+			utils.JsonStringToStruct(val["value"], &data)
+			userSettings = append(userSettings, &data)
+		}
+	}
+
+	return userSettings, nil
 }

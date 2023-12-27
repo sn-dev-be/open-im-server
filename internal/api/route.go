@@ -78,6 +78,8 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		userRouterGroup.POST("/subscribe_users_status", ParseToken, u.SubscriberStatus)
 		userRouterGroup.POST("/get_users_status", ParseToken, u.GetUserStatus)
 		userRouterGroup.POST("/get_subscribe_users_status", ParseToken, u.GetSubscribeUsersStatus)
+		userRouterGroup.POST("/get_user_setting", u.GetUserSetting)
+		userRouterGroup.POST("/set_user_setting", ParseToken, u.SetUserSetting)
 	}
 	// friend routing group
 	friendRouterGroup := r.Group("/friend", ParseToken)

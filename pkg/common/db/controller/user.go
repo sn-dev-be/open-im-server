@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/OpenIMSDK/protocol/user"
+	"gorm.io/gorm"
 
 	unrelationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/unrelation"
 
@@ -65,17 +66,23 @@ type UserDatabase interface {
 	GetUserStatus(ctx context.Context, userIDs []string) ([]*user.OnlineStatus, error)
 	// SetUserStatus Set the user status and store the user status in redis
 	SetUserStatus(ctx context.Context, userID string, status, platformID int32) error
+
+	InsertUserSetting(ctx context.Context, setting *relation.UserSettingModel) (*relation.UserSettingModel, error)
+	GetUserSetting(ctx context.Context, userID string) (*relation.UserSettingModel, error)
+	SetUserSetting(ctx context.Context, userID string, args map[string]interface{}) error
+	GetUserSettingsByUserIDs(ctx context.Context, userIDs []string) ([]*relation.UserSettingModel, error)
 }
 
 type userDatabase struct {
-	userDB  relation.UserModelInterface
-	cache   cache.UserCache
-	tx      tx.Tx
-	mongoDB unrelationtb.UserModelInterface
+	userDB        relation.UserModelInterface
+	userSettingDB relation.UserSettingModelInterface
+	cache         cache.UserCache
+	tx            tx.Tx
+	mongoDB       unrelationtb.UserModelInterface
 }
 
-func NewUserDatabase(userDB relation.UserModelInterface, cache cache.UserCache, tx tx.Tx, mongoDB unrelationtb.UserModelInterface) UserDatabase {
-	return &userDatabase{userDB: userDB, cache: cache, tx: tx, mongoDB: mongoDB}
+func NewUserDatabase(userDB relation.UserModelInterface, userSettingDB relation.UserSettingModelInterface, cache cache.UserCache, tx tx.Tx, mongoDB unrelationtb.UserModelInterface) UserDatabase {
+	return &userDatabase{userDB: userDB, userSettingDB: userSettingDB, cache: cache, tx: tx, mongoDB: mongoDB}
 }
 
 func (u *userDatabase) InitOnce(ctx context.Context, users []*relation.UserModel) (err error) {
@@ -118,6 +125,20 @@ func (u *userDatabase) Create(ctx context.Context, users []*relation.UserModel) 
 		if err != nil {
 			return err
 		}
+
+		//setting, _ := settings.NewDefaultSettings().ToJSON()
+		for _, user := range users {
+			userSetting := &relation.UserSettingModel{
+				UserID:               user.UserID,
+				NewMsgPushMode:       1,
+				NewMsgPushDetailMode: 0,
+				NewMsgVoiceMode:      0,
+				NewMsgShakeMode:      0,
+				CreateTime:           time.Time{},
+			}
+			u.userSettingDB.Create(ctx, []*relation.UserSettingModel{userSetting})
+		}
+
 		return nil
 	}); err != nil {
 		return err
@@ -219,4 +240,70 @@ func (u *userDatabase) GetUserStatus(ctx context.Context, userIDs []string) ([]*
 // SetUserStatus Set the user status and save it in redis.
 func (u *userDatabase) SetUserStatus(ctx context.Context, userID string, status, platformID int32) error {
 	return u.cache.SetUserStatus(ctx, userID, status, platformID)
+}
+
+func (u *userDatabase) InsertUserSetting(ctx context.Context, setting *relation.UserSettingModel) (*relation.UserSettingModel, error) {
+	err := u.userSettingDB.Create(ctx, []*relation.UserSettingModel{setting})
+	if err != nil {
+		return nil, err
+	}
+	return setting, nil
+}
+
+// GetUserSetting implements UserDatabase.
+func (u *userDatabase) GetUserSetting(ctx context.Context, userID string) (*relation.UserSettingModel, error) {
+	return u.cache.GetUserSettingInfo(ctx, userID)
+}
+
+// SetUserSetting implements UserDatabase.
+func (u *userDatabase) SetUserSetting(ctx context.Context, userID string, data map[string]any) error {
+	userSetting, err := u.userSettingDB.Take(ctx, userID)
+	if err != nil && errs.Unwrap(err) != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err != nil {
+		// settingObj := settings.NewDefaultSettings()
+		// settingObj.AddOrUpdateSetting(settingKey, settingValue)
+		// settingStr, err := settingObj.ToJSON()
+		// if err != nil {
+		// 	return err
+		// }
+		userSetting = &relation.UserSettingModel{
+			UserID:               userID,
+			NewMsgPushMode:       1,
+			NewMsgPushDetailMode: 0,
+			NewMsgVoiceMode:      0,
+			NewMsgShakeMode:      0,
+			CreateTime:           time.Now(),
+		}
+		if err := u.userSettingDB.Create(ctx, []*relation.UserSettingModel{userSetting}); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err = u.userSettingDB.UpdateByMap(ctx, userID, data)
+	if err != nil {
+		return err
+	}
+
+	// if setting_obj, err := settings.SettingsFromJSON(userSetting.Setting); err != nil {
+	// 	return err
+	// } else {
+	// 	setting_obj.AddOrUpdateSetting(settingKey, settingValue)
+	// 	if settingStr, err := setting_obj.ToJSON(); err != nil {
+	// 		return nil
+	// 	} else {
+	// 		userSetting.Setting = settingStr
+	// 		if err := u.userSettingDB.Update(ctx, userSetting); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+	u.cache.DelUserSettingsInfo(userID).ExecDel(ctx)
+	return nil
+}
+
+func (u *userDatabase) GetUserSettingsByUserIDs(ctx context.Context, userIDs []string) ([]*relation.UserSettingModel, error) {
+	return u.cache.GetUserSettingsInfo(ctx, userIDs)
 }
