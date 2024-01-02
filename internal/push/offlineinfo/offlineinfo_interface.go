@@ -23,8 +23,9 @@ import (
 )
 
 type OfflineMsg struct {
-	Title   string
-	Content string
+	Title      string
+	Content    string
+	MsgContent string
 }
 
 type rpc struct {

@@ -17,25 +17,26 @@ package user
 import (
 	"context"
 
-	"github.com/OpenIMSDK/protocol/sdkws"
+	"github.com/OpenIMSDK/protocol/user"
 )
 
-func UserSettingInfoMap(ctx context.Context, userSetting *sdkws.UserSettingForSet) map[string]any {
+func UpdateUserInfoMap(ctx context.Context, user *user.SetGlobalRecvMessageOptReq) map[string]any {
 	m := make(map[string]any)
-	if userSetting.NewMsgPushMode != nil {
-		m["new_msg_push_mode"] = userSetting.NewMsgPushMode.Value
+	if user.GlobalRecvMsgOpt != nil {
+		m["global_recv_msg_opt"] = user.GlobalRecvMsgOpt.Value
 	}
-	if userSetting.NewMsgPushDetailMode != nil {
-		m["new_msg_push_detail_mode"] = userSetting.NewMsgPushDetailMode.Value
+	if user.AllowBeep != nil {
+		m["allow_beep"] = user.AllowBeep.Value
 	}
-	if userSetting.NewMsgVoiceMode != nil {
-		m["new_msg_voice_mode"] = userSetting.NewMsgVoiceMode.Value
+	if user.AllowVibration != nil {
+		m["allow_vibration"] = user.AllowVibration.Value
 	}
-	if userSetting.NewMsgShakeMode != nil {
-		m["new_msg_shake_mode"] = userSetting.NewMsgShakeMode.Value
+	if user.AllowPushContent != nil {
+		m["allow_push_content"] = user.AllowPushContent.Value
 	}
-	if userSetting.Ex != nil {
-		m["ex"] = userSetting.Ex.Value
+	if user.AllowOnlinePush != nil {
+		m["allow_online_push"] = user.AllowOnlinePush.Value
 	}
+
 	return m
 }

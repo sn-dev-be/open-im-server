@@ -24,9 +24,7 @@ import (
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
-	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/tx"
-	"gorm.io/gorm"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/unrelation"
@@ -69,7 +67,7 @@ func Start(client registry.SvcDiscoveryRegistry, server *grpc.Server) error {
 	if err != nil {
 		return err
 	}
-	if err := db.AutoMigrate(&tablerelation.UserModel{}, &tablerelation.UserSettingModel{}); err != nil {
+	if err := db.AutoMigrate(&tablerelation.UserModel{}); err != nil {
 		return err
 	}
 	users := make([]*tablerelation.UserModel, 0)
@@ -80,10 +78,9 @@ func Start(client registry.SvcDiscoveryRegistry, server *grpc.Server) error {
 		users = append(users, &tablerelation.UserModel{UserID: v, Nickname: config.Config.Manager.Nickname[k], AppMangerLevel: constant.AppAdmin})
 	}
 	userDB := relation.NewUserGorm(db)
-	userSettingDB := relation.NewUserSettingGorm(db)
-	cache := cache.NewUserCacheRedis(rdb, userDB, userSettingDB, cache.GetDefaultOpt())
+	cache := cache.NewUserCacheRedis(rdb, userDB, cache.GetDefaultOpt())
 	userMongoDB := unrelation.NewUserMongoDriver(mongo.GetDatabase())
-	database := controller.NewUserDatabase(userDB, userSettingDB, cache, tx.NewGorm(db), userMongoDB)
+	database := controller.NewUserDatabase(userDB, cache, tx.NewGorm(db), userMongoDB)
 	friendRpcClient := rpcclient.NewFriendRpcClient(client)
 	groupRpcClient := rpcclient.NewGroupRpcClient(client)
 	msgRpcClient := rpcclient.NewMessageRpcClient(client)
@@ -153,8 +150,9 @@ func (s *userServer) SetGlobalRecvMessageOpt(ctx context.Context, req *pbuser.Se
 	if _, err := s.FindWithError(ctx, []string{req.UserID}); err != nil {
 		return nil, err
 	}
-	m := make(map[string]interface{}, 1)
-	m["global_recv_msg_opt"] = req.GlobalRecvMsgOpt
+	//m := make(map[string]interface{}, 1)
+	m := UpdateUserInfoMap(ctx, req)
+	//m["global_recv_msg_opt"] = req.GlobalRecvMsgOpt
 	if err := s.UpdateByMap(ctx, req.UserID, m); err != nil {
 		return nil, err
 	}
@@ -253,11 +251,18 @@ func (s *userServer) UserRegister(ctx context.Context, req *pbuser.UserRegisterR
 }
 
 func (s *userServer) GetGlobalRecvMessageOpt(ctx context.Context, req *pbuser.GetGlobalRecvMessageOptReq) (resp *pbuser.GetGlobalRecvMessageOptResp, err error) {
-	user, err := s.FindWithError(ctx, []string{req.UserID})
+	users, err := s.FindWithError(ctx, []string{req.UserID})
 	if err != nil {
 		return nil, err
 	}
-	return &pbuser.GetGlobalRecvMessageOptResp{GlobalRecvMsgOpt: user[0].GlobalRecvMsgOpt}, nil
+	user := users[0]
+	return &pbuser.GetGlobalRecvMessageOptResp{
+		GlobalRecvMsgOpt: user.GlobalRecvMsgOpt,
+		AllowBeep:        user.AllowBeep,
+		AllowVibration:   user.AllowVibration,
+		AllowPushContent: user.AllowPushContent,
+		AllowOnlinePush:  user.AllowOnlinePush,
+	}, nil
 }
 
 // GetAllUserID Get user account by page.
@@ -337,66 +342,4 @@ func (s *userServer) GetSubscribeUsersStatus(ctx context.Context,
 		return nil, err
 	}
 	return &pbuser.GetSubscribeUsersStatusResp{StatusList: onlineStatusList}, nil
-}
-
-func (s *userServer) GetUserSetting(ctx context.Context, req *pbuser.GetUserSettingReq) (resp *pbuser.GetUserSettingResp, err error) {
-	resp = &pbuser.GetUserSettingResp{}
-	userID := req.UserID
-	if userID == "" {
-		return nil, errs.ErrArgs
-	}
-	if userSetting, err := s.UserDatabase.GetUserSetting(ctx, userID); err != nil {
-		if errors.Unwrap(err) != gorm.ErrRecordNotFound {
-			setting, err := s.UserDatabase.InsertUserSetting(ctx, &tablerelation.UserSettingModel{
-				UserID:               req.UserID,
-				NewMsgPushMode:       1,
-				NewMsgPushDetailMode: 0,
-				NewMsgVoiceMode:      0,
-				NewMsgShakeMode:      0,
-				Ex:                   "",
-				CreateTime:           time.Now(),
-			})
-			if err != nil {
-				return nil, err
-			}
-			s.UserDatabase.GetUserSetting(ctx, userID)
-			resp.Setting = convert.UserSettingDB2Pb(setting)
-			return resp, nil
-		}
-		return nil, err
-	} else {
-		resp.Setting = convert.UserSettingDB2Pb(userSetting)
-	}
-	return resp, nil
-}
-
-func (s *userServer) SetUserSetting(ctx context.Context, req *pbuser.SetUserSettingReq) (resp *pbuser.SetUserSettingResp, err error) {
-	userID := req.Setting.UserID
-	opUserID := mcontext.GetOpUserID(ctx)
-	if userID != opUserID {
-		return nil, errs.ErrArgs
-	}
-
-	data := UserSettingInfoMap(ctx, req.Setting)
-	err = s.UserDatabase.SetUserSetting(ctx, userID, data)
-	if err != nil {
-		return nil, err
-	}
-	return &pbuser.SetUserSettingResp{}, nil
-}
-
-// GetAllowedOfflinePushUserIDs implements user.UserServer.
-func (s *userServer) GetUserSettingsByUserIDs(ctx context.Context, req *pbuser.GetUserSettingsByUserIDsReq) (*pbuser.GetUserSettingsByUserIDsResp, error) {
-	if req.UserIDs != nil && len(req.UserIDs) > 0 {
-		settings, err := s.UserDatabase.GetUserSettingsByUserIDs(ctx, req.UserIDs)
-		if err != nil {
-			return nil, err
-		}
-		resp := &pbuser.GetUserSettingsByUserIDsResp{
-			Settings: utils.Batch(convert.UserSettingDB2Pb, settings),
-		}
-
-		return resp, nil
-	}
-	return nil, errs.ErrArgs
 }

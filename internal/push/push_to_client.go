@@ -500,8 +500,26 @@ func (p *Pusher) GetConnsAndOnlinePush(ctx context.Context, msg *sdkws.MsgData, 
 // 	return nil
 // }
 
-func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string, msg *sdkws.MsgData, userID, title, content string, opts *offlinepush.Opts) error {
-	//todo  设置推送是否展示消息内容
+func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string, msg *sdkws.MsgData, userID, title, content, msgContent string, opts *offlinepush.Opts) error {
+
+	userPushSetting, err := p.userRpcClient.Client.GetGlobalRecvMessageOpt(ctx, &user.GetGlobalRecvMessageOptReq{UserID: userID})
+	if err != nil {
+		return err
+	}
+
+	//user not allow offline push
+	if userPushSetting.GlobalRecvMsgOpt == constant.ReceiveNotPushMessage {
+		return nil
+	}
+	// pus msg content
+	if userPushSetting.AllowPushContent == constant.NewMsgPushSettingAllowed {
+	}
+	if userPushSetting.AllowBeep == constant.NewMsgPushSettingAllowed {
+		opts.IOSPushSound = "default"
+	}
+	if userPushSetting.AllowVibration == constant.NewMsgPushSettingAllowed {
+
+	}
 	if msg.ContentType == constant.AtText {
 		if utils.Contain(userID, msg.AtUserIDList...) {
 			content = constant.ContentType2PushContentI18n[constant.AtText]
@@ -515,7 +533,7 @@ func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string
 		return nil
 	}
 
-	err := p.offlinePusher.Push(ctx, []string{userID}, title, content, opts)
+	err = p.offlinePusher.Push(ctx, []string{userID}, title, content, opts)
 	if err != nil {
 		prommetrics.MsgOfflinePushFailedCounter.Inc()
 		return err
@@ -524,26 +542,29 @@ func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string
 }
 
 func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
-	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
+	title, content, msgContent, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
 	if err != nil {
 		return err
 	}
 
-	//批量获取用户设置
-	userSettingResp, err := p.userRpcClient.Client.GetUserSettingsByUserIDs(ctx, &user.GetUserSettingsByUserIDsReq{UserIDs: offlinePushUserIDs})
-	if err != nil {
-		return err
+	for _, userID := range offlinePushUserIDs {
+		p.offlinePushMsgToUser(ctx, conversationID, msg, userID, title, content, msgContent, opts)
 	}
-	for _, userSetting := range userSettingResp.Settings {
-		//allowed push new msg
-		if userSetting.NewMsgPushMode == 1 {
-			err := p.offlinePushMsgToUser(ctx, conversationID, msg, userSetting.UserID, title, content, opts)
-			if err != nil {
-				prommetrics.MsgOfflinePushFailedCounter.Inc()
-				return err
-			}
-		}
-	}
+
+	// userSettingResp, err := p.userRpcClient.Client.GetUserSettingsByUserIDs(ctx, &user.GetUserSettingsByUserIDsReq{UserIDs: offlinePushUserIDs})
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, userSetting := range userSettingResp.Settings {
+	// 	//allowed push new msg
+	// 	if userSetting.NewMsgPushMode == 1 {
+	// 		err :=
+	// 		if err != nil {
+	// 			prommetrics.MsgOfflinePushFailedCounter.Inc()
+	// 			return err
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -581,7 +602,7 @@ func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (op
 	return opts, nil
 }
 
-func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) (title, content string, opts *offlinepush.Opts, err error) {
+func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) (title, content, msgContent string, opts *offlinepush.Opts, err error) {
 	if p.offlinePusher == nil {
 		err = errNoOfflinePusher
 		return
@@ -613,38 +634,5 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string,
 		title = offlineMsg.Title
 		content = offlineMsg.Content
 	}
-	// if title == "" {
-	// 	switch msg.ContentType {
-	// 	case constant.Text:
-	// 		fallthrough
-	// 	case constant.Picture:
-	// 		fallthrough
-	// 	case constant.Voice:
-	// 		fallthrough
-	// 	case constant.Video:
-	// 		fallthrough
-	// 	case constant.Transfer:
-	// 		fallthrough
-	// 	case constant.RedPacket:
-	// 		fallthrough
-	// 	case constant.File:
-	// 		title = constant.ContentType2PushContent[int64(msg.ContentType)]
-	// 	case constant.AtText:
-	// 		ac := atContent{}
-	// 		_ = utils.JsonStringToStruct(string(msg.Content), &ac)
-	// 		if utils.IsContain(conversationID, ac.AtUserList) {
-	// 			title = constant.ContentType2PushContent[constant.AtText] + constant.ContentType2PushContent[constant.Common]
-	// 		} else {
-	// 			title = constant.ContentType2PushContent[constant.GroupMsg]
-	// 		}
-	// 	case constant.SignalingNotification:
-	// 		title = constant.ContentType2PushContent[constant.SignalMsg]
-	// 	default:
-	// 		title = constant.ContentType2PushContent[constant.Common]
-	// 	}
-	// }
-	// if content == "" {
-	// 	content = title
-	// }
 	return
 }

@@ -139,6 +139,10 @@ func (o *ClubApi) CancelMuteServerGroup(c *gin.Context) {
 	a2r.Call(club.ClubClient.CancelMuteServerGroup, o.Client, c)
 }
 
+func (o *ClubApi) GetServerGroupBaseInfos(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetServerGroupBaseInfos, o.Client, c)
+}
+
 func (o *ClubApi) GetServerGroupMembersInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerGroupMembersInfo, o.Client, c)
 }

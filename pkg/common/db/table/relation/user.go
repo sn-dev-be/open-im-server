@@ -30,7 +30,11 @@ type UserModel struct {
 	Ex               string    `gorm:"column:ex;size:1024"`
 	CreateTime       time.Time `gorm:"column:create_time;index:create_time;autoCreateTime"`
 	AppMangerLevel   int32     `gorm:"column:app_manger_level;default:1"`
-	GlobalRecvMsgOpt int32     `gorm:"column:global_recv_msg_opt"`
+	GlobalRecvMsgOpt int32     `gorm:"column:global_recv_msg_opt;default:0"`
+	AllowBeep        int32     `gorm:"column:allow_beep;default:1"`
+	AllowVibration   int32     `gorm:"column:allow_vibration;default:1"`
+	AllowPushContent int32     `gorm:"column:allow_push_content;default:1"`
+	AllowOnlinePush  int32     `gorm:"column:allow_online_push;default:1"`
 }
 
 func (u *UserModel) GetNickname() string {

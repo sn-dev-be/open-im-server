@@ -377,3 +377,37 @@ func (c *clubServer) GetServerGroupMembersInfo(ctx context.Context, req *pbclub.
 	})
 	return resp, nil
 }
+
+func (c *clubServer) GetServerGroupBaseInfos(ctx context.Context, req *pbclub.GetServerGroupBaseInfosReq) (*pbclub.GetServerGroupBaseInfosResp, error) {
+	if req.GroupIDs == nil || len(req.GroupIDs) == 0 {
+		return nil, errs.ErrArgs
+	}
+	resp := &pbclub.GetServerGroupBaseInfosResp{}
+
+	groups, err := c.GroupDatabase.FindGroup(ctx, req.GroupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, group := range groups {
+		each := &sdkws.ServerGroupBaseInfo{
+			GroupID:       group.GroupID,
+			GroupName:     group.GroupName,
+			GroupFaceUrl:  group.FaceURL,
+			Condition:     group.Condition,
+			ConditionType: group.ConditionType,
+		}
+		if group.ServerID != "" {
+			if server, err := c.ClubDatabase.FindServer(ctx, []string{group.ServerID}); err != nil {
+				continue
+			} else {
+				each.ServerID = server[0].ServerID
+				each.ServerName = server[0].ServerName
+				each.ServerIconUrl = server[0].Icon
+				each.ServerOwnerUserID = server[0].OwnerUserID
+			}
+		}
+		resp.ServerGroupBaseInfos = append(resp.ServerGroupBaseInfos, each)
+	}
+	return resp, nil
+}

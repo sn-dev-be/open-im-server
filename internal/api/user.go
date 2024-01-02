@@ -199,11 +199,3 @@ func (u *UserApi) GetUserStatus(c *gin.Context) {
 func (u *UserApi) GetSubscribeUsersStatus(c *gin.Context) {
 	a2r.Call(user.UserClient.GetSubscribeUsersStatus, u.Client, c)
 }
-
-func (u *UserApi) GetUserSetting(c *gin.Context) {
-	a2r.Call(user.UserClient.GetUserSetting, u.Client, c)
-}
-
-func (u *UserApi) SetUserSetting(c *gin.Context) {
-	a2r.Call(user.UserClient.SetUserSetting, u.Client, c)
-}

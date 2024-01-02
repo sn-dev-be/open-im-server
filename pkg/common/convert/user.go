@@ -32,6 +32,10 @@ func UsersDB2Pb(users []*relationtb.UserModel) (result []*sdkws.UserInfo) {
 		userPb.CreateTime = user.CreateTime.UnixMilli()
 		userPb.AppMangerLevel = user.AppMangerLevel
 		userPb.GlobalRecvMsgOpt = user.GlobalRecvMsgOpt
+		userPb.AllowBeep = user.AllowBeep
+		userPb.AllowVibration = user.AllowVibration
+		userPb.AllowPushContent = user.AllowPushContent
+		userPb.AllowOnlinePush = user.AllowOnlinePush
 		result = append(result, &userPb)
 	}
 	return result
@@ -46,17 +50,9 @@ func UserPb2DB(user *sdkws.UserInfo) *relationtb.UserModel {
 	userDB.CreateTime = time.UnixMilli(user.CreateTime)
 	userDB.AppMangerLevel = user.AppMangerLevel
 	userDB.GlobalRecvMsgOpt = user.GlobalRecvMsgOpt
+	userDB.AllowBeep = user.AllowBeep
+	userDB.AllowVibration = user.AllowVibration
+	userDB.AllowPushContent = user.AllowPushContent
+	userDB.AllowOnlinePush = user.AllowOnlinePush
 	return &userDB
-}
-
-func UserSettingDB2Pb(user *relationtb.UserSettingModel) (result *sdkws.UserSetting) {
-	var userSettingPb sdkws.UserSetting
-	userSettingPb.UserID = user.UserID
-	userSettingPb.NewMsgPushMode = user.NewMsgPushMode
-	userSettingPb.NewMsgPushDetailMode = user.NewMsgPushDetailMode
-	userSettingPb.NewMsgVoiceMode = user.NewMsgVoiceMode
-	userSettingPb.NewMsgShakeMode = user.NewMsgShakeMode
-	userSettingPb.Ex = user.Ex
-	userSettingPb.CreateTime = user.CreateTime.UnixMilli()
-	return &userSettingPb
 }
