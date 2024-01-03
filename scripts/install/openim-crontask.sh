@@ -46,11 +46,25 @@ SERVER_NAME="openim-crontask"
 function openim::crontask::start() {
     openim::log::info "Start OpenIM Cron, binary root: ${SERVER_NAME}"
     openim::log::status "Start OpenIM Cron, path: ${OPENIM_CRONTASK_BINARY}"
+    openim::log::status "prepare start cron process, port: ${OPENIM_CRON_PORT}, prometheus port: ${CRON_PROM_PORT}"
+
+    OPENIM_CRON_PORTS_ARRAY=$(openim::util::list-to-string ${OPENIM_CRON_PORT} )
+    CRON_PROM_PORTS_ARRAY=$(openim::util::list-to-string ${CRON_PROM_PORT} )
 
     openim::util::stop_services_with_name ${OPENIM_CRONTASK_BINARY}
 
-    openim::log::status "start cron_task process, path: ${OPENIM_CRONTASK_BINARY}"
-    nohup ${OPENIM_CRONTASK_BINARY} -c ${OPENIM_PUSH_CONFIG} >> ${LOG_FILE} 2>&1 &
+    openim::log::status "cron port list: ${OPENIM_CRON_PORTS_ARRAY[@]}"
+    openim::log::status "prometheus port list: ${CRON_PROM_PORTS_ARRAY[@]}"
+
+    if [ ${#OPENIM_CRON_PORTS_ARRAY[@]} -ne ${#CRON_PROM_PORTS_ARRAY[@]} ]; then
+        openim::log::error_exit "The length of the two port lists is different!"
+    fi
+
+    for (( i=0; i<${#OPENIM_CRON_PORTS_ARRAY[@]}; i++ )); do
+        openim::log::info "start cron_task process, port: ${OPENIM_CRON_PORTS_ARRAY[$i]}, prometheus port: ${CRON_PROM_PORTS_ARRAY[$i]}"
+        nohup ${OPENIM_CRONTASK_BINARY} --port ${OPENIM_CRON_PORTS_ARRAY[$i]} -c ${OPENIM_PUSH_CONFIG} --prometheus_port ${CRON_PROM_PORTS_ARRAY[$i]} >> ${LOG_FILE} 2>&1 &
+    done
+
     openim::util::check_process_names ${SERVER_NAME}
 }
 
@@ -60,7 +74,7 @@ SYSTEM_FILE_PATH="/etc/systemd/system/${SERVER_NAME}.service"
 # Print the necessary information after installation
 function openim::crontask::info() {
 cat << EOF
-openim-crontask listen on: ${OPENIM_CRONTASK_HOST}
+openim-crontask listen on: ${OPENIM_CRONTASK_HOST}:${OPENIM_CRON_PORT}
 EOF
 }
 

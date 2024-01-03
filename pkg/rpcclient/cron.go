@@ -12,17 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package rpcclient
 
 import (
-	"github.com/openimsdk/open-im-server/v3/pkg/common/cmd"
+	"context"
+
+	"google.golang.org/grpc"
+
+	"github.com/OpenIMSDK/protocol/cron"
+	"github.com/OpenIMSDK/tools/discoveryregistry"
+
+	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 )
 
-func main() {
-	cronTaskCmd := cmd.NewCronTaskCmd()
-	cronTaskCmd.AddPortFlag()
-	cronTaskCmd.AddPrometheusPortFlag()
-	if err := cronTaskCmd.Exec(); err != nil {
-		panic(err.Error())
+type Cron struct {
+	conn   grpc.ClientConnInterface
+	Client cron.CronClient
+	discov discoveryregistry.SvcDiscoveryRegistry
+}
+
+func NewCron(discov discoveryregistry.SvcDiscoveryRegistry) *Cron {
+	conn, err := discov.GetConn(context.Background(), config.Config.RpcRegisterName.OpenImCronName)
+	if err != nil {
+		panic(err)
+	}
+	return &Cron{
+		discov: discov,
+		conn:   conn,
+		Client: cron.NewCronClient(conn),
 	}
 }

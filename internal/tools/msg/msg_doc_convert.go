@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tools
+package msg
 
 import (
 	"github.com/OpenIMSDK/protocol/constant"
@@ -22,7 +22,7 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
 )
 
-func (c *MsgTool) convertTools() {
+func (c *MsgTool) ConvertTools() {
 	ctx := mcontext.NewCtx("convert")
 	conversationIDs, err := c.conversationDatabase.GetAllConversationIDs(ctx)
 	if err != nil {

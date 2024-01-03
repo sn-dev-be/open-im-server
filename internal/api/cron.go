@@ -12,17 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package api
 
 import (
-	"github.com/openimsdk/open-im-server/v3/pkg/common/cmd"
+	"github.com/gin-gonic/gin"
+
+	"github.com/OpenIMSDK/protocol/cron"
+	"github.com/OpenIMSDK/tools/a2r"
+
+	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 )
 
-func main() {
-	cronTaskCmd := cmd.NewCronTaskCmd()
-	cronTaskCmd.AddPortFlag()
-	cronTaskCmd.AddPrometheusPortFlag()
-	if err := cronTaskCmd.Exec(); err != nil {
-		panic(err.Error())
-	}
+type CronApi rpcclient.Cron
+
+func NewCronApi(client rpcclient.Cron) CronApi {
+	return CronApi(client)
+}
+
+func (o *CronApi) AddClearMsgJob(c *gin.Context) {
+	a2r.Call(cron.CronClient.AddClearMsgJob, o.Client, c)
+}
+
+func (o *CronApi) RemoveClearMsgJob(c *gin.Context) {
+	a2r.Call(cron.CronClient.RemoveClearMsgJob, o.Client, c)
 }

@@ -169,6 +169,7 @@ type configStruct struct {
 		OpenImRtcPort            []int `yaml:"openImRtcPort"`
 		OpenImThirdPort          []int `yaml:"openImThirdPort"`
 		OpenImClubPort           []int `yaml:"openImClubPort"`
+		OpenImCronPort           []int `yaml:"openImCronPort"`
 	} `yaml:"rpcPort"`
 
 	RpcRegisterName struct {
@@ -182,6 +183,7 @@ type configStruct struct {
 		OpenImConversationName   string `yaml:"openImConversationName"`
 		OpenImThirdName          string `yaml:"openImThirdName"`
 		OpenImClubName           string `yaml:"openImClubName"`
+		OpenImCronName           string `yaml:"openImCronName"`
 	} `yaml:"rpcRegisterName"`
 
 	Log struct {
@@ -299,6 +301,7 @@ type configStruct struct {
 		MessageTransferPrometheusPort []int  `yaml:"messageTransferPrometheusPort"`
 		ThirdPrometheusPort           []int  `yaml:"thirdPrometheusPort"`
 		ClubPrometheusPort            []int  `yaml:"clubPrometheusPort"`
+		CronPrometheusPort            []int  `yaml:"cronPrometheusPort"`
 	} `yaml:"prometheus"`
 	Notification notification `yaml:"notification"`
 }

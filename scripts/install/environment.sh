@@ -317,6 +317,8 @@ readonly OPENIM_CONVERSATION_PORT=${OPENIM_CONVERSATION_PORT:-'10180'}
 readonly OPENIM_THIRD_PORT=${OPENIM_THIRD_PORT:-'10190'}
 # OpenIM部落服务端口
 readonly OPENIM_CLUB_PORT=${OPENIM_CLUB_PORT:-'10200'}
+# OpenIM定时任务端口
+readonly OPENIM_CRON_PORT=${OPENIM_CRON_PORT:-'10210'}
 
 ###################### RPC Register Name Variables ######################
 def "OPENIM_USER_NAME" "User"                       # OpenIM用户服务名称
@@ -407,6 +409,8 @@ readonly RTC_PROM_PORT=${RTC_PROM_PORT:-'21300'}
 readonly THIRD_PROM_PORT=${THIRD_PROM_PORT:-'21301'}
 # Club 服务的 Prometheus 端口
 readonly CLUB_PROM_PORT=${CLUB_PROM_PORT:-'20180'}
+# Cron 服务的 Prometheus 端口
+readonly CRON_PROM_PORT=${CRON_PROM_PORT:-'20190'}
 
 # Message Transfer 服务的 Prometheus 端口列表
 readonly MSG_TRANSFER_PROM_PORT=${MSG_TRANSFER_PROM_PORT:-'21400, 21401, 21402, 21403'}
