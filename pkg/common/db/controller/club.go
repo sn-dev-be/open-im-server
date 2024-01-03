@@ -372,7 +372,7 @@ func (c *clubDatabase) TakeGroupCategory(ctx context.Context, groupCategoryID st
 }
 
 func (c *clubDatabase) FindGroupCategory(ctx context.Context, groupCategoryIDs []string) (groupCategorys []*relationtb.GroupCategoryModel, err error) {
-	return c.groupCategoryDB.Find(ctx, groupCategoryIDs)
+	return c.cache.GetGroupCategoriesInfo(ctx, groupCategoryIDs)
 }
 
 func (c *clubDatabase) GetAllGroupCategoriesByServer(ctx context.Context, serverID string) ([]*relationtb.GroupCategoryModel, error) {

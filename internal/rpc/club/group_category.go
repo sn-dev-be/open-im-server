@@ -44,6 +44,20 @@ func (c *clubServer) CreateGroupCategory(ctx context.Context, req *pbclub.Create
 	return &pbclub.CreateGroupCategoryResp{GroupCategory: gc}, nil
 }
 
+func (c *clubServer) GetGroupCategories(ctx context.Context, req *pbclub.GetGroupCategoriesReq) (*pbclub.GetGroupCategoriesResp, error) {
+	if req.CategoryIDs == nil || len(req.CategoryIDs) == 0 {
+		return nil, errs.ErrArgs
+	}
+
+	resp := &pbclub.GetGroupCategoriesResp{}
+	groupCategorys, err := c.ClubDatabase.FindGroupCategory(ctx, req.CategoryIDs)
+	if err != nil {
+		return nil, err
+	}
+	resp.GroupCategories = utils.Batch(convert.Db2PbGroupCategory, groupCategorys)
+	return resp, nil
+}
+
 func (c *clubServer) DeleteGroupCategory(ctx context.Context, req *pbclub.DeleteGroupCategoryReq) (*pbclub.DeleteGroupCategoryResp, error) {
 	if len(req.CategoryIDs) == 0 {
 		return nil, errs.ErrArgs.Wrap("categoryID is empty")

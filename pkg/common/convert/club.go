@@ -125,6 +125,7 @@ func Db2PbGroupCategory(m *relation.GroupCategoryModel) *sdkws.GroupCategoryInfo
 		CategoryType:  m.CategoryType,
 		ServerID:      m.ServerID,
 		Ex:            m.Ex,
+		CreateTime:    m.CreateTime.UnixMilli(),
 	}
 }
 

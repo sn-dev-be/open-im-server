@@ -411,3 +411,26 @@ func (c *clubServer) GetServerGroupBaseInfos(ctx context.Context, req *pbclub.Ge
 	}
 	return resp, nil
 }
+
+func (c *clubServer) GetGroupsByServer(ctx context.Context, req *pbclub.GetGroupsByServerReq) (*pbclub.GetGroupsByServerResp, error) {
+	if req.ServerIDs == nil || len(req.ServerIDs) == 0 {
+		return nil, errs.ErrArgs
+	}
+	resp := &pbclub.GetGroupsByServerResp{}
+
+	serverMemberNum, err := c.ClubDatabase.MapServerMemberNum(ctx, req.ServerIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, err := c.GroupDatabase.FindGroup(ctx, req.ServerIDs)
+	if err != nil {
+		return nil, err
+	}
+	groupsResp := []*sdkws.GroupInfo{}
+	for _, group := range groups {
+		groupsResp = append(groupsResp, convert.Db2PbGroupInfo(group, group.CreatorUserID, serverMemberNum[group.GroupID]))
+	}
+	resp.GroupInfos = groupsResp
+	return resp, nil
+}

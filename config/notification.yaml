@@ -208,19 +208,19 @@ friendApplicationAdded:
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
-    enable: false
-    title: "Somebody applies to add you as a friend"
-    desc: "Somebody applies to add you as a friend"
-    ext: "Somebody applies to add you as a friend"
+    enable: true
+    title: "系统消息"
+    desc: "收到一条好友申请"
+    ext: ""
 
 friendApplicationApproved:
   isSendMsg: false
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:
-    enable: true
-    title: "通过了你的好友申请"
-    desc: ""
+    enable: false
+    title: ""
+    desc: "通过了你的好友申请"
     ext: ""
 
 friendApplicationRejected:
@@ -446,4 +446,14 @@ serverApplicationRejected:
     enable: true
     title: "部落通知"
     desc: "你的部落申请被拒绝了"
+    ext: ""
+
+serverCreated:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: "server created"
     ext: ""

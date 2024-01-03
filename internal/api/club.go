@@ -89,6 +89,10 @@ func (o *ClubApi) DeleteGroupCategory(c *gin.Context) {
 	a2r.Call(club.ClubClient.DeleteGroupCategory, o.Client, c)
 }
 
+func (o *ClubApi) GetGroupCategories(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetGroupCategories, o.Client, c)
+}
+
 // /group
 func (o *ClubApi) GetJoinedServerGroupList(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetJoinedServerGroupList, o.Client, c)
@@ -145,6 +149,10 @@ func (o *ClubApi) GetServerGroupBaseInfos(c *gin.Context) {
 
 func (o *ClubApi) GetServerGroupMembersInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerGroupMembersInfo, o.Client, c)
+}
+
+func (o *ClubApi) GetGroupsByServer(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetGroupsByServer, o.Client, c)
 }
 
 // /serverMember
