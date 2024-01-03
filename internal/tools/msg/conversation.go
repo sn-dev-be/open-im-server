@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tools
+package msg
 
 import (
 	"context"
@@ -140,6 +140,51 @@ func (c *MsgTool) ConversationsDestructMsgs() {
 				if err := c.msgNotificationSender.UserDeleteMsgsNotification(ctx, conversation.OwnerUserID, conversation.ConversationID, seqs); err != nil {
 					log.ZError(ctx, "userDeleteMsgsNotification failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 				}
+			}
+		}
+	}
+}
+
+func (c *MsgTool) ClearMsgsByConversationID(conversationID string) {
+	ctx := mcontext.NewCtx(utils.GetSelfFuncName())
+	conversations, err := c.conversationDatabase.GetConversationsByConversationID(ctx, []string{conversationID})
+	if err != nil {
+		log.ZError(ctx, "GetConversationsByConversationID failed", err, "conversationID", conversationID)
+	}
+	// temp := make([]*relation.ConversationModel, 0, len(conversations))
+	// for i, conversation := range conversations {
+	// if conversation.IsMsgDestruct && conversation.MsgDestructTime != 0 && (time.Now().Unix() > (conversation.MsgDestructTime+conversation.LatestMsgDestructTime.Unix()+8*60*60)) ||
+	// 	conversation.LatestMsgDestructTime.IsZero() {
+	// 	temp = append(temp, conversations[i])
+	// }
+	// }
+	for _, conversation := range conversations {
+		ctx = mcontext.NewCtx(utils.GetSelfFuncName() + "-" + utils.OperationIDGenerator() + "-" + conversation.ConversationID + "-" + conversation.OwnerUserID)
+		log.ZDebug(
+			ctx,
+			"UserMsgsDestruct",
+			"conversationID",
+			conversation.ConversationID,
+			"ownerUserID",
+			conversation.OwnerUserID,
+			"msgDestructTime",
+			conversation.MsgDestructTime,
+			"lastMsgDestructTime",
+			conversation.LatestMsgDestructTime,
+		)
+		now := time.Now()
+		seqs, err := c.msgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, conversation.MsgDestructTime, conversation.LatestMsgDestructTime)
+		if err != nil {
+			log.ZError(ctx, "user msg destruct failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
+			continue
+		}
+		if len(seqs) > 0 {
+			if err := c.conversationDatabase.UpdateUsersConversationFiled(ctx, []string{conversation.OwnerUserID}, conversation.ConversationID, map[string]interface{}{"latest_msg_destruct_time": now}); err != nil {
+				log.ZError(ctx, "updateUsersConversationFiled failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
+				continue
+			}
+			if err := c.msgNotificationSender.UserDeleteMsgsNotification(ctx, conversation.OwnerUserID, conversation.ConversationID, seqs); err != nil {
+				log.ZError(ctx, "userDeleteMsgsNotification failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 			}
 		}
 	}

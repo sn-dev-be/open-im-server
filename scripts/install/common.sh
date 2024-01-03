@@ -45,6 +45,7 @@ openim::common::prometheus_port() {
     ${THIRD_PROM_PORT}              # Prometheus port for third-party integrations service
     ${MSG_TRANSFER_PROM_PORT}       # Prometheus port for message transfer service
     ${CLUB_PROM_PORT}               # Prometheus port for club service
+    ${CRON_PROM_PORT}               # Prometheus port for cron service
   )
   # Print the list of ports
   echo "${targets[@]}"
@@ -65,6 +66,8 @@ openim::common::service_name() {
         openim-conversation
         openim-third
         # openim-msg-transfer
+        openim-club
+        openim-crontask
 
         # api
         openim-api
@@ -90,6 +93,7 @@ openim::common::service_port() {
     ${OPENIM_CONVERSATION_PORT}    # Conversation service
     ${OPENIM_THIRD_PORT}           # Third-party service
     ${OPENIM_CLUB_PORT}            # Club service
+    ${OPENIM_CRON_PORT}            # Cron service
 
     # API PORT
     ${API_OPENIM_PORT}             # API service

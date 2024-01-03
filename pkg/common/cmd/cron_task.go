@@ -14,7 +14,12 @@
 
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/openimsdk/open-im-server/v3/internal/tools"
+	v3config "github.com/openimsdk/open-im-server/v3/pkg/common/config"
+	"github.com/spf13/cobra"
+)
 
 type CronTaskCmd struct {
 	*RootCmd
@@ -26,13 +31,23 @@ func NewCronTaskCmd() *CronTaskCmd {
 	return ret
 }
 
-func (c *CronTaskCmd) addRunE(f func() error) {
+func (c *CronTaskCmd) addRunE() {
 	c.Command.RunE = func(cmd *cobra.Command, args []string) error {
-		return f()
+		return tools.StartTask(c.getPortFlag(cmd), c.getPrometheusPortFlag(cmd))
 	}
 }
 
-func (c *CronTaskCmd) Exec(f func() error) error {
-	c.addRunE(f)
+func (c *CronTaskCmd) Exec() error {
+	c.addRunE()
 	return c.Execute()
+}
+
+func (c *CronTaskCmd) GetPortFromConfig(portType string) int {
+	if portType == constant.FlagPort {
+		return v3config.Config.RpcPort.OpenImCronPort[0]
+	} else if portType == constant.FlagPrometheusPort {
+		return v3config.Config.Prometheus.CronPrometheusPort[0]
+	} else {
+		return 0
+	}
 }

@@ -60,6 +60,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 	authRpc := rpcclient.NewAuth(discov)
 	thirdRpc := rpcclient.NewThird(discov)
 	clubRpc := rpcclient.NewClub(discov)
+	cronRpc := rpcclient.NewCron(discov)
 
 	u := NewUserApi(*userRpc)
 	m := NewMessageApi(messageRpc, userRpc)
@@ -272,6 +273,15 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/get_user_req_server_application_list", c.GetUserReqServerApplicationList)
 		clubGroup.POST("/get_server_users_req_application_list", c.GetServerUsersReqApplicationList)
 	}
+
+	// cron
+	cronGroup := r.Group("/cron", ParseToken)
+	{
+		c := NewCronApi(*cronRpc)
+		cronGroup.POST("/add_clear_msg_job", c.AddClearMsgJob)
+		cronGroup.POST("/remove_clear_msg_job", c.RemoveClearMsgJob)
+	}
+
 	return r
 }
 
