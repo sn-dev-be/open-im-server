@@ -151,10 +151,6 @@ func (o *ClubApi) GetServerGroupMembersInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerGroupMembersInfo, o.Client, c)
 }
 
-func (o *ClubApi) GetGroupsByServer(c *gin.Context) {
-	a2r.Call(club.ClubClient.GetGroupsByServer, o.Client, c)
-}
-
 // /serverMember
 func (o *ClubApi) GetServerMembersInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerMembersInfo, o.Client, c)
