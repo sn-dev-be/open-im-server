@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,8 +28,10 @@ import (
 
 	"github.com/OpenIMSDK/protocol/constant"
 	pbcron "github.com/OpenIMSDK/protocol/cron"
+	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/discoveryregistry"
 	"github.com/OpenIMSDK/tools/log"
+	"github.com/OpenIMSDK/tools/mcontext"
 
 	"github.com/OpenIMSDK/tools/utils"
 
@@ -40,11 +43,15 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/cache"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/startrpc"
+	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
+	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient/notification"
 )
 
 type cronServer struct {
-	dcron   *dcron.Dcron
-	msgTool *msg.MsgTool
+	dcron                 *dcron.Dcron
+	msgTool               *msg.MsgTool
+	user                  rpcclient.UserRpcClient
+	msgNotificationSender *notification.MsgNotificationSender
 }
 
 func StartTask(rpcPort, prometheusPort int) error {
@@ -130,8 +137,13 @@ func StartTask(rpcPort, prometheusPort int) error {
 	return nil
 }
 
-func (c *cronServer) registerRpc(disCov discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) error {
+func (c *cronServer) registerRpc(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) error {
 	pbcron.RegisterCronServer(server, c)
+	userRpcClient := rpcclient.NewUserRpcClient(client)
+	msgRpcClient := rpcclient.NewMessageRpcClient(client)
+	msgNotificationSender := notification.NewMsgNotificationSender(rpcclient.WithRpcClient(&msgRpcClient))
+	c.user = userRpcClient
+	c.msgNotificationSender = msgNotificationSender
 	return nil
 }
 
@@ -156,24 +168,31 @@ func (c *cronServer) recoverAllStableJob(jobs map[string]string) error {
 	return nil
 }
 
-func (c *cronServer) AddClearMsgJob(ctx context.Context, req *pbcron.AddClearMsgJobReq) (*pbcron.AddClearMsgJobResp, error) {
-	resp := &pbcron.AddClearMsgJobResp{}
+func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsgJobReq) (resp *pbcron.SetClearMsgJobResp, err error) {
 	job := job.NewClearMsgJob(req.ConversationID, getCronExpr(req.CronCycle), c.msgTool)
-	// job := job.NewClearMsgJob(req.ConversationID, "1 * * * * *", c.msgTool)
-	err := c.dcron.AddJob(job.Name, job.CronExpr, job)
-	log.ZInfo(ctx, "add job", "jobName", job.Name)
-	if err != nil {
-		log.ZError(ctx, "add Job failed", err, "jobName", job.Name)
+	if req.CronCycle == constant.CrontabDisable {
+		c.dcron.Remove(job.Name)
+		log.ZInfo(ctx, "remove job", "jobName", job.Name)
+	} else {
+		err := c.dcron.AddJob(job.Name, job.CronExpr, job)
+		log.ZInfo(ctx, "add job", "jobName", job.Name)
+		if err != nil {
+			log.ZError(ctx, "add Job failed", err, "jobName", job.Name)
+			return nil, err
+		}
 	}
+	opUserID := mcontext.GetOpUserID(ctx)
+	user, err := c.user.GetPublicUserInfo(ctx, opUserID)
+	if err != nil {
+		return nil, err
+	}
+	tips := &sdkws.CronMsgClearTips{
+		OpUser:    user,
+		CronCycle: req.CronCycle,
+	}
+	recvID := strings.SplitN(req.ConversationID, "_", 2)
+	c.msgNotificationSender.NotificationWithSesstionType(ctx, opUserID, recvID[1], constant.CronMsgClearSetNotification, req.ConversationType, tips)
 	return resp, err
-}
-
-func (c *cronServer) RemoveClearMsgJob(ctx context.Context, req *pbcron.AddClearMsgJobReq) (*pbcron.AddClearMsgJobResp, error) {
-	resp := &pbcron.AddClearMsgJobResp{}
-	job := job.NewClearMsgJob(req.ConversationID, "", nil)
-	c.dcron.Remove(job.Name)
-	log.ZInfo(ctx, "remove job", "jobName", job.Name)
-	return resp, nil
 }
 
 // netlock redis lock.

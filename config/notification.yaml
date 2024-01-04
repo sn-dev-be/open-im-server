@@ -457,3 +457,14 @@ serverCreated:
     title: ""
     desc: "server created"
     ext: ""
+
+# cron
+cronMsgClearSet:
+  isSendMsg: true
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""

@@ -357,6 +357,7 @@ type notification struct {
 	ServerApplicationAccepted NotificationConf `yaml:"serverApplicationAccepted"`
 	ServerApplicationRejected NotificationConf `yaml:"serverApplicationRejected"`
 	ServerCreated             NotificationConf `yaml:"serverCreated"`
+	CronMsgClearSet           NotificationConf `yaml:"cronMsgClearSet"`
 }
 
 var BannerURLs = []string{

@@ -107,6 +107,9 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 
 		// modifyMsg
 		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
+
+		// cron
+		constant.CronMsgClearSetNotification: config.Config.Notification.CronMsgClearSet,
 	}
 }
 
