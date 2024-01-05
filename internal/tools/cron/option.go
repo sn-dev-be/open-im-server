@@ -74,6 +74,6 @@ func WithClusterStable(timeWindow time.Duration) Option {
 
 func WithPersist(persist persist.PersistJob) Option {
 	return func(dcron *Dcron) {
-		dcron.persistJob = persist
+		dcron.PersistJob = persist
 	}
 }

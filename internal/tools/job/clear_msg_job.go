@@ -10,18 +10,18 @@ import (
 	"github.com/openimsdk/open-im-server/v3/internal/tools/msg"
 )
 
-const JobNamePrefix = "clearMsgJob_"
-
 type ClearMsgJob struct {
 	CommonJob
-	ConversationID string `json:"conversationID"`
-	MsgTool        *msg.MsgTool
+	ConversationID string       `json:"conversationID"`
+	CronCycle      int32        `json:"cronCycle"`
+	MsgTool        *msg.MsgTool `json:"-"`
 }
 
-func NewClearMsgJob(ConversationID, cronExpr string, msgTool *msg.MsgTool) *ClearMsgJob {
+func NewClearMsgJob(ConversationID, cronExpr string, cronCycle int32, msgTool *msg.MsgTool) *ClearMsgJob {
 	return &ClearMsgJob{
 		ConversationID: ConversationID,
-		CommonJob:      CommonJob{Name: JobNamePrefix + ConversationID, CronExpr: cronExpr},
+		CronCycle:      cronCycle,
+		CommonJob:      CommonJob{Name: ClearMsgJobNamePrefix + ConversationID, CronExpr: cronExpr},
 		MsgTool:        msgTool,
 	}
 }

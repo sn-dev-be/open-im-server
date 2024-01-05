@@ -278,6 +278,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 	{
 		c := NewCronApi(*cronRpc)
 		cronGroup.POST("/set_clear_msg_job", c.SetClearMsgJob)
+		cronGroup.POST("/get_clear_msg_job", c.GetClearMsgJob)
 	}
 
 	return r

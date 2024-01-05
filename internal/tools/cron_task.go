@@ -60,7 +60,7 @@ func StartTask(rpcPort, prometheusPort int) error {
 	if err != nil {
 		return err
 	}
-	msgTool.ConvertTools()
+	go msgTool.ConvertTools()
 
 	rdb, err := cache.NewRedis()
 	if err != nil {
@@ -168,8 +168,9 @@ func (c *cronServer) recoverAllStableJob(jobs map[string]string) error {
 	return nil
 }
 
-func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsgJobReq) (resp *pbcron.SetClearMsgJobResp, err error) {
-	job := job.NewClearMsgJob(req.ConversationID, getCronExpr(req.CronCycle), c.msgTool)
+func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsgJobReq) (*pbcron.SetClearMsgJobResp, error) {
+	resp := &pbcron.SetClearMsgJobResp{}
+	job := job.NewClearMsgJob(req.ConversationID, getCronExpr(req.CronCycle), req.CronCycle, c.msgTool)
 	if req.CronCycle == constant.CrontabDisable {
 		c.dcron.Remove(job.Name)
 		log.ZInfo(ctx, "remove job", "jobName", job.Name)
@@ -193,6 +194,25 @@ func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsg
 	recvID := strings.SplitN(req.ConversationID, "_", 2)
 	c.msgNotificationSender.NotificationWithSesstionType(ctx, opUserID, recvID[1], constant.CronMsgClearSetNotification, req.ConversationType, tips)
 	return resp, err
+}
+
+func (c *cronServer) GetClearMsgJob(ctx context.Context, req *pbcron.GetClearMsgJobReq) (*pbcron.GetClearMsgJobResp, error) {
+	resp := &pbcron.GetClearMsgJobResp{}
+	resp.CronCycle = constant.CrontabDisable
+	jobStr, err := c.dcron.PersistJob.GetJob(job.ClearMsgJobNamePrefix + req.ConversationID)
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+	if jobStr == "" {
+		return resp, nil
+	}
+	job := job.ClearMsgJob{}
+	err = job.UnSerialize([]byte(jobStr))
+	if err != nil {
+		return nil, err
+	}
+	resp.CronCycle = job.CronCycle
+	return resp, nil
 }
 
 // netlock redis lock.

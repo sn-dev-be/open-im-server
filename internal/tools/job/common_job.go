@@ -1,5 +1,7 @@
 package job
 
+const ClearMsgJobNamePrefix = "clearMsgJob_"
+
 type CommonJob struct {
 	CronExpr string `json:"cronExpr"`
 	Name     string `json:"name"`

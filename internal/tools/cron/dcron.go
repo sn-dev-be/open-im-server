@@ -45,7 +45,7 @@ type Dcron struct {
 	recentJobs IRecentJobPacker
 	state      atomic.Value
 
-	persistJob ps.PersistJob
+	PersistJob ps.PersistJob
 }
 
 func NewDcron(serverName string, driver driver.DriverV2, cronOpts ...cron.Option) *Dcron {
@@ -104,9 +104,9 @@ func (d *Dcron) addJob(jobName, cronStr string, cmd func(), job Job) (err error)
 		Dcron:   d,
 	}
 	entryID, err := d.cr.AddJob(cronStr, innerJob)
-	if d.persistJob != nil {
+	if d.PersistJob != nil {
 		if cjob, ok := (job).(ps.StableJob); ok {
-			d.persistJob.AddJob(jobName, cjob)
+			d.PersistJob.AddJob(jobName, cjob)
 		}
 	}
 	if err != nil {
@@ -125,8 +125,8 @@ func (d *Dcron) Remove(jobName string) {
 	if job, ok := d.jobs[jobName]; ok {
 		delete(d.jobs, jobName)
 		d.cr.Remove(job.ID)
-		if d.persistJob != nil {
-			d.persistJob.RemoveJob(jobName)
+		if d.PersistJob != nil {
+			d.PersistJob.RemoveJob(jobName)
 		}
 	}
 }

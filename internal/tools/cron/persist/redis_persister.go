@@ -37,6 +37,10 @@ func (r *RedisPersist) RemoveJob(jobName string) error {
 	return nil
 }
 
+func (r *RedisPersist) GetJob(jobName string) (string, error) {
+	return r.redisClient.HGet(context.Background(), driver.GetStableJobStore(), jobName).Result()
+}
+
 func (r *RedisPersist) RecoverAllJob() (map[string]string, error) {
 	return r.redisClient.HGetAll(context.Background(), driver.GetStableJobStore()).Result()
 }

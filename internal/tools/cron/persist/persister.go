@@ -14,5 +14,6 @@ type StableJob interface {
 type PersistJob interface {
 	AddJob(jobName string, job StableJob) error
 	RemoveJob(jobName string) error
+	GetJob(jobName string) (string, error)
 	RecoverAllJob() (map[string]string, error)
 }

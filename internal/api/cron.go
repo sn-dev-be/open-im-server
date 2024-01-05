@@ -32,3 +32,7 @@ func NewCronApi(client rpcclient.Cron) CronApi {
 func (o *CronApi) SetClearMsgJob(c *gin.Context) {
 	a2r.Call(cron.CronClient.SetClearMsgJob, o.Client, c)
 }
+
+func (o *CronApi) GetClearMsgJob(c *gin.Context) {
+	a2r.Call(cron.CronClient.GetClearMsgJob, o.Client, c)
+}
