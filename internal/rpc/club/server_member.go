@@ -78,6 +78,14 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 		if err != nil {
 			return nil, err
 		}
+		if err := c.conversationRpcClient.ServerChatFirstCreateConversation(ctx, req.ServerID, []string{req.InviterUserID}); err != nil {
+			return nil, err
+		}
+		req := &pbclub.ServerApplicationResponseReq{
+			ServerID:   req.ServerID,
+			FromUserID: req.InviterUserID,
+		}
+		c.Notification.ServerApplicationAcceptedNotification(ctx, req)
 		return resp, nil
 	}
 	serverRequest := relationtb.ServerRequestModel{

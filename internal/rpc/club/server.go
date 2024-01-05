@@ -11,6 +11,7 @@ import (
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/protocol/conversation"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/OpenIMSDK/tools/errs"
@@ -137,7 +138,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		tips.ServerGroupList = append(tips.ServerGroupList, convert.Db2PbGroupInfo(group, opUserID, 1))
 	}
 
-	//tips.ServerGroupList = append(tips.ServerGroupList, s.groupMemberDB2PB(member, userMap[member.UserID].AppMangerLevel))
+	s.conversationRpcClient.Client.CreateServerChatConversations(ctx, &conversation.CreateServerChatConversationsReq{UserIDs: []string{opUserID}, ServerID: serverDB.ServerID})
 
 	s.Notification.ServerCreatedNotification(ctx, tips)
 

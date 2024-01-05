@@ -21,6 +21,7 @@ import (
 
 	"github.com/OpenIMSDK/protocol/constant"
 	pbconversation "github.com/OpenIMSDK/protocol/conversation"
+	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/discoveryregistry"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/log"
@@ -38,6 +39,7 @@ import (
 
 type conversationServer struct {
 	groupRpcClient                 *rpcclient.GroupRpcClient
+	clubRpcClient                  *rpcclient.ClubRpcClient
 	conversationDatabase           controller.ConversationDatabase
 	conversationNotificationSender *notification.ConversationNotificationSender
 }
@@ -57,9 +59,11 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	conversationDB := relation.NewConversationGorm(db)
 	groupRpcClient := rpcclient.NewGroupRpcClient(client)
 	msgRpcClient := rpcclient.NewMessageRpcClient(client)
+	clubRpcClient := rpcclient.NewClubRpcClient(client)
 	pbconversation.RegisterConversationServer(server, &conversationServer{
 		conversationNotificationSender: notification.NewConversationNotificationSender(&msgRpcClient),
 		groupRpcClient:                 &groupRpcClient,
+		clubRpcClient:                  &clubRpcClient,
 		conversationDatabase:           controller.NewConversationDatabase(conversationDB, cache.NewConversationRedis(rdb, cache.GetDefaultOpt(), conversationDB), tx.NewGorm(db)),
 	})
 	return nil
@@ -288,6 +292,21 @@ func (c *conversationServer) CreateServerGroupChatConversations(ctx context.Cont
 		return nil, err
 	}
 	return &pbconversation.CreateGroupChatConversationsResp{}, nil
+}
+
+func (c *conversationServer) CreateServerChatConversations(ctx context.Context, req *pbconversation.CreateServerChatConversationsReq) (*pbconversation.CreateServerChatConversationsResp, error) {
+	groupResp, err := c.clubRpcClient.GetServerGroups(ctx, []string{req.ServerID})
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := utils.Slice(groupResp.Groups, func(g *sdkws.GroupInfo) string { return g.GroupID })
+	for _, groupID := range groupIDs {
+		err := c.conversationDatabase.CreateServerGroupChatConversation(ctx, groupID, req.UserIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &pbconversation.CreateServerChatConversationsResp{}, nil
 }
 
 func (c *conversationServer) SetConversationMaxSeq(ctx context.Context, req *pbconversation.SetConversationMaxSeqReq) (*pbconversation.SetConversationMaxSeqResp, error) {

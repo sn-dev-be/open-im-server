@@ -75,7 +75,7 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 	}
 	switch req.HandleResult {
 	case constant.ServerResponseAgree:
-		if err := c.conversationRpcClient.ServerGroupChatFirstCreateConversation(ctx, req.ServerID, []string{req.FromUserID}); err != nil {
+		if err := c.conversationRpcClient.ServerChatFirstCreateConversation(ctx, req.ServerID, []string{req.FromUserID}); err != nil {
 			return nil, err
 		}
 		c.Notification.ServerApplicationAcceptedNotification(ctx, req)

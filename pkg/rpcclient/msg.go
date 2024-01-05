@@ -103,7 +103,7 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.JoinServerApplicationNotification:     config.Config.Notification.JoinServerApplication,
 		constant.ServerApplicationAcceptedNotification: config.Config.Notification.ServerApplicationAccepted,
 		constant.ServerApplicationRejectedNotification: config.Config.Notification.ServerApplicationRejected,
-		constant.ServerCreatedNotification:             config.Config.Notification.ServerApplicationRejected,
+		constant.ServerCreatedNotification:             config.Config.Notification.ServerCreated,
 
 		// modifyMsg
 		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
