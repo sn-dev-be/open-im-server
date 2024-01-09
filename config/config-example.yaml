@@ -96,6 +96,8 @@ kafka:
     topic: "offlineMsgToMongoMysql"
   msgToPush:
     topic: "msgToPush"
+  eventToBusiness:
+    topic: "openim-to-mimo"
   consumerGroupID:
     msgToRedis: redis
     msgToMongo: mongo
@@ -391,19 +393,7 @@ callback:
     enable: false
     timeout: 5
     failedContinue: true
-  zapBusinessUrl: http://192.168.2.197:3004
-  callbackAfterSetServerMember:
-    enable: true
-    timeout: 5
-    failedContinue: true
-  callbackAfterChangefriendRelation:
-    enable: true
-    timeout: 5
-    failedContinue: true
-  callbackAfterServerChanged:
-    enable: true
-    timeout: 5
-    failedContinue: true
+
 
 ###################### Prometheus ######################
 # Prometheus configuration for various services
