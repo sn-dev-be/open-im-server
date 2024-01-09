@@ -111,6 +111,10 @@ type ClubDatabase interface {
 
 	//mute_record
 	FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*relationtb.MuteRecordModel, total int64, err error)
+
+	// to mq
+	// MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error
+	// MsgToModifyMQ(ctx context.Context, key, conversarionID string, msgs []*sdkws.MsgData) error
 }
 
 func NewClubDatabase(

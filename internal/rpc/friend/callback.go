@@ -20,9 +20,7 @@ import (
 	"github.com/OpenIMSDK/protocol/constant"
 	pbfriend "github.com/OpenIMSDK/protocol/friend"
 	"github.com/OpenIMSDK/tools/errs"
-	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
-	"github.com/OpenIMSDK/tools/utils"
 
 	cbapi "github.com/openimsdk/open-im-server/v3/pkg/callbackstruct"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
@@ -55,45 +53,45 @@ func CallbackBeforeAddFriend(ctx context.Context, req *pbfriend.ApplyToAddFriend
 	return nil
 }
 
-func CallbackAfterAddFriend(ctx context.Context, fromUserID, targetUserID, remark string) error {
-	addFriendUri := config.Config.Callback.CallbackZapBusinessUrl + AddFriendURI
+// func CallbackAfterAddFriend(ctx context.Context, fromUserID, targetUserID, remark string) error {
+// 	addFriendUri := config.Config.Callback.CallbackZapBusinessUrl + AddFriendURI
 
-	if !config.Config.Callback.CallbackAfterChangefriendRelation.Enable {
-		return nil
-	}
-	userRelation := &cbapi.UserRelationStruct{
-		UserID:       fromUserID,
-		TargetUserID: targetUserID,
-		Remark:       remark,
-	}
-	cbReq := &cbapi.CallbackAfterFriendRelationChangedReq{
-		UserRelation: *userRelation,
-	}
-	if _, err := http.Post(ctx, addFriendUri, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
-		log.ZInfo(ctx, "CallbackAfterAddFriend", utils.Unwrap(err))
-	}
+// 	if !config.Config.Callback.CallbackAfterChangefriendRelation.Enable {
+// 		return nil
+// 	}
+// 	userRelation := &cbapi.UserRelationStruct{
+// 		UserID:       fromUserID,
+// 		TargetUserID: targetUserID,
+// 		Remark:       remark,
+// 	}
+// 	cbReq := &cbapi.CallbackAfterFriendRelationChangedReq{
+// 		UserRelation: *userRelation,
+// 	}
+// 	if _, err := http.Post(ctx, addFriendUri, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
+// 		log.ZInfo(ctx, "CallbackAfterAddFriend", utils.Unwrap(err))
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func CallbackAfterDeleteFriend(ctx context.Context, fromUserID, targetUserID, remark string) error {
-	deleteFriendURI := config.Config.Callback.CallbackZapBusinessUrl + DeleteFriendURI
+// func CallbackAfterDeleteFriend(ctx context.Context, fromUserID, targetUserID, remark string) error {
+// 	deleteFriendURI := config.Config.Callback.CallbackZapBusinessUrl + DeleteFriendURI
 
-	if !config.Config.Callback.CallbackAfterChangefriendRelation.Enable {
-		return nil
-	}
-	userRelation := &cbapi.UserRelationStruct{
-		UserID:       fromUserID,
-		TargetUserID: targetUserID,
-		Remark:       remark,
-	}
-	cbReq := &cbapi.CallbackAfterFriendRelationChangedReq{
-		UserRelation: *userRelation,
-	}
+// 	if !config.Config.Callback.CallbackAfterChangefriendRelation.Enable {
+// 		return nil
+// 	}
+// 	userRelation := &cbapi.UserRelationStruct{
+// 		UserID:       fromUserID,
+// 		TargetUserID: targetUserID,
+// 		Remark:       remark,
+// 	}
+// 	cbReq := &cbapi.CallbackAfterFriendRelationChangedReq{
+// 		UserRelation: *userRelation,
+// 	}
 
-	if _, err := http.Post(ctx, deleteFriendURI, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
-		log.ZInfo(ctx, "CallbackAfterDeleteFriend", utils.Unwrap(err))
-	}
+// 	if _, err := http.Post(ctx, deleteFriendURI, nil, cbReq, config.Config.Callback.CallbackAfterChangefriendRelation.CallbackTimeOut); err != nil {
+// 		log.ZInfo(ctx, "CallbackAfterDeleteFriend", utils.Unwrap(err))
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

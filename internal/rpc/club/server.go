@@ -10,8 +10,10 @@ import (
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/protocol/common"
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/conversation"
+	"github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/OpenIMSDK/tools/errs"
@@ -20,7 +22,6 @@ import (
 	"github.com/OpenIMSDK/tools/mw/specialerror"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
-	cbapi "github.com/openimsdk/open-im-server/v3/pkg/callbackstruct"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -105,29 +106,31 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		return nil, err
 	}
 
-	go func() {
-		asyncCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	createServerEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServer: &common.ClubServer{
+				ClubServerId: serverDB.ServerID,
+				Name:         serverDB.CommunityName,
+				Banner:       serverDB.CommunityBanner,
+				IsPublic:     false,
+			},
+			EventType: constant.ClubServerMQEventType,
+		}),
+	}
 
-		cbreq := &cbapi.CallbackAfterServerChangedReq{
-			ServerID:        serverDB.ServerID,
-			CommunityName:   serverDB.CommunityName,
-			CommunityBanner: serverDB.CommunityBanner,
-			IsPublic:        false,
-		}
-		CallbackAfterServerChanged(asyncCtx, cbreq)
+	createServerUserEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServerUser: &common.ClubServerUser{
+				ServerId: serverDB.ServerID,
+				UserId:   serverDB.OwnerUserID,
+			},
+			EventType: constant.ClubServerUserMQEventType,
+		}),
+	}
 
-		clubServerUser := &cbapi.ClubServerUserStruct{
-			ServerID: serverDB.ServerID,
-			UserID:   serverDB.OwnerUserID,
-		}
-
-		serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-			ClubServerUser: *clubServerUser,
-		}
-		CallbackAfterJoinServer(asyncCtx, serverReq)
-
-	}()
+	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{createServerEvent, createServerUserEvent},
+	})
 
 	tips := &sdkws.ServerCreatedTips{
 		Server:        convert.DB2PbServerInfo(serverDB),
@@ -277,14 +280,19 @@ func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServe
 	if err := s.ClubDatabase.DismissServer(ctx, req.ServerID); err != nil {
 		return nil, err
 	}
-	go func() {
-		asyncCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		cbreq := &cbapi.CallbackAfterServerChangedReq{
-			ServerID: req.ServerID,
-		}
-		CallbackAfterServerDelete(asyncCtx, cbreq)
-	}()
+
+	deleteServerEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServer: &common.ClubServer{
+				ClubServerId: req.ServerID,
+			},
+			EventType: constant.DeleteServerMQEventType,
+		}),
+	}
+	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{deleteServerEvent},
+	})
+
 	return resp, nil
 }
 
@@ -410,20 +418,21 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 	// 	s.Notification.ServerInfoSetNotification(ctx, tips)
 	// }
 
-	go func() {
-		asyncCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		cbreq := &cbapi.CallbackAfterServerChangedReq{
-			ServerID:        server.ServerID,
-			CommunityName:   server.CommunityName,
-			CommunityBanner: server.CommunityBanner,
-			IsPublic:        false,
-		}
-		if server.CommunityViewMode == 1 {
-			cbreq.IsPublic = true
-		}
-		CallbackAfterServerChanged(asyncCtx, cbreq)
-	}()
+	createServerEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServer: &common.ClubServer{
+				ClubServerId: server.ServerID,
+				Name:         server.CommunityName,
+				Banner:       server.CommunityBanner,
+				IsPublic:     server.CommunityViewMode == 1,
+			},
+			EventType: constant.ClubServerMQEventType,
+		}),
+	}
+
+	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{createServerEvent},
+	})
 
 	return resp, nil
 }

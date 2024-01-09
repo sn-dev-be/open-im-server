@@ -109,6 +109,9 @@ type configStruct struct {
 		MsgToPush struct {
 			Topic string `yaml:"topic"`
 		} `yaml:"msgToPush"`
+		EventToBusiness struct {
+			Topic string `yaml:"topic"`
+		} `yaml:"eventToBusiness"`
 		ConsumerGroupID struct {
 			MsgToRedis string `yaml:"msgToRedis"`
 			MsgToMongo string `yaml:"msgToMongo"`
@@ -279,10 +282,6 @@ type configStruct struct {
 		CallbackBeforeCreateGroup          CallBackConfig `yaml:"beforeCreateGroup"`
 		CallbackBeforeMemberJoinGroup      CallBackConfig `yaml:"beforeMemberJoinGroup"`
 		CallbackBeforeSetGroupMemberInfo   CallBackConfig `yaml:"beforeSetGroupMemberInfo"`
-		CallbackZapBusinessUrl             string         `yaml:"zapBusinessUrl"`
-		CallbackAfterSetServerMember       CallBackConfig `yaml:"callbackAfterSetServerMember"`
-		CallbackAfterChangefriendRelation  CallBackConfig `yaml:"callbackAfterChangefriendRelation"`
-		CallbackAfterServerChanged         CallBackConfig `yaml:"callbackAfterServerChanged"`
 	} `yaml:"callback"`
 
 	Prometheus struct {

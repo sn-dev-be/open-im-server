@@ -39,6 +39,7 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/kafka"
 
 	pbmsg "github.com/OpenIMSDK/protocol/msg"
+
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/utils"
 )
@@ -107,6 +108,7 @@ type CommonMsgDatabase interface {
 	MsgToModifyMQ(ctx context.Context, key, conversarionID string, msgs []*sdkws.MsgData) error
 	MsgToPushMQ(ctx context.Context, key, conversarionID string, msg2mq *sdkws.MsgData) (int32, int64, error)
 	MsgToMongoMQ(ctx context.Context, key, conversarionID string, msgs []*sdkws.MsgData, lastSeq int64) error
+	MsgToBusinessMQ(ctx context.Context, req *pbmsg.SendBusinessEventToMQReq) error
 
 	RangeUserSendCount(
 		ctx context.Context,
@@ -137,11 +139,12 @@ type CommonMsgDatabase interface {
 
 func NewCommonMsgDatabase(msgDocModel unrelationtb.MsgDocModelInterface, cacheModel cache.MsgModel) CommonMsgDatabase {
 	return &commonMsgDatabase{
-		msgDocDatabase:  msgDocModel,
-		cache:           cacheModel,
-		producer:        kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.LatestMsgToRedis.Topic),
-		producerToMongo: kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.MsgToMongo.Topic),
-		producerToPush:  kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.MsgToPush.Topic),
+		msgDocDatabase:     msgDocModel,
+		cache:              cacheModel,
+		producer:           kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.LatestMsgToRedis.Topic),
+		producerToMongo:    kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.MsgToMongo.Topic),
+		producerToPush:     kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.MsgToPush.Topic),
+		producerToBusiness: kafka.NewKafkaProducer(config.Config.Kafka.Addr, config.Config.Kafka.EventToBusiness.Topic),
 	}
 }
 
@@ -153,13 +156,14 @@ func InitCommonMsgDatabase(rdb redis.UniversalClient, database *mongo.Database) 
 }
 
 type commonMsgDatabase struct {
-	msgDocDatabase   unrelationtb.MsgDocModelInterface
-	msg              unrelationtb.MsgDocModel
-	cache            cache.MsgModel
-	producer         *kafka.Producer
-	producerToMongo  *kafka.Producer
-	producerToModify *kafka.Producer
-	producerToPush   *kafka.Producer
+	msgDocDatabase     unrelationtb.MsgDocModelInterface
+	msg                unrelationtb.MsgDocModel
+	cache              cache.MsgModel
+	producer           *kafka.Producer
+	producerToMongo    *kafka.Producer
+	producerToModify   *kafka.Producer
+	producerToPush     *kafka.Producer
+	producerToBusiness *kafka.Producer
 }
 
 func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error {
@@ -188,6 +192,19 @@ func (db *commonMsgDatabase) MsgToMongoMQ(ctx context.Context, key, conversation
 	if len(messages) > 0 {
 		_, _, err := db.producerToMongo.SendMessage(ctx, key, &pbmsg.MsgDataToMongoByMQ{LastSeq: lastSeq, ConversationID: conversationID, MsgData: messages})
 		return err
+	}
+	return nil
+}
+
+func (db *commonMsgDatabase) MsgToBusinessMQ(ctx context.Context, req *pbmsg.SendBusinessEventToMQReq) error {
+	if len(req.Events) > 0 {
+		for _, event := range req.Events {
+			_, _, err := db.producerToBusiness.SendJsonMessage(ctx, "mq", event.Event)
+			if err != nil {
+				log.ZError(ctx, "MsgToBusinessMQ", err, "event", utils.StructToJsonString(event))
+			}
+		}
+		//return err
 	}
 	return nil
 }

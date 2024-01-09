@@ -17,6 +17,8 @@ package friend
 import (
 	"context"
 
+	"github.com/OpenIMSDK/protocol/common"
+	"github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
@@ -47,6 +49,7 @@ type friendServer struct {
 	friendDatabase        controller.FriendDatabase
 	blackDatabase         controller.BlackDatabase
 	userRpcClient         *rpcclient.UserRpcClient
+	msgRpcClient          *rpcclient.MessageRpcClient
 	notificationSender    *notification.FriendNotificationSender
 	conversationRpcClient rpcclient.ConversationRpcClient
 	RegisterCenter        registry.SvcDiscoveryRegistry
@@ -84,6 +87,7 @@ func Start(client registry.SvcDiscoveryRegistry, server *grpc.Server) error {
 			cache.NewBlackCacheRedis(rdb, blackDB, cache.GetDefaultOpt()),
 		),
 		userRpcClient:         &userRpcClient,
+		msgRpcClient:          &msgRpcClient,
 		notificationSender:    notificationSender,
 		RegisterCenter:        client,
 		conversationRpcClient: rpcclient.NewConversationRpcClient(client),
@@ -122,12 +126,18 @@ func (s *friendServer) ApplyToAddFriend(
 	}
 
 	if config.Config.SingleFriend {
-		go func() {
-			asyncCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			CallbackAfterAddFriend(asyncCtx, req.FromUserID, req.ToUserID, "")
-		}()
+		createUserRelationEvent := &common.BusinessMQEvent{
+			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+				UserRelation: &common.UserRelation{
+					UserId:       req.FromUserID,
+					TargetUserId: req.ToUserID,
+				},
+				EventType: constant.UserRelationMQEventType,
+			}),
+		}
+		s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+			Events: []*common.BusinessMQEvent{createUserRelationEvent},
+		})
 	}
 
 	s.notificationSender.FriendApplicationAddNotification(ctx, req)
@@ -188,7 +198,19 @@ func (s *friendServer) RespondFriendApply(
 			return nil, err
 		}
 		s.notificationSender.FriendApplicationAgreedNotification(ctx, req)
-		CallbackAfterAddFriend(ctx, req.ToUserID, req.FromUserID, "")
+		createUserRelationEvent := &common.BusinessMQEvent{
+			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+				UserRelation: &common.UserRelation{
+					UserId:       req.FromUserID,
+					TargetUserId: req.ToUserID,
+				},
+				EventType: constant.UserRelationMQEventType,
+			}),
+		}
+
+		s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+			Events: []*common.BusinessMQEvent{createUserRelationEvent},
+		})
 		return resp, nil
 	}
 	if req.HandleResult == constant.FriendResponseRefuse {
@@ -220,7 +242,20 @@ func (s *friendServer) DeleteFriend(
 		return nil, err
 	}
 	s.notificationSender.FriendDeletedNotification(ctx, req)
-	CallbackAfterDeleteFriend(ctx, req.OwnerUserID, req.FriendUserID, "")
+
+	deleteUserRelationEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			UserRelation: &common.UserRelation{
+				UserId:       req.OwnerUserID,
+				TargetUserId: req.FriendUserID,
+			},
+			EventType: constant.DeleteUserRelationMQEventType,
+		}),
+	}
+
+	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{deleteUserRelationEvent},
+	})
 	return resp, nil
 }
 
@@ -242,7 +277,21 @@ func (s *friendServer) SetFriendRemark(
 		return nil, err
 	}
 	s.notificationSender.FriendRemarkSetNotification(ctx, req.OwnerUserID, req.FriendUserID)
-	CallbackAfterAddFriend(ctx, req.OwnerUserID, req.FriendUserID, req.Remark)
+	createUserRelationEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			UserRelation: &common.UserRelation{
+				UserId:       req.OwnerUserID,
+				TargetUserId: req.FriendUserID,
+				Remark:       req.Remark,
+			},
+			EventType: constant.UserRelationMQEventType,
+		}),
+	}
+
+	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{createUserRelationEvent},
+	})
+
 	return resp, nil
 }
 

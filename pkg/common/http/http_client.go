@@ -18,7 +18,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	urllib "net/url"
 	"time"
@@ -95,6 +98,66 @@ func Post(ctx context.Context, url string, header map[string]string, data interf
 	}
 
 	return result, nil
+}
+
+func PostWithRetry(ctx context.Context, url string, header map[string]string, data interface{}, timeout int, maxRetries int, retryInterval time.Duration) (content []byte, err error) {
+	for retry := 0; retry <= maxRetries; retry++ {
+		// Copy the context to avoid modifying the original context
+		ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(timeout))
+		defer cancel()
+
+		jsonStr, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonStr))
+		if err != nil {
+			return nil, err
+		}
+
+		if operationID, _ := ctx.Value(constant.OperationID).(string); operationID != "" {
+			req.Header.Set(constant.OperationID, operationID)
+		}
+
+		for k, v := range header {
+			req.Header.Set(k, v)
+		}
+		req.Header.Add("content-type", "application/json; charset=utf-8")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			// Handle error and optionally log it
+			//fmt.Printf("Error during POST request: %v\n", err)
+			// Wait before retrying
+			log.ZError(ctx, "PostWithRetry", err)
+			// Check if the error is due to timeout or temporary network issues
+			if netErr, ok := err.(net.Error); ok && (netErr.Timeout() || resp.StatusCode == 502) {
+				// Log the error and wait before retrying
+				fmt.Printf("Error during POST request: %v\n", err)
+				time.Sleep(retryInterval)
+				continue
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		defer resp.Body.Close()
+
+		result, err := io.ReadAll(resp.Body)
+		if err == nil {
+			// Successful response, break out of the loop
+			return result, nil
+		}
+
+		// Handle error and optionally log it
+		fmt.Printf("Error reading response body: %v\n", err)
+
+		// Wait before retrying
+		time.Sleep(retryInterval)
+	}
+
+	return nil, errors.New("Exceeded maximum retry attempts")
 }
 
 func PostReturn(ctx context.Context, url string, header map[string]string, input, output interface{}, timeOutSecond int) error {

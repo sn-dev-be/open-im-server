@@ -10,7 +10,9 @@ import (
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
+	"github.com/OpenIMSDK/protocol/common"
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/OpenIMSDK/tools/errs"
@@ -18,7 +20,6 @@ import (
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/authverify"
-	cbapi "github.com/openimsdk/open-im-server/v3/pkg/callbackstruct"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	relationtb "github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
 	"github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
@@ -102,21 +103,20 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 
 	c.Notification.JoinServerApplicationNotification(ctx, req)
 
-	go func() {
-		asyncCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	createServerUserEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServerUser: &common.ClubServerUser{
+				ServerId: req.ServerID,
+				UserId:   req.InviterUserID,
+				Nickname: user.Nickname,
+			},
+			EventType: constant.ClubServerUserMQEventType,
+		}),
+	}
 
-		clubServerUser := &cbapi.ClubServerUserStruct{
-			ServerID: req.ServerID,
-			UserID:   req.InviterUserID,
-			Nickname: user.Nickname,
-		}
-
-		serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-			ClubServerUser: *clubServerUser,
-		}
-		CallbackAfterJoinServer(asyncCtx, serverReq)
-	}()
+	c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{createServerUserEvent},
+	})
 
 	return resp, nil
 }
@@ -147,20 +147,19 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	//_ = c.Notification.MemberQuitNotification(ctx, c.groupMemberDB2PB(info, 0))
 	c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID})
 
-	go func() {
-		asyncCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	deleteServerUserEvent := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServerUser: &common.ClubServerUser{
+				ServerId: req.ServerID,
+				UserId:   req.UserID,
+			},
+			EventType: constant.DeleteClubServerUserMQEventType,
+		}),
+	}
 
-		clubServerUser := &cbapi.ClubServerUserStruct{
-			ServerID: req.ServerID,
-			UserID:   req.UserID,
-		}
-
-		serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-			ClubServerUser: *clubServerUser,
-		}
-		CallbackAfterQuitServer(asyncCtx, serverReq)
-	}()
+	c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{deleteServerUserEvent},
+	})
 
 	return resp, nil
 }
@@ -329,24 +328,21 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 		return nil, err
 	}
 
-	go func() {
-		asyncCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		for _, userID := range req.KickedUserIDs {
-
-			clubServerUser := &cbapi.ClubServerUserStruct{
-				ServerID: req.ServerID,
-				UserID:   userID,
-			}
-
-			serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-				ClubServerUser: *clubServerUser,
-			}
-
-			CallbackAfterQuitServer(asyncCtx, serverReq)
+	for _, userID := range req.KickedUserIDs {
+		deleteServerUserEvent := &common.BusinessMQEvent{
+			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+				ClubServerUser: &common.ClubServerUser{
+					ServerId: req.ServerID,
+					UserId:   userID,
+				},
+				EventType: constant.DeleteClubServerUserMQEventType,
+			}),
 		}
 
-	}()
+		c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+			Events: []*common.BusinessMQEvent{deleteServerUserEvent},
+		})
+	}
 
 	// tips := &sdkws.MemberKickedTips{
 	// 	Server: &sdkws.ServerInfo{
@@ -690,21 +686,21 @@ func (c *clubServer) SetServerMemberInfo(ctx context.Context, req *pbclub.SetSer
 		}
 
 		if member.Nickname != nil {
-			go func() {
-				asyncCtx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+			createServerUserEvent := &common.BusinessMQEvent{
+				Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+					ClubServerUser: &common.ClubServerUser{
+						ServerId: member.ServerID,
+						UserId:   member.UserID,
+						Nickname: member.Nickname.Value,
+					},
+					EventType: constant.ClubServerUserMQEventType,
+				}),
+			}
 
-				clubServerUser := &cbapi.ClubServerUserStruct{
-					ServerID: member.ServerID,
-					UserID:   member.UserID,
-					Nickname: member.Nickname.Value,
-				}
+			c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+				Events: []*common.BusinessMQEvent{createServerUserEvent},
+			})
 
-				serverReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-					ClubServerUser: *clubServerUser,
-				}
-				CallbackAfterJoinServer(asyncCtx, serverReq)
-			}()
 		}
 	}
 	return resp, nil

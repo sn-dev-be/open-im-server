@@ -243,15 +243,42 @@ func cronWrapFunc(rdb redis.UniversalClient, key string, fn func()) func() {
 	}
 }
 
+// func getCronExpr(cycle int32) (expr string) {
+// 	now := time.Unix(time.Now().Unix(), 0)
+// 	switch cycle {
+// 	case constant.CrontabDay:
+// 		expr = fmt.Sprintf("%d %d * * *", now.Minute(), now.Hour())
+// 	case constant.CrontabWeek:
+// 		expr = fmt.Sprintf("%d %d */7 * *", now.Minute(), now.Hour())
+// 	case constant.CrontabHalfMonth:
+// 		expr = fmt.Sprintf("%d %d %d,*/15 * *", now.Minute(), now.Hour(), now.Day())
+// 	case constant.CrontabMonth:
+// 		expr = fmt.Sprintf("%d %d %d * *", now.Minute(), now.Hour(), now.Day())
+// 	}
+// 	return expr
+// }
+
 func getCronExpr(cycle int32) (expr string) {
 	now := time.Unix(time.Now().Unix(), 0)
 	switch cycle {
-	case constant.CrontabDay:
+	case constant.CrontabDayOne:
 		expr = fmt.Sprintf("%d %d * * *", now.Minute(), now.Hour())
-	case constant.CrontabWeek:
+	case constant.CrontabDayTwo:
+		expr = fmt.Sprintf("%d %d */2 * *", now.Minute(), now.Hour())
+	case constant.CrontabDayThree:
+		expr = fmt.Sprintf("%d %d */3 * *", now.Minute(), now.Hour())
+	case constant.CrontabDayFour:
+		expr = fmt.Sprintf("%d %d */4 * *", now.Minute(), now.Hour())
+	case constant.CrontabDayFive:
+		expr = fmt.Sprintf("%d %d */5 * *", now.Minute(), now.Hour())
+	case constant.CrontabDaySix:
+		expr = fmt.Sprintf("%d %d */6 * *", now.Minute(), now.Hour())
+	case constant.CrontabWeekOne:
 		expr = fmt.Sprintf("%d %d */7 * *", now.Minute(), now.Hour())
-	case constant.CrontabHalfMonth:
-		expr = fmt.Sprintf("%d %d %d,*/15 * *", now.Minute(), now.Hour(), now.Day())
+	case constant.CrontabWeekTwo:
+		expr = fmt.Sprintf("%d %d */14 * *", now.Minute(), now.Hour())
+	case constant.CrontabWeekThree:
+		expr = fmt.Sprintf("%d %d */21 * *", now.Minute(), now.Hour())
 	case constant.CrontabMonth:
 		expr = fmt.Sprintf("%d %d %d * *", now.Minute(), now.Hour(), now.Day())
 	}

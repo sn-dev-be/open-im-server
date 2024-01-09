@@ -151,3 +151,33 @@ func (p *Producer) SendMessage(ctx context.Context, key string, msg proto.Messag
 	}
 	return partition, offset, utils.Wrap(err, "")
 }
+
+func (p *Producer) SendJsonMessage(ctx context.Context, key string, msg string) (int32, int64, error) {
+	log.ZDebug(ctx, "SendMessage", "msg", msg, "topic", p.topic, "key", key)
+	kMsg := &sarama.ProducerMessage{}
+	kMsg.Topic = p.topic
+	kMsg.Key = sarama.StringEncoder(key)
+	//bMsg, err := proto.Marshal(msg)
+	// if err != nil {
+	// 	return 0, 0, utils.Wrap(err, "kafka proto Marshal err")
+	// }
+	// if len(bMsg) == 0 {
+	// 	return 0, 0, utils.Wrap(errEmptyMsg, "")
+	// }
+	kMsg.Value = sarama.ByteEncoder(msg)
+	if kMsg.Key.Length() == 0 || kMsg.Value.Length() == 0 {
+		return 0, 0, utils.Wrap(errEmptyMsg, "")
+	}
+	kMsg.Metadata = ctx
+	header, err := GetMQHeaderWithContext(ctx)
+	if err != nil {
+		return 0, 0, utils.Wrap(err, "")
+	}
+	kMsg.Headers = header
+	partition, offset, err := p.producer.SendMessage(kMsg)
+	log.ZDebug(ctx, "ByteEncoder SendMessage end", "key ", kMsg.Key, "key length", kMsg.Value.Length())
+	if err != nil {
+		log.ZWarn(ctx, "p.producer.SendMessage error", err)
+	}
+	return partition, offset, utils.Wrap(err, "")
+}

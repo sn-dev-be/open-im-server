@@ -193,3 +193,11 @@ func (m *msgServer) sendMsgSingleChat(ctx context.Context, req *pbmsg.SendMsgReq
 func (m *msgServer) BatchSendMsg(ctx context.Context, in *pbmsg.BatchSendMessageReq) (*pbmsg.BatchSendMessageResp, error) {
 	return nil, nil
 }
+
+func (m *msgServer) SendBusinessEventToMQ(ctx context.Context, in *pbmsg.SendBusinessEventToMQReq) (*pbmsg.SendBusinessEventToMQResp, error) {
+	if in.Events == nil {
+		return nil, errs.ErrArgs
+	}
+	m.MsgDatabase.MsgToBusinessMQ(ctx, in)
+	return nil, nil
+}
