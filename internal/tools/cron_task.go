@@ -192,8 +192,8 @@ func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsg
 		OpUser:    user,
 		CronCycle: req.CronCycle,
 	}
-	recvID := strings.SplitN(req.ConversationID, "_", 2)
-	c.msgNotificationSender.NotificationWithSesstionType(ctx, opUserID, recvID[1], constant.CronMsgClearSetNotification, req.ConversationType, tips)
+	recvID := req.ConversationID[strings.LastIndex(req.ConversationID, "_")+1:]
+	c.msgNotificationSender.NotificationWithSesstionType(ctx, opUserID, recvID, constant.CronMsgClearSetNotification, req.ConversationType, tips)
 	return resp, err
 }
 
