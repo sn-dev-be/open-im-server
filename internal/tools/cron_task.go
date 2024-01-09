@@ -150,7 +150,7 @@ func (c *cronServer) registerRpc(client discoveryregistry.SvcDiscoveryRegistry, 
 func (c *cronServer) recoverAllStableJob(jobs map[string]string) error {
 	log.ZInfo(context.Background(), "sizeof stablejobs", "containers", len(jobs))
 	for jobName, v := range jobs {
-		log.ZInfo(context.Background(), "recover", "jobName", jobName, "jobBoyd", v)
+		log.ZInfo(context.Background(), "recover", "jobName", jobName, "jobBody", v)
 		clearMsgJob := job.ClearMsgJob{}
 		clearMsgJob.MsgTool = c.msgTool
 		err := clearMsgJob.UnSerialize([]byte(v))
@@ -175,10 +175,11 @@ func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsg
 		c.dcron.Remove(job.Name)
 		log.ZInfo(ctx, "remove job", "jobName", job.Name)
 	} else {
+		c.dcron.Remove(job.Name)
 		err := c.dcron.AddJob(job.Name, job.CronExpr, job)
 		log.ZInfo(ctx, "add job", "jobName", job.Name)
 		if err != nil {
-			log.ZError(ctx, "add Job failed", err, "jobName", job.Name)
+			log.ZError(ctx, "add job failed", err, "jobName", job.Name)
 			return nil, err
 		}
 	}
