@@ -102,22 +102,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 	}
 
 	c.Notification.JoinServerApplicationNotification(ctx, req)
-
-	createServerUserEvent := &common.BusinessMQEvent{
-		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-			ClubServerUser: &common.ClubServerUser{
-				ServerId: req.ServerID,
-				UserId:   req.InviterUserID,
-				Nickname: user.Nickname,
-			},
-			EventType: constant.ClubServerUserMQEventType,
-		}),
-	}
-
-	c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-		Events: []*common.BusinessMQEvent{createServerUserEvent},
-	})
-
+	c.SendClubServerUserEvent(ctx, req.ServerID, req.InviterUserID, user.Nickname)
 	return resp, nil
 }
 
@@ -146,21 +131,7 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	//todo 发送notification
 	//_ = c.Notification.MemberQuitNotification(ctx, c.groupMemberDB2PB(info, 0))
 	c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID})
-
-	deleteServerUserEvent := &common.BusinessMQEvent{
-		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-			ClubServerUser: &common.ClubServerUser{
-				ServerId: req.ServerID,
-				UserId:   req.UserID,
-			},
-			EventType: constant.DeleteClubServerUserMQEventType,
-		}),
-	}
-
-	c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-		Events: []*common.BusinessMQEvent{deleteServerUserEvent},
-	})
-
+	c.SendDeleteClubServerUserEvent(ctx, req.ServerID, []string{req.UserID})
 	return resp, nil
 }
 
@@ -177,9 +148,6 @@ func (c *clubServer) genServerMember(ctx context.Context, serverID, user_id, nic
 		MuteEndTime:   time.UnixMilli(0),
 		JoinTime:      time.Now(),
 	}
-	// if err := c.ClubDatabase.CreateServerMember(ctx, []*relationtb.ServerMemberModel{server_member}); err != nil {
-	// 	return err
-	// }
 	return serverMember
 }
 
@@ -328,22 +296,7 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 		return nil, err
 	}
 
-	for _, userID := range req.KickedUserIDs {
-		deleteServerUserEvent := &common.BusinessMQEvent{
-			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-				ClubServerUser: &common.ClubServerUser{
-					ServerId: req.ServerID,
-					UserId:   userID,
-				},
-				EventType: constant.DeleteClubServerUserMQEventType,
-			}),
-		}
-
-		c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-			Events: []*common.BusinessMQEvent{deleteServerUserEvent},
-		})
-	}
-
+	c.SendDeleteClubServerUserEvent(ctx, req.ServerID, req.KickedUserIDs)
 	// tips := &sdkws.MemberKickedTips{
 	// 	Server: &sdkws.ServerInfo{
 	// 		ServerID:     server.ServerID,
@@ -863,8 +816,4 @@ func mergeAndDeduplicate(slice1, slice2 []string) []string {
 	}
 
 	return result
-}
-
-func (s *clubServer) callbackAfterJoinServer(ctx context.Context, serverDB *relationtb.ServerModel) {
-
 }

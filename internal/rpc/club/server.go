@@ -10,10 +10,8 @@ import (
 	"time"
 
 	pbclub "github.com/OpenIMSDK/protocol/club"
-	"github.com/OpenIMSDK/protocol/common"
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/conversation"
-	"github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
 
 	"github.com/OpenIMSDK/tools/errs"
@@ -81,7 +79,6 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		return nil, err
 	}
 	roles = append(append(roles, everyone), owner)
-
 	//创建默认分组与房间
 	categories := []*relationtb.GroupCategoryModel{}
 	groups := []*relationtb.GroupModel{}
@@ -98,39 +95,11 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		categories = append(categories, categoryC)
 		groups = append(groups, s.genCreateServerGroupReq(ctx, serverDB.ServerID, categoryC.CategoryID, "部落事务讨论", opUserID, "https://download.imimo.xyz/image/service.png", constant.GroupOk))
 	}
-
 	members := []*relationtb.ServerMemberModel{}
 	members = append(members, s.genServerMember(ctx, serverDB.ServerID, opUserID, "", owner.RoleID, opUserID, "", constant.ServerOwner, 0))
-
 	if err := s.ClubDatabase.CreateServer(ctx, []*relationtb.ServerModel{serverDB}, roles, categories, groups, members); err != nil {
 		return nil, err
 	}
-
-	createServerEvent := &common.BusinessMQEvent{
-		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-			ClubServer: &common.ClubServer{
-				ClubServerId: serverDB.ServerID,
-				Name:         serverDB.CommunityName,
-				Banner:       serverDB.CommunityBanner,
-				IsPublic:     false,
-			},
-			EventType: constant.ClubServerMQEventType,
-		}),
-	}
-
-	createServerUserEvent := &common.BusinessMQEvent{
-		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-			ClubServerUser: &common.ClubServerUser{
-				ServerId: serverDB.ServerID,
-				UserId:   serverDB.OwnerUserID,
-			},
-			EventType: constant.ClubServerUserMQEventType,
-		}),
-	}
-
-	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-		Events: []*common.BusinessMQEvent{createServerEvent, createServerUserEvent},
-	})
 
 	tips := &sdkws.ServerCreatedTips{
 		Server:        convert.DB2PbServerInfo(serverDB),
@@ -140,10 +109,11 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	for _, group := range groups {
 		tips.ServerGroupList = append(tips.ServerGroupList, convert.Db2PbGroupInfo(group, opUserID, 1))
 	}
+	s.Notification.ServerCreatedNotification(ctx, tips)
 
 	s.conversationRpcClient.Client.CreateServerChatConversations(ctx, &conversation.CreateServerChatConversationsReq{UserIDs: []string{opUserID}, ServerID: serverDB.ServerID})
-
-	s.Notification.ServerCreatedNotification(ctx, tips)
+	s.SendClubServerEvent(ctx, serverDB.ServerID, serverDB.CommunityName, serverDB.CommunityBanner, false)
+	s.SendClubServerUserEvent(ctx, serverDB.ServerID, serverDB.OwnerUserID, "")
 
 	return &pbclub.CreateServerResp{ServerID: serverDB.ServerID}, nil
 }
@@ -281,18 +251,7 @@ func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServe
 		return nil, err
 	}
 
-	deleteServerEvent := &common.BusinessMQEvent{
-		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-			ClubServer: &common.ClubServer{
-				ClubServerId: req.ServerID,
-			},
-			EventType: constant.DeleteServerMQEventType,
-		}),
-	}
-	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-		Events: []*common.BusinessMQEvent{deleteServerEvent},
-	})
-
+	s.SendDeleteClubServerEvent(ctx, req.ServerID)
 	return resp, nil
 }
 
@@ -379,14 +338,7 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 		return nil, utils.Wrap(errs.ErrDismissedAlready, "")
 	}
 	resp := &pbclub.SetServerInfoResp{}
-	// count, err := s.ClubDatabase.FindServerMemberNum(ctx, server.ServerID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// owner, err := s.TakeServerOwner(ctx, server.ServerID)
-	// if err != nil {
-	// 	return nil, err
-	// }
+
 	data := UpdateServerInfoMap(ctx, req.ServerInfoForSet)
 	if len(data) == 0 {
 		return resp, nil
@@ -398,42 +350,8 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 	if err != nil {
 		return nil, err
 	}
-	// tips := &sdkws.ServerInfoSetTips{
-	// 	Server:   s.serverDB2PB(server, owner.UserID, count),
-	// 	MuteTime: 0,
-	// 	OpUser:   &sdkws.ServerMemberFullInfo{},
-	// }
-	// if opMember != nil {
-	// 	tips.OpUser = s.serverMemberDB2PB(opMember, 0)
-	// }
-	// switch len(data) - num {
-	// case 0:
-	// case 1:
-	// 	if req.ServerInfoForSet.ServerName == "" {
-	// 		s.Notification.ServerInfoSetNotification(ctx, tips)
-	// 	} else {
-	// 		s.Notification.ServerInfoSetNameNotification(ctx, &sdkws.ServerInfoSetNameTips{Server: tips.Server, OpUser: tips.OpUser})
-	// 	}
-	// default:
-	// 	s.Notification.ServerInfoSetNotification(ctx, tips)
-	// }
 
-	createServerEvent := &common.BusinessMQEvent{
-		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-			ClubServer: &common.ClubServer{
-				ClubServerId: server.ServerID,
-				Name:         server.CommunityName,
-				Banner:       server.CommunityBanner,
-				IsPublic:     server.CommunityViewMode == 1,
-			},
-			EventType: constant.ClubServerMQEventType,
-		}),
-	}
-
-	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-		Events: []*common.BusinessMQEvent{createServerEvent},
-	})
-
+	s.SendClubServerEvent(ctx, server.ServerID, server.CommunityName, server.CommunityBanner, server.CommunityViewMode == 1)
 	return resp, nil
 }
 

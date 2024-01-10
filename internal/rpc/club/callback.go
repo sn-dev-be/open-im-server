@@ -14,82 +14,82 @@
 
 package club
 
-const (
-	RemarkServerMemberURI    = "/openim-callback/club-server-user"
-	DeleteServerMemberURI    = "/openim-callback/club-server-user/delete"
-	ServerChangedCallbackURI = "/openim-callback/club-server"
-	ServerDeleteCallbackURI  = "/openim-callback/club-server/delete"
+import (
+	"context"
+
+	"github.com/OpenIMSDK/protocol/common"
+	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/protocol/msg"
+	"github.com/OpenIMSDK/tools/utils"
 )
 
-// func CallbackAfterJoinServer(ctx context.Context, req *cbapi.CallbackAfterRemarkServerMemberReq) error {
-// 	remarkServerMemberUri := config.Config.Callback.CallbackZapBusinessUrl + RemarkServerMemberURI
+func (s *clubServer) SendBusinessEventToMQ(ctx context.Context, req *msg.SendBusinessEventToMQReq) {
+	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, req)
+}
 
-// 	if !config.Config.Callback.CallbackAfterSetServerMember.Enable {
-// 		return nil
-// 	}
+func (s *clubServer) SendClubServerEvent(ctx context.Context, serverID, name, banner string, isPublic bool) {
+	event := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServer: &common.ClubServer{
+				ClubServerId: serverID,
+				Name:         name,
+				Banner:       banner,
+				IsPublic:     false,
+			},
+			EventType: constant.ClubServerMQEventType,
+		}),
+	}
+	s.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{event},
+	})
+}
 
-// 	// clubServerUser := &cbapi.ClubServerUserStruct{
-// 	// 	ServerID: serverID,
-// 	// 	UserID:   userID,
-// 	// 	Nickname: nickname,
-// 	// }
-// 	// cbReq := &cbapi.CallbackAfterRemarkServerMemberReq{
-// 	// 	ClubServerUser: *clubServerUser,
-// 	// }
+func (s *clubServer) SendDeleteClubServerEvent(ctx context.Context, serverID string) {
+	event := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServer: &common.ClubServer{
+				ClubServerId: serverID,
+			},
+			EventType: constant.DeleteServerMQEventType,
+		}),
+	}
+	s.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{event},
+	})
+}
 
-// 	if _, err := http.Post(ctx, remarkServerMemberUri, nil, req, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut); err != nil {
-// 		log.ZInfo(ctx, "CallbackAfterRemarkServerMember", utils.Unwrap(err))
-// 	}
+func (s *clubServer) SendClubServerUserEvent(ctx context.Context, serverID, userID, nickname string) {
+	event := &common.BusinessMQEvent{
+		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+			ClubServerUser: &common.ClubServerUser{
+				ServerId: serverID,
+				UserId:   userID,
+				Nickname: nickname,
+			},
+			EventType: constant.ClubServerUserMQEventType,
+		}),
+	}
+	s.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: []*common.BusinessMQEvent{event},
+	})
+}
 
-// 	return nil
-// }
+func (s *clubServer) SendDeleteClubServerUserEvent(ctx context.Context, serverID string, userIDs []string) {
+	events := []*common.BusinessMQEvent{}
+	for _, userID := range userIDs {
+		event := &common.BusinessMQEvent{
+			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+				ClubServerUser: &common.ClubServerUser{
+					ServerId: serverID,
+					UserId:   userID,
+				},
+				EventType: constant.DeleteClubServerUserMQEventType,
+			}),
+		}
+		events = append(events, event)
+	}
 
-// func CallbackAfterQuitServer(ctx context.Context, req *cbapi.CallbackAfterRemarkServerMemberReq) error {
-// 	deleteServerMemberURI := config.Config.Callback.CallbackZapBusinessUrl + DeleteServerMemberURI
-
-// 	if !config.Config.Callback.CallbackAfterSetServerMember.Enable {
-// 		return nil
-// 	}
-
-// 	// clubServerUser := &cbapi.ClubServerUserStruct{
-// 	// 	ServerID: serverID,
-// 	// 	UserID:   userID,
-// 	// 	Nickname: nickname,
-// 	// }
-// 	// cbReq := &cbapi.CallbackQuitServerReq{
-// 	// 	ClubServerUser: *clubServerUser,
-// 	// }
-
-// 	if _, err := http.PostWithRetry(ctx, deleteServerMemberURI, nil, req, config.Config.Callback.CallbackAfterSetServerMember.CallbackTimeOut, 3, 5); err != nil {
-// 		log.ZError(ctx, "CallbackAfterQuitServer", utils.Unwrap(err))
-// 	}
-
-// 	return nil
-// }
-
-// func CallbackAfterServerChanged(ctx context.Context, req *cbapi.CallbackAfterServerChangedReq) error {
-// 	serverChangedCallbackURI := config.Config.Callback.CallbackZapBusinessUrl + ServerChangedCallbackURI
-
-// 	if !config.Config.Callback.CallbackAfterServerChanged.Enable {
-// 		return nil
-// 	}
-
-// 	if _, err := http.PostWithRetry(ctx, serverChangedCallbackURI, nil, req, config.Config.Callback.CallbackAfterServerChanged.CallbackTimeOut, 3, 5); err != nil {
-// 		log.ZError(ctx, "CallbackAfterServerChanged", utils.Unwrap(err))
-// 	}
-
-// 	return nil
-// }
-
-// func CallbackAfterServerDelete(ctx context.Context, req *cbapi.CallbackAfterServerChangedReq) error {
-// 	serverChangedCallbackURI := config.Config.Callback.CallbackZapBusinessUrl + ServerDeleteCallbackURI
-
-// 	if !config.Config.Callback.CallbackAfterServerChanged.Enable {
-// 		return nil
-// 	}
-// 	if _, err := http.Post(ctx, serverChangedCallbackURI, nil, req, config.Config.Callback.CallbackAfterServerChanged.CallbackTimeOut); err != nil {
-// 		log.ZError(ctx, "CallbackAfterServerDelete", utils.Unwrap(err))
-// 	}
-
-// 	return nil
-// }
+	s.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		Events: events,
+	})
+}
