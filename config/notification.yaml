@@ -458,6 +458,26 @@ serverCreated:
     desc: "server created"
     ext: ""
 
+serverInfoSet:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverInfoSet title"
+    desc: "serverInfoSet desc"
+    ext: "serverInfoSet ext"
+
+serverDismissed:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverDismissed title"
+    desc: "serverDismissed desc"
+    ext: "serverDismissed ext"
+
 # cron
 cronMsgClearSet:
   isSendMsg: true
