@@ -46,6 +46,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		&relationtb.ServerModel{},
 		&relationtb.GroupCategoryModel{},
 		&relationtb.ServerRoleModel{},
+		&relationtb.ServerMemberRoleModel{},
 		&relationtb.GroupDappModel{},
 		&relationtb.ServerBlackModel{},
 		&relationtb.ServerRequestModel{},
