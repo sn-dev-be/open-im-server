@@ -124,6 +124,7 @@ func NewClubDatabase(
 	groupCategory relationtb.GroupCategoryModelInterface,
 	group relationtb.GroupModelInterface,
 	serverRole relationtb.ServerRoleModelInterface,
+	serverMemberRole relationtb.ServerMemberRoleModelInterface,
 	serverRequest relationtb.ServerRequestModelInterface,
 	serverBlack relationtb.ServerBlackModelInterface,
 	groupDapp relationtb.GroupDappModellInterface,
@@ -137,6 +138,7 @@ func NewClubDatabase(
 		serverRecommendedDB: ServerRecommended,
 		serverMemberDB:      serverMember,
 		serverRoleDB:        serverRole,
+		serverMemberRoleDB:  serverMemberRole,
 		serverRequestDB:     serverRequest,
 		serverBlackDB:       serverBlack,
 		groupCategoryDB:     groupCategory,
@@ -163,6 +165,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		relation.NewGroupCategoryDB(db),
 		relation.NewGroupDB(db),
 		relation.NewServerRoleDB(db),
+		relation.NewServerMemberRoleDB(db),
 		relation.NewServerRequestDB(db),
 		relation.NewServerBlackDB(db),
 		relation.NewGroupDappDB(db),
@@ -192,6 +195,7 @@ type clubDatabase struct {
 	groupCategoryDB     relationtb.GroupCategoryModelInterface
 	groupDB             relationtb.GroupModelInterface
 	serverRoleDB        relationtb.ServerRoleModelInterface
+	serverMemberRoleDB  relationtb.ServerMemberRoleModelInterface
 	serverRequestDB     relationtb.ServerRequestModelInterface
 	serverBlackDB       relationtb.ServerBlackModelInterface
 	groupDappDB         relationtb.GroupDappModellInterface
@@ -232,6 +236,15 @@ func (c *clubDatabase) CreateServer(
 		if err := c.serverMemberDB.NewTx(tx).Create(ctx, members); err != nil {
 			return err
 		}
+
+		memberRoles := []*relationtb.ServerMemberRoleModel{}
+		for _, member := range members {
+			memberRoles = append(memberRoles, &relationtb.ServerMemberRoleModel{RoleID: member.ServerRoleID, MemberID: member.ID})
+		}
+		if err := c.serverMemberRoleDB.NewTx(tx).Create(ctx, memberRoles); err != nil {
+			return err
+		}
+
 		serverID := servers[0].ServerID
 		userID := members[0].UserID
 		groupIDs := utils.Slice(groups, func(g *relationtb.GroupModel) string { return g.GroupID })
@@ -659,15 +672,29 @@ func (c *clubDatabase) UpdateServerGroupOrder(ctx context.Context, groupID strin
 
 // //serverMember
 func (c *clubDatabase) CreateServerMember(ctx context.Context, serverMembers []*relationtb.ServerMemberModel) error {
-	if err := c.serverMemberDB.Create(ctx, serverMembers); err != nil {
+	if err := c.tx.Transaction(func(tx any) error {
+		if err := c.serverMemberDB.Create(ctx, serverMembers); err != nil {
+			return err
+		}
+
+		memberRoles := []*relationtb.ServerMemberRoleModel{}
+		for _, member := range serverMembers {
+			memberRoles = append(memberRoles, &relationtb.ServerMemberRoleModel{RoleID: member.ServerRoleID, MemberID: member.ID})
+		}
+		if err := c.serverMemberRoleDB.NewTx(tx).Create(ctx, memberRoles); err != nil {
+			return err
+		}
+
+		for _, serverMember := range serverMembers {
+			c.cache.DelServerMembersHash(serverMember.ServerID).
+				DelServerMemberIDs(serverMember.ServerID).
+				DelServersMemberNum(serverMember.ServerID).
+				DelJoinedServerID(serverMember.UserID).
+				DelServerMembersInfo(serverMember.ServerID, serverMember.UserID).ExecDel(ctx)
+		}
+		return nil
+	}); err != nil {
 		return err
-	}
-	for _, serverMember := range serverMembers {
-		c.cache.DelServerMembersHash(serverMember.ServerID).
-			DelServerMemberIDs(serverMember.ServerID).
-			DelServersMemberNum(serverMember.ServerID).
-			DelJoinedServerID(serverMember.UserID).
-			DelServerMembersInfo(serverMember.ServerID, serverMember.UserID).ExecDel(ctx)
 	}
 	return nil
 }
