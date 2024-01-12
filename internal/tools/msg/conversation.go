@@ -145,7 +145,7 @@ func (c *MsgTool) ConversationsDestructMsgs() {
 	}
 }
 
-func (c *MsgTool) ClearMsgsByConversationID(conversationID string) {
+func (c *MsgTool) ClearMsgsByConversationID(conversationID string, msgDestructTime int64) {
 	ctx := mcontext.NewCtx(utils.GetSelfFuncName())
 	conversations, err := c.conversationDatabase.GetConversationsByConversationID(ctx, []string{conversationID})
 	if err != nil {
@@ -173,7 +173,7 @@ func (c *MsgTool) ClearMsgsByConversationID(conversationID string) {
 			conversation.LatestMsgDestructTime,
 		)
 		now := time.Now()
-		seqs, err := c.msgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, conversation.MsgDestructTime, conversation.LatestMsgDestructTime)
+		seqs, err := c.msgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, msgDestructTime, conversation.LatestMsgDestructTime)
 		if err != nil {
 			log.ZError(ctx, "user msg destruct failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 			continue

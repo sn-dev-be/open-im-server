@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -192,8 +191,11 @@ func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsg
 		OpUser:    user,
 		CronCycle: req.CronCycle,
 	}
-	recvID := strings.SplitN(req.ConversationID, "_", 2)
-	c.msgNotificationSender.NotificationWithSesstionType(ctx, opUserID, recvID[1], constant.CronMsgClearSetNotification, req.ConversationType, tips)
+	recvID := req.GroupID
+	if req.ConversationType == constant.SingleChatType {
+		recvID = req.UserID
+	}
+	c.msgNotificationSender.NotificationWithSesstionType(ctx, opUserID, recvID, constant.CronMsgClearSetNotification, req.ConversationType, tips)
 	return resp, err
 }
 
@@ -243,21 +245,6 @@ func cronWrapFunc(rdb redis.UniversalClient, key string, fn func()) func() {
 		}
 	}
 }
-
-// func getCronExpr(cycle int32) (expr string) {
-// 	now := time.Unix(time.Now().Unix(), 0)
-// 	switch cycle {
-// 	case constant.CrontabDay:
-// 		expr = fmt.Sprintf("%d %d * * *", now.Minute(), now.Hour())
-// 	case constant.CrontabWeek:
-// 		expr = fmt.Sprintf("%d %d */7 * *", now.Minute(), now.Hour())
-// 	case constant.CrontabHalfMonth:
-// 		expr = fmt.Sprintf("%d %d %d,*/15 * *", now.Minute(), now.Hour(), now.Day())
-// 	case constant.CrontabMonth:
-// 		expr = fmt.Sprintf("%d %d %d * *", now.Minute(), now.Hour(), now.Day())
-// 	}
-// 	return expr
-// }
 
 func getCronExpr(cycle int32) (expr string) {
 	now := time.Unix(time.Now().Unix(), 0)
