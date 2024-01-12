@@ -104,6 +104,14 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.ServerApplicationAcceptedNotification: config.Config.Notification.ServerApplicationAccepted,
 		constant.ServerApplicationRejectedNotification: config.Config.Notification.ServerApplicationRejected,
 		constant.ServerCreatedNotification:             config.Config.Notification.ServerCreated,
+		constant.ServerInfoSetNotification:             config.Config.Notification.ServerInfoSet,
+		constant.ServerDissmissedNotification:          config.Config.Notification.ServerDismissed,
+		constant.ServerMemberEnterNotification:         config.Config.Notification.ServerMemberEnter,
+		constant.ServerMemberQuitNotification:          config.Config.Notification.ServerMemberQuit,
+		constant.ServerMemberKickedNotification:        config.Config.Notification.ServerMemberKick,
+		constant.ServerMemberMutedNotification:         config.Config.Notification.ServerMemberMute,
+		constant.ServerMemberCancelMutedNotification:   config.Config.Notification.ServerMemberCancelMute,
+		constant.ServerMemberInfoSetNotification:       config.Config.Notification.ServerMemberInfoSet,
 
 		// modifyMsg
 		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
@@ -160,6 +168,14 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ServerApplicationAcceptedNotification: constant.SingleChatType,
 		constant.ServerApplicationRejectedNotification: constant.SingleChatType,
 		constant.ServerCreatedNotification:             constant.ServerGroupChatType,
+		constant.ServerInfoSetNotification:             constant.SingleChatType,
+		constant.ServerDismissedNotification:           constant.SingleChatType,
+		constant.ServerMemberEnterNotification:         constant.SingleChatType,
+		constant.ServerMemberQuitNotification:          constant.SingleChatType,
+		constant.ServerMemberKickedNotification:        constant.SingleChatType,
+		constant.ServerMemberMutedNotification:         constant.SingleChatType,
+		constant.ServerMemberCancelMutedNotification:   constant.SingleChatType,
+		constant.ServerMemberInfoSetNotification:       constant.SingleChatType,
 	}
 }
 

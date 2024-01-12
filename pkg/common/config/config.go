@@ -356,7 +356,15 @@ type notification struct {
 	ServerApplicationAccepted NotificationConf `yaml:"serverApplicationAccepted"`
 	ServerApplicationRejected NotificationConf `yaml:"serverApplicationRejected"`
 	ServerCreated             NotificationConf `yaml:"serverCreated"`
+	ServerInfoSet             NotificationConf `yaml:"serverInfoSet"`
+	ServerDismissed           NotificationConf `yaml:"serverDismissed"`
 	CronMsgClearSet           NotificationConf `yaml:"cronMsgClearSet"`
+	ServerMemberEnter         NotificationConf `yaml:"serverMemberEnter"`
+	ServerMemberQuit          NotificationConf `yaml:"serverMemberQuit"`
+	ServerMemberKick          NotificationConf `yaml:"serverMemberKick"`
+	ServerMemberMute          NotificationConf `yaml:"serverMemberMute"`
+	ServerMemberCancelMute    NotificationConf `yaml:"serverMemberCancelMute"`
+	ServerMemberInfoSet       NotificationConf `yaml:"serverMemberInfoSet"`
 }
 
 var BannerURLs = []string{

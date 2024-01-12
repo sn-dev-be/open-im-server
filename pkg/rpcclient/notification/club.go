@@ -288,6 +288,117 @@ func (c *ClubNotificationSender) ServerCreatedNotification(ctx context.Context, 
 	return nil
 }
 
+func (c *ClubNotificationSender) ServerDismissNotification(ctx context.Context, tips *sdkws.ServerDissmissedTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
+		return err
+	}
+
+	// if tips.ServerGroupList != nil && len(tips.ServerGroupList) > 0 {
+	// 	groupIDs := utils.Slice(tips.ServerGroupList, func(g *sdkws.GroupInfo) string { return g.GroupID })
+	// 	c.sendNotificationToServerGroups(ctx, mcontext.GetOpUserID(ctx), groupIDs, constant.ServerCreatedNotification, tips)
+
+	// }
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerDismissedNotification, tips)
+	}
+
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerInfoSetNotification(ctx context.Context, tips *sdkws.ServerInfoSetTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	// if err := c.fillOpUser(ctx, &tips.OpUser, tips.Server.ServerID); err != nil {
+	// 	return err
+	// }
+
+	// if tips.ServerGroupList != nil && len(tips.ServerGroupList) > 0 {
+	// 	groupIDs := utils.Slice(tips.ServerGroupList, func(g *sdkws.GroupInfo) string { return g.GroupID })
+	// 	c.sendNotificationToServerGroups(ctx, mcontext.GetOpUserID(ctx), groupIDs, constant.ServerCreatedNotification, tips)
+
+	// }
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerInfoSetNotification, tips)
+	}
+
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerMemberMutedNotification(ctx context.Context, tips *sdkws.ServerMemberMutedTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerMemberMutedNotification, tips)
+	}
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerMemberCancelMutedNotification(ctx context.Context, tips *sdkws.ServerMemberCancelMutedTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerMemberCancelMutedNotification, tips)
+	}
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerMemberQuitNotification(ctx context.Context, tips *sdkws.ServerMemberQuitTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerMemberQuitNotification, tips)
+	}
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerMemberKickedNotification(ctx context.Context, tips *sdkws.ServerMemberKickedTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerMemberKickedNotification, tips)
+	}
+	return nil
+}
+
+func (c *ClubNotificationSender) ServerMemberInfoSetNotification(ctx context.Context, tips *sdkws.ServerMemberInfoSetTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerMemberInfoSetNotification, tips)
+	}
+	return nil
+}
+
 func (c *ClubNotificationSender) sendNotificationToServerGroups(ctx context.Context, opUserID string, groupIDs []string, notificationType int32, tips interface{}) error {
 	for _, groupID := range groupIDs {
 		switch v := tips.(type) {

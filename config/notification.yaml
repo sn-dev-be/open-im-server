@@ -478,6 +478,66 @@ serverDismissed:
     desc: "serverDismissed desc"
     ext: "serverDismissed ext"
 
+serverMemberEnter:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverMemberEnter title"
+    desc: "serverMemberEnter desc"
+    ext: "serverMemberEnter ext"
+
+serverMemberQuit:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverMemberQuit title"
+    desc: "serverMemberQuit desc"
+    ext: "serverMemberQuit ext"
+
+serverMemberKick:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverMemberKicked title"
+    desc: "serverMemberKicked desc"
+    ext: "serverMemberKicked ext"
+
+serverMemberMute:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverMemberMute title"
+    desc: "serverMemberMute desc"
+    ext: "serverMemberMute ext"
+
+serverMemberCancelMute:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverMemberCancelMute title"
+    desc: "serverMemberCancelMute desc"
+    ext: "serverMemberCancelMute ext"
+
+serverMemberInfoSet:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: "serverMemberInfoSet title"
+    desc: "serverMemberInfoSet desc"
+    ext: "serverMemberInfoSet ext"
+
 # cron
 cronMsgClearSet:
   isSendMsg: true

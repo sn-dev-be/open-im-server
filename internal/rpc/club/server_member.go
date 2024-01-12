@@ -87,6 +87,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 			FromUserID: req.InviterUserID,
 		}
 		c.Notification.ServerApplicationAcceptedNotification(ctx, req)
+		c.SendClubServerUserEvent(ctx, req.ServerID, user.UserID, user.Nickname)
 		return resp, nil
 	}
 	serverRequest := relationtb.ServerRequestModel{
@@ -127,11 +128,17 @@ func (c *clubServer) QuitServer(ctx context.Context, req *pbclub.QuitServerReq) 
 	if err != nil {
 		return nil, err
 	}
-
-	//todo 发送notification
-	//_ = c.Notification.MemberQuitNotification(ctx, c.groupMemberDB2PB(info, 0))
 	c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, []string{req.UserID})
 	c.SendDeleteClubServerUserEvent(ctx, req.ServerID, []string{req.UserID})
+
+	//todo 发送notification
+	tips := &sdkws.ServerMemberQuitTips{
+		ServerID:         req.ServerID,
+		OperationTime:    time.Now().UnixMilli(),
+		MemberUserIDList: []string{req.UserID},
+	}
+	c.Notification.ServerMemberQuitNotification(ctx, tips)
+
 	return resp, nil
 }
 
@@ -203,10 +210,11 @@ func (c *clubServer) GetServerMembersInfo(ctx context.Context, req *pbclub.GetSe
 	if len(req.UserIDs) == 0 {
 		return nil, errs.ErrArgs.Wrap("userIDs empty")
 	}
-	if req.ServerID == "" {
-		return nil, errs.ErrArgs.Wrap("serverID empty")
+	serverIDs := []string{}
+	if req.ServerID != "" {
+		serverIDs = append(serverIDs, req.ServerID)
 	}
-	members, err := c.FindServerMember(ctx, []string{req.ServerID}, req.UserIDs, nil)
+	members, err := c.FindServerMember(ctx, serverIDs, req.UserIDs, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -297,38 +305,15 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 	}
 
 	c.SendDeleteClubServerUserEvent(ctx, req.ServerID, req.KickedUserIDs)
-	// tips := &sdkws.MemberKickedTips{
-	// 	Server: &sdkws.ServerInfo{
-	// 		ServerID:     server.ServerID,
-	// 		ServerName:   server.ServerName,
-	// 		Notification: server.Notification,
-	// 		Introduction: server.Introduction,
-	// 		FaceURL:      server.FaceURL,
-	// 		// OwnerUserID:            owner[0].UserID,
-	// 		CreateTime:             server.CreateTime.UnixMilli(),
-	// 		MemberCount:            num,
-	// 		Ex:                     server.Ex,
-	// 		Status:                 server.Status,
-	// 		CreatorUserID:          server.CreatorUserID,
-	// 		ServerType:             server.ServerType,
-	// 		NeedVerification:       server.NeedVerification,
-	// 		LookMemberInfo:         server.LookMemberInfo,
-	// 		ApplyMemberFriend:      server.ApplyMemberFriend,
-	// 		NotificationUpdateTime: server.NotificationUpdateTime.UnixMilli(),
-	// 		NotificationUserID:     server.NotificationUserID,
-	// 	},
-	// 	KickedUserList: []*sdkws.ServerMemberFullInfo{},
-	// }
-	// if len(owner) > 0 {
-	// 	tips.Server.OwnerUserID = owner[0].UserID
-	// }
-	// if opMember, ok := memberMap[opUserID]; ok {
-	// 	tips.OpUser = convert.Db2PbServerMember(opMember)
-	// }
-	// for _, userID := range req.KickedUserIDs {
-	// 	tips.KickedUserList = append(tips.KickedUserList, convert.Db2PbServerMember(memberMap[userID]))
-	// }
-	// c.Notification.MemberKickedNotification(ctx, tips)
+
+	//todo 发送notification
+	tips := &sdkws.ServerMemberQuitTips{
+		ServerID:         req.ServerID,
+		OperationTime:    time.Now().UnixMilli(),
+		MemberUserIDList: req.KickedUserIDs,
+	}
+	c.Notification.ServerMemberQuitNotification(ctx, tips)
+
 	// if err := c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, req.KickedUserIDs); err != nil {
 	// 	return nil, err
 	// }
@@ -459,7 +444,16 @@ func (c *clubServer) MuteServerMember(ctx context.Context, req *pbclub.MuteServe
 	if err := c.ClubDatabase.UpdateServerMember(ctx, member.ServerID, member.UserID, data); err != nil {
 		return nil, err
 	}
-	// c.Notification.ServerMemberMutedNotification(ctx, req.ServerID, req.UserID, req.MutedSeconds)
+
+	tips := &sdkws.ServerMemberMutedTips{
+		ServerID:         member.ServerID,
+		OpUser:           convert.Db2PbServerMember(member),
+		OperationTime:    time.Now().UnixMilli(),
+		MemberUserIDList: []string{member.UserID},
+		MutedSeconds:     req.MutedSeconds,
+	}
+	c.Notification.ServerMemberMutedNotification(ctx, tips)
+
 	return resp, nil
 }
 
@@ -512,7 +506,15 @@ func (c *clubServer) CancelMuteServerMember(ctx context.Context, req *pbclub.Can
 	if err := c.ClubDatabase.UpdateServerMember(ctx, member.ServerID, member.UserID, data); err != nil {
 		return nil, err
 	}
-	// c.Notification.ServerMemberCancelMutedNotification(ctx, req.ServerID, req.UserID)
+
+	tips := &sdkws.ServerMemberCancelMutedTips{
+		ServerID:         member.ServerID,
+		OpUser:           convert.Db2PbServerMember(member),
+		OperationTime:    time.Now().UnixMilli(),
+		MemberUserIDList: []string{member.UserID},
+	}
+	c.Notification.ServerMemberCancelMutedNotification(ctx, tips)
+
 	return resp, nil
 }
 
@@ -649,12 +651,17 @@ func (c *clubServer) SetServerMemberInfo(ctx context.Context, req *pbclub.SetSer
 					EventType: constant.ClubServerUserMQEventType,
 				}),
 			}
-
 			c.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
 				Events: []*common.BusinessMQEvent{createServerUserEvent},
 			})
-
 		}
+
+		tips := &sdkws.ServerMemberInfoSetTips{
+			ServerID:         member.ServerID,
+			OperationTime:    time.Now().UnixMilli(),
+			MemberUserIDList: []string{member.UserID},
+		}
+		c.Notification.ServerMemberInfoSetNotification(ctx, tips)
 	}
 	return resp, nil
 }

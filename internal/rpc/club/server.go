@@ -247,11 +247,24 @@ func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServe
 			return nil, errs.ErrNoPermission.Wrap("not group owner")
 		}
 	}
+
+	members, err := s.ClubDatabase.FindServerMember(ctx, []string{req.ServerID}, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := s.ClubDatabase.DismissServer(ctx, req.ServerID); err != nil {
 		return nil, err
 	}
 
 	s.SendDeleteClubServerEvent(ctx, req.ServerID)
+
+	tips := &sdkws.ServerDissmissedTips{
+		ServerID:         req.ServerID,
+		OperationTime:    time.Now().UnixMilli(),
+		MemberUserIDList: utils.Slice(members, func(m *relationtb.ServerMemberModel) string { return m.UserID }),
+	}
+	s.Notification.ServerDismissNotification(ctx, tips)
 	return resp, nil
 }
 
@@ -346,11 +359,17 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 	if err := s.ClubDatabase.UpdateServer(ctx, server.ServerID, data); err != nil {
 		return nil, err
 	}
-	server, err = s.ClubDatabase.TakeServer(ctx, req.ServerInfoForSet.ServerID)
+
+	members, err := s.ClubDatabase.FindServerMember(ctx, []string{req.ServerInfoForSet.ServerID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-
+	tips := &sdkws.ServerInfoSetTips{
+		Server:           convert.DB2PbServerInfo(server),
+		OperationTime:    time.Now().UnixMilli(),
+		MemberUserIDList: utils.Slice(members, func(m *relationtb.ServerMemberModel) string { return m.UserID }),
+	}
+	s.Notification.ServerInfoSetNotification(ctx, tips)
 	s.SendClubServerEvent(ctx, server.ServerID, server.CommunityName, server.CommunityBanner, server.CommunityViewMode == 1)
 	return resp, nil
 }
