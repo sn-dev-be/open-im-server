@@ -36,6 +36,7 @@ func UsersDB2Pb(users []*relationtb.UserModel) (result []*sdkws.UserInfo) {
 		userPb.AllowVibration = user.AllowVibration
 		userPb.AllowPushContent = user.AllowPushContent
 		userPb.AllowOnlinePush = user.AllowOnlinePush
+		userPb.Language = user.Language
 		result = append(result, &userPb)
 	}
 	return result
@@ -54,5 +55,6 @@ func UserPb2DB(user *sdkws.UserInfo) *relationtb.UserModel {
 	userDB.AllowVibration = user.AllowVibration
 	userDB.AllowPushContent = user.AllowPushContent
 	userDB.AllowOnlinePush = user.AllowOnlinePush
+	userDB.Language = user.Language
 	return &userDB
 }

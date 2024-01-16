@@ -262,6 +262,7 @@ func (s *userServer) GetGlobalRecvMessageOpt(ctx context.Context, req *pbuser.Ge
 		AllowVibration:   user.AllowVibration,
 		AllowPushContent: user.AllowPushContent,
 		AllowOnlinePush:  user.AllowOnlinePush,
+		Language:         user.Language,
 	}, nil
 }
 

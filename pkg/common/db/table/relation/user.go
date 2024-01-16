@@ -35,6 +35,7 @@ type UserModel struct {
 	AllowVibration   int32     `gorm:"column:allow_vibration;default:1"`
 	AllowPushContent int32     `gorm:"column:allow_push_content;default:1"`
 	AllowOnlinePush  int32     `gorm:"column:allow_online_push;default:1"`
+	Language         string    `gorm:"column:language;size:64"`
 }
 
 func (u *UserModel) GetNickname() string {
