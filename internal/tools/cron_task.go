@@ -250,7 +250,7 @@ func getCronExpr(cycle int32) (expr string) {
 	now := time.Unix(time.Now().Unix(), 0)
 	switch cycle {
 	case constant.CrontabDayOne:
-		expr = fmt.Sprintf("%d %d * * *", now.Minute(), now.Hour())
+		expr = fmt.Sprintf("%d %d */1 * *", now.Minute(), now.Hour())
 	case constant.CrontabDayTwo:
 		expr = fmt.Sprintf("%d %d */2 * *", now.Minute(), now.Hour())
 	case constant.CrontabDayThree:
@@ -268,7 +268,7 @@ func getCronExpr(cycle int32) (expr string) {
 	case constant.CrontabWeekThree:
 		expr = fmt.Sprintf("%d %d */21 * *", now.Minute(), now.Hour())
 	case constant.CrontabMonth:
-		expr = fmt.Sprintf("%d %d %d * *", now.Minute(), now.Hour(), now.Day())
+		expr = fmt.Sprintf("%d %d %d */1 *", now.Minute(), now.Hour(), now.Day())
 	}
 	return expr
 }
