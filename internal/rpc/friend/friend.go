@@ -25,7 +25,6 @@ import (
 
 	"github.com/OpenIMSDK/tools/log"
 
-	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/convert"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
@@ -125,20 +124,20 @@ func (s *friendServer) ApplyToAddFriend(
 		return nil, err
 	}
 
-	if config.Config.SingleFriend {
-		createUserRelationEvent := &common.BusinessMQEvent{
-			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-				UserRelation: &common.UserRelation{
-					UserId:       req.FromUserID,
-					TargetUserId: req.ToUserID,
-				},
-				EventType: constant.UserRelationMQEventType,
-			}),
-		}
-		s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-			Events: []*common.BusinessMQEvent{createUserRelationEvent},
-		})
-	}
+	// if config.Config.SingleFriend {
+	// 	createUserRelationEvent := &common.BusinessMQEvent{
+	// 		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+	// 			UserRelation: &common.UserRelation{
+	// 				UserId:       req.FromUserID,
+	// 				TargetUserId: req.ToUserID,
+	// 			},
+	// 			EventType: constant.UserRelationMQEventType,
+	// 		}),
+	// 	}
+	// 	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+	// 		Events: []*common.BusinessMQEvent{createUserRelationEvent},
+	// 	})
+	// }
 
 	s.notificationSender.FriendApplicationAddNotification(ctx, req)
 	return resp, nil
@@ -198,19 +197,19 @@ func (s *friendServer) RespondFriendApply(
 			return nil, err
 		}
 		s.notificationSender.FriendApplicationAgreedNotification(ctx, req)
-		createUserRelationEvent := &common.BusinessMQEvent{
-			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
-				UserRelation: &common.UserRelation{
-					UserId:       req.FromUserID,
-					TargetUserId: req.ToUserID,
-				},
-				EventType: constant.UserRelationMQEventType,
-			}),
-		}
+		// createUserRelationEvent := &common.BusinessMQEvent{
+		// 	Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+		// 		UserRelation: &common.UserRelation{
+		// 			UserId:       req.FromUserID,
+		// 			TargetUserId: req.ToUserID,
+		// 		},
+		// 		EventType: constant.UserRelationMQEventType,
+		// 	}),
+		// }
 
-		s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
-			Events: []*common.BusinessMQEvent{createUserRelationEvent},
-		})
+		// s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+		// 	Events: []*common.BusinessMQEvent{createUserRelationEvent},
+		// })
 		return resp, nil
 	}
 	if req.HandleResult == constant.FriendResponseRefuse {
