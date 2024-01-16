@@ -57,7 +57,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 		UserMutualAccessible: req.UserMutualAccessible,
 		OwnerUserID:          req.OwnerUserID,
 		CreateTime:           time.Now(),
-		CommunityName:        "部落社区",
+		CommunityName:        "社区动态",
 		CommunityViewMode:    constant.ServerCommunityPrivate,
 		Ex:                   req.Ex,
 	}
@@ -361,6 +361,11 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 	}
 
 	members, err := s.ClubDatabase.FindServerMember(ctx, []string{req.ServerInfoForSet.ServerID}, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	server, err = s.ClubDatabase.TakeServer(ctx, req.ServerInfoForSet.ServerID)
 	if err != nil {
 		return nil, err
 	}

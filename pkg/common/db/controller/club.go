@@ -277,11 +277,11 @@ func (c *clubDatabase) SearchServer(
 	return c.serverDB.Search(ctx, keyword, pageNumber, showNumber)
 }
 
-func (c *clubDatabase) UpdateServer(ctx context.Context, groupID string, data map[string]any) error {
-	if err := c.serverDB.UpdateMap(ctx, groupID, data); err != nil {
+func (c *clubDatabase) UpdateServer(ctx context.Context, serverID string, data map[string]any) error {
+	if err := c.serverDB.UpdateMap(ctx, serverID, data); err != nil {
 		return err
 	}
-	return c.cache.DelServersInfo(groupID).ExecDel(ctx)
+	return c.cache.DelServersInfo(serverID).ExecDel(ctx)
 }
 
 func (c *clubDatabase) GetServerRecommendedList(ctx context.Context) (servers []*relationtb.ServerModel, err error) {
