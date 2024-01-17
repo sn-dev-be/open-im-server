@@ -1,6 +1,10 @@
 package cmd
 
 const (
+	I18nPath = "i18n"
+)
+
+const (
 	RpcPushServer         = "push"
 	RpcAuthServer         = "auth"
 	RpcConversationServer = "conversation"

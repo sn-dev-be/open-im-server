@@ -1,0 +1,13 @@
+msg:
+  base:
+    test: "test {{ .Name }}"
+    success:
+      other: 成功
+  push:
+    group:
+      title: "hello group"
+    server:
+      title: "hello server"
+
+err:
+  user_does_not_exist: "user does not exist"

@@ -28,7 +28,7 @@ type ApiCmd struct {
 }
 
 func NewApiCmd() *ApiCmd {
-	ret := &ApiCmd{NewRootCmd("api")}
+	ret := &ApiCmd{NewRootCmd("api", WithI18n())}
 	ret.SetRootCmdPt(ret)
 
 	return ret
