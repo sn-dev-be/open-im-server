@@ -1,0 +1,12 @@
+msg:
+  base:
+    success:
+      other: success
+  push:
+    group:
+      title: "hello group"
+    server:
+      title: "hello server"
+
+err:
+  user_does_not_exist: "user does not exist"

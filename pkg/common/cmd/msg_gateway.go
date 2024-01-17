@@ -30,7 +30,7 @@ type MsgGatewayCmd struct {
 }
 
 func NewMsgGatewayCmd() *MsgGatewayCmd {
-	ret := &MsgGatewayCmd{NewRootCmd("msgGateway")}
+	ret := &MsgGatewayCmd{NewRootCmd("msgGateway", WithI18n())}
 	ret.SetRootCmdPt(ret)
 	return ret
 }

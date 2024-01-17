@@ -55,6 +55,7 @@ type cronServer struct {
 
 func StartTask(rpcPort, prometheusPort int) error {
 	fmt.Println("cron task start, config", config.Config.ChatRecordsClearTime)
+
 	msgTool, err := msg.InitMsgTool()
 	if err != nil {
 		return err

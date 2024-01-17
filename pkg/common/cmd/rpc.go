@@ -33,7 +33,7 @@ type RpcCmd struct {
 }
 
 func NewRpcCmd(name string) *RpcCmd {
-	ret := &RpcCmd{NewRootCmd(name)}
+	ret := &RpcCmd{NewRootCmd(name, WithI18n())}
 	ret.SetRootCmdPt(ret)
 	return ret
 }

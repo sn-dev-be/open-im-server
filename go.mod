@@ -42,13 +42,16 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.9+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/nicksnyder/go-i18n/v2 v2.3.0
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.45
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/sync v0.4.0
+	golang.org/x/text v0.14.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gorm.io/datatypes v1.2.0
 	gotest.tools v2.2.0+incompatible
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
@@ -135,7 +138,6 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -157,3 +159,6 @@ require (
 	golang.org/x/crypto v0.14.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
+
+// replace github.com/OpenIMSDK/protocol => github.com/sn-dev-be/protocol v0.10.3
+// replace github.com/OpenIMSDK/protocol => /Users/pagefau1t/Playground/openim/protocol/
