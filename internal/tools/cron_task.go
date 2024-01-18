@@ -171,6 +171,7 @@ func (c *cronServer) recoverAllStableJob(jobs map[string]string) error {
 func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsgJobReq) (*pbcron.SetClearMsgJobResp, error) {
 	resp := &pbcron.SetClearMsgJobResp{}
 	job := job.NewClearMsgJob(req.ConversationID, getCronExpr(req.CronCycle), req.CronCycle, c.msgTool)
+	// job.MsgTool.ClearMsgsByConversationID(job.ConversationID, job.GetSeconds())
 	if req.CronCycle == constant.CrontabDisable {
 		c.dcron.Remove(job.Name)
 		log.ZInfo(ctx, "remove job", "jobName", job.Name)
@@ -249,27 +250,17 @@ func cronWrapFunc(rdb redis.UniversalClient, key string, fn func()) func() {
 
 func getCronExpr(cycle int32) (expr string) {
 	now := time.Unix(time.Now().Unix(), 0)
-	switch cycle {
-	case constant.CrontabDayOne:
-		expr = fmt.Sprintf("%d %d */1 * *", now.Minute(), now.Hour())
-	case constant.CrontabDayTwo:
-		expr = fmt.Sprintf("%d %d */2 * *", now.Minute(), now.Hour())
-	case constant.CrontabDayThree:
-		expr = fmt.Sprintf("%d %d */3 * *", now.Minute(), now.Hour())
-	case constant.CrontabDayFour:
-		expr = fmt.Sprintf("%d %d */4 * *", now.Minute(), now.Hour())
-	case constant.CrontabDayFive:
-		expr = fmt.Sprintf("%d %d */5 * *", now.Minute(), now.Hour())
-	case constant.CrontabDaySix:
-		expr = fmt.Sprintf("%d %d */6 * *", now.Minute(), now.Hour())
-	case constant.CrontabWeekOne:
-		expr = fmt.Sprintf("%d %d */7 * *", now.Minute(), now.Hour())
-	case constant.CrontabWeekTwo:
-		expr = fmt.Sprintf("%d %d */14 * *", now.Minute(), now.Hour())
-	case constant.CrontabWeekThree:
-		expr = fmt.Sprintf("%d %d */21 * *", now.Minute(), now.Hour())
-	case constant.CrontabMonth:
-		expr = fmt.Sprintf("%d %d %d */1 *", now.Minute(), now.Hour(), now.Day())
+	cronMap := map[int32]string{
+		constant.CrontabDayOne:    fmt.Sprintf("%d %d */1 * *", now.Minute(), now.Hour()),
+		constant.CrontabDayTwo:    fmt.Sprintf("%d %d */2 * *", now.Minute(), now.Hour()),
+		constant.CrontabDayThree:  fmt.Sprintf("%d %d */3 * *", now.Minute(), now.Hour()),
+		constant.CrontabDayFour:   fmt.Sprintf("%d %d */4 * *", now.Minute(), now.Hour()),
+		constant.CrontabDayFive:   fmt.Sprintf("%d %d */5 * *", now.Minute(), now.Hour()),
+		constant.CrontabDaySix:    fmt.Sprintf("%d %d */6 * *", now.Minute(), now.Hour()),
+		constant.CrontabWeekOne:   fmt.Sprintf("%d %d */7 * *", now.Minute(), now.Hour()),
+		constant.CrontabWeekTwo:   fmt.Sprintf("%d %d */14 * *", now.Minute(), now.Hour()),
+		constant.CrontabWeekThree: fmt.Sprintf("%d %d */21 * *", now.Minute(), now.Hour()),
+		constant.CrontabMonth:     fmt.Sprintf("%d %d %d */1 *", now.Minute(), now.Hour(), now.Day()),
 	}
-	return expr
+	return cronMap[cycle]
 }

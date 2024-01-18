@@ -12,6 +12,19 @@ import (
 	"github.com/openimsdk/open-im-server/v3/internal/tools/msg"
 )
 
+var cronCycleMap = map[int32]int32{
+	constant.CrontabDayOne:    1,
+	constant.CrontabDayTwo:    2,
+	constant.CrontabDayThree:  3,
+	constant.CrontabDayFour:   4,
+	constant.CrontabDayFive:   5,
+	constant.CrontabDaySix:    6,
+	constant.CrontabWeekOne:   7,
+	constant.CrontabWeekTwo:   14,
+	constant.CrontabWeekThree: 21,
+	constant.CrontabMonth:     30,
+}
+
 type ClearMsgJob struct {
 	CommonJob
 	ConversationID string       `json:"conversationID"`
@@ -36,28 +49,8 @@ func (c *ClearMsgJob) Run() {
 }
 
 func (c *ClearMsgJob) GetSeconds() int64 {
-	var days int32
-	switch c.CronCycle {
-	case constant.CrontabDayOne:
-		days = 1
-	case constant.CrontabDayTwo:
-		days = 2
-	case constant.CrontabDayThree:
-		days = 3
-	case constant.CrontabDayFour:
-		days = 4
-	case constant.CrontabDayFive:
-		days = 5
-	case constant.CrontabDaySix:
-		days = 6
-	case constant.CrontabWeekOne:
-		days = 7
-	case constant.CrontabWeekTwo:
-		days = 14
-	case constant.CrontabWeekThree:
-		days = 21
-	case constant.CrontabMonth:
-		days = 30
+	days, ok := cronCycleMap[c.CronCycle]
+	if !ok {
 	}
 	return int64((time.Duration(days) * 24 * time.Hour).Seconds())
 }
