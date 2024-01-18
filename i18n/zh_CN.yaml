@@ -4,10 +4,31 @@ msg:
     success:
       other: 成功
   push:
+    single:
+      title: "hello single"
     group:
       title: "hello group"
     server:
       title: "hello server"
+    common:
+      title: "Zapry"
+      base: "你收到一条新消息"
+      picture: "[图片]"
+      voice: "[语音]"
+      video: "[视频]"
+      businessCard: "[个人名片]"
+      clubInvitation: "[部落名片]"
+      redPacket: "[红包]{{ .greetings }}"
+      groupInvitation: "[群邀请]"
+      transfer: "[转账]向你发起一笔转账"
+      voiceCall: "[语音通话]"
+      file: "[文件]"
+      fireAfterRead: "[你收到一条阅后即焚消息]"
 
 err:
   user_does_not_exist: "user does not exist"
+
+
+notification:
+  friendApplicationApproved:
+    desc: "{{ .Name }}将你添加为好友～ 点击查看>"

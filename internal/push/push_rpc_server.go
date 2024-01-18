@@ -59,6 +59,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		&groupRpcClient,
 		&msgRpcClient,
 		&userRpcClient,
+		&clubRpcClient,
 	)
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -74,6 +75,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		consumer.Start()
 	}()
 	wg.Wait()
+
 	return nil
 }
 

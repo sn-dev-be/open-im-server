@@ -101,3 +101,9 @@ type MessageRevoked struct {
 	SessionType     int32  `mapstructure:"sessionType"     json:"sessionType"     validate:"required"`
 	Seq             uint32 `mapstructure:"seq"             json:"seq"             validate:"required"`
 }
+
+type RedPacketElem struct {
+	RedPacketID string `json:"redPacketID"`
+	Greetings   string `json:"greetings"`
+	Status      int32  `json:"status"`
+}

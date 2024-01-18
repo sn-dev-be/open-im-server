@@ -7,6 +7,24 @@ msg:
       title: "hello group"
     server:
       title: "hello server"
+    common:
+      title: "Zapry"
+      base: "You've got a new message"
+      picture: "[Picture]"
+      voice: "[Voice]"
+      video: "[Video]"
+      businessCard: "[Business Card]"
+      clubInvitation: "[Club invitation]"
+      redPacket: "[Crypto Boxes]{{.greetings}}"
+      groupInvitation: "[Group invitation]"
+      transfer: "[Transfer] Initiate a transfer to you"
+      voiceCall: "[voiceCall]"
+      file: "[File]"
+      fireAfterRead: "[Delete After reading]"
 
 err:
   user_does_not_exist: "user does not exist"
+
+notification:
+  friendApplicationApproved:
+    desc: "{{ .Name }} added you as a friend~ Click to view>"

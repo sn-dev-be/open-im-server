@@ -1,7 +1,7 @@
 package cmd
 
 const (
-	I18nPath = "i18n"
+	I18nPath = "/i18n"
 )
 
 const (

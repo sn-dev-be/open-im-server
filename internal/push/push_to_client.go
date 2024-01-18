@@ -31,6 +31,7 @@ import (
 	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/i18n"
 
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlineinfo"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush"
@@ -60,13 +61,15 @@ type Pusher struct {
 	groupRpcClient         *rpcclient.GroupRpcClient
 	offlineInfoParse       *offlineinfo.OfflineInfoParse
 	userRpcClient          *rpcclient.UserRpcClient
+	clubRpcClient          *rpcclient.ClubRpcClient
 }
 
 var errNoOfflinePusher = errors.New("no offlinePusher is configured")
 
 func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offlinepush.OfflinePusher, database controller.PushDatabase,
 	groupLocalCache *localcache.GroupLocalCache, conversationLocalCache *localcache.ConversationLocalCache, serverLocalCache *localcache.ServerLocalCache,
-	conversationRpcClient *rpcclient.ConversationRpcClient, groupRpcClient *rpcclient.GroupRpcClient, msgRpcClient *rpcclient.MessageRpcClient, userRpcClient *rpcclient.UserRpcClient,
+	conversationRpcClient *rpcclient.ConversationRpcClient, groupRpcClient *rpcclient.GroupRpcClient, msgRpcClient *rpcclient.MessageRpcClient,
+	userRpcClient *rpcclient.UserRpcClient, clubRpcClient *rpcclient.ClubRpcClient,
 ) *Pusher {
 	return &Pusher{
 		discov:                 discov,
@@ -78,8 +81,9 @@ func NewPusher(discov discoveryregistry.SvcDiscoveryRegistry, offlinePusher offl
 		msgRpcClient:           msgRpcClient,
 		conversationRpcClient:  conversationRpcClient,
 		groupRpcClient:         groupRpcClient,
-		offlineInfoParse:       offlineinfo.NewOfflineInfoParse(groupRpcClient),
+		offlineInfoParse:       offlineinfo.NewOfflineInfoParse(groupRpcClient, clubRpcClient),
 		userRpcClient:          userRpcClient,
+		clubRpcClient:          clubRpcClient,
 	}
 }
 
@@ -297,9 +301,6 @@ func (p *Pusher) Push2SuperGroup(ctx context.Context, groupID string, msg *sdkws
 func (p *Pusher) Push2ServerGroup(ctx context.Context, groupID string, msg *sdkws.MsgData) (err error) {
 	log.ZDebug(ctx, "Get server group msg from msg_transfer and push msg", "msg", msg.String(), "groupID", groupID)
 	var pushToUserIDs []string
-	// if err := callbackBeforeSuperGroupOnlinePush(ctx, groupID, msg, &pushToUserIDs); err != nil {
-	// 	return err
-	// }
 	if len(msg.RecvIDList) > 0 {
 		pushToUserIDs = msg.RecvIDList
 	}
@@ -308,47 +309,6 @@ func (p *Pusher) Push2ServerGroup(ctx context.Context, groupID string, msg *sdkw
 		if err != nil {
 			return err
 		}
-		// switch msg.ContentType {
-		// case constant.MemberQuitNotification:
-		// 	var tips sdkws.MemberQuitTips
-		// 	if p.UnmarshalNotificationElem(msg.Content, &tips) != nil {
-		// 		return err
-		// 	}
-		// 	defer func(groupID string, userIDs []string) {
-		// 		if err := p.DeleteMemberAndSetConversationSeq(ctx, groupID, userIDs); err != nil {
-		// 			log.ZError(ctx, "MemberQuitNotification DeleteMemberAndSetConversationSeq", err, "groupID", groupID, "userIDs", userIDs)
-		// 		}
-		// 	}(groupID, []string{tips.QuitUser.UserID})
-		// 	pushToUserIDs = append(pushToUserIDs, tips.QuitUser.UserID)
-		// case constant.MemberKickedNotification:
-		// 	var tips sdkws.MemberKickedTips
-		// 	if p.UnmarshalNotificationElem(msg.Content, &tips) != nil {
-		// 		return err
-		// 	}
-		// 	kickedUsers := utils.Slice(tips.KickedUserList, func(e *sdkws.GroupMemberFullInfo) string { return e.UserID })
-		// 	defer func(groupID string, userIDs []string) {
-		// 		if err := p.DeleteMemberAndSetConversationSeq(ctx, groupID, userIDs); err != nil {
-		// 			log.ZError(ctx, "MemberKickedNotification DeleteMemberAndSetConversationSeq", err, "groupID", groupID, "userIDs", userIDs)
-		// 		}
-		// 	}(groupID, kickedUsers)
-		// 	pushToUserIDs = append(pushToUserIDs, kickedUsers...)
-		// case constant.GroupDismissedNotification:
-		// 	if msgprocessor.IsNotification(msgprocessor.GetConversationIDByMsg(msg)) { // 消息先到,通知后到
-		// 		var tips sdkws.GroupDismissedTips
-		// 		if p.UnmarshalNotificationElem(msg.Content, &tips) != nil {
-		// 			return err
-		// 		}
-		// 		log.ZInfo(ctx, "GroupDismissedNotificationInfo****", "groupID", groupID, "num", len(pushToUserIDs), "list", pushToUserIDs)
-		// 		if len(config.Config.Manager.UserID) > 0 {
-		// 			ctx = mcontext.WithOpUserIDContext(ctx, config.Config.Manager.UserID[0])
-		// 		}
-		// 		defer func(groupID string) {
-		// 			if err := p.groupRpcClient.DismissGroup(ctx, groupID); err != nil {
-		// 				log.ZError(ctx, "DismissGroup Notification clear members", err, "groupID", groupID)
-		// 			}
-		// 		}(groupID)
-		// 	}
-		// }
 	}
 	wsResults, err := p.GetConnsAndOnlinePush(ctx, msg, pushToUserIDs)
 	if err != nil {
@@ -482,25 +442,15 @@ func (p *Pusher) GetConnsAndOnlinePush(ctx context.Context, msg *sdkws.MsgData, 
 	return wsResults, nil
 }
 
-// func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
-// 	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
-// 	if err != nil {
-// 		return err
-// 	}
+func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
 
-// 	for _, userID := range offlinePushUserIDs {
-// 		// 根据每个用户ID检查推送设置
-// 		go func() {
-// 			asyncCtx, cancel := context.WithCancel(context.Background())
-// 			defer cancel()
-// 			p.offlinePushMsgToUser(asyncCtx, conversationID, msg, userID, title, content, opts)
-// 		}()
+	for _, userID := range offlinePushUserIDs {
+		p.offlinePushMsgToUser(ctx, conversationID, msg, userID)
+	}
+	return nil
+}
 
-// 	}
-// 	return nil
-// }
-
-func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string, msg *sdkws.MsgData, userID, title, content, msgContent string, opts *offlinepush.Opts) error {
+func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string, msg *sdkws.MsgData, userID string) error {
 
 	userPushSetting, err := p.userRpcClient.Client.GetGlobalRecvMessageOpt(ctx, &user.GetGlobalRecvMessageOptReq{UserID: userID})
 	if err != nil {
@@ -511,60 +461,32 @@ func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string
 	if userPushSetting.GlobalRecvMsgOpt == constant.ReceiveNotPushMessage {
 		return nil
 	}
+
+	title, content, opts, err := p.getOfflinePushInfos(ctx, conversationID, userID, msg, userPushSetting)
+	if err != nil {
+		return err
+	}
+
 	// pus msg content
-	if userPushSetting.AllowPushContent == constant.NewMsgPushSettingAllowed {
-	}
-	if userPushSetting.AllowBeep == constant.NewMsgPushSettingAllowed {
-		opts.IOSPushSound = "default"
-	}
-	if userPushSetting.AllowVibration == constant.NewMsgPushSettingAllowed {
 
-	}
-	if msg.ContentType == constant.AtText {
-		if utils.Contain(userID, msg.AtUserIDList...) {
-			content = constant.ContentType2PushContentI18n[constant.AtText]
-		}
-		err := p.offlinePusher.Push(ctx, []string{userID}, title, constant.ContentType2PushContentI18n[constant.Common], opts)
+	// if msg.ContentType == constant.AtText {
+	// 	if utils.Contain(userID, msg.AtUserIDList...) {
+	// 		content = constant.ContentType2PushContentI18n[constant.AtText]
+	// 	}
+	// 	err := p.offlinePusher.Push(ctx, []string{userID}, title, constant.ContentType2PushContentI18n[constant.Common], opts)
 
-		if err != nil {
-			prommetrics.MsgOfflinePushFailedCounter.Inc()
-			return err
-		}
-		return nil
-	}
+	// 	if err != nil {
+	// 		prommetrics.MsgOfflinePushFailedCounter.Inc()
+	// 		return err
+	// 	}
+	// 	return nil
+	// }
 
 	err = p.offlinePusher.Push(ctx, []string{userID}, title, content, opts)
 	if err != nil {
 		prommetrics.MsgOfflinePushFailedCounter.Inc()
 		return err
 	}
-	return nil
-}
-
-func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
-	title, content, msgContent, opts, err := p.getOfflinePushInfos(ctx, conversationID, msg, offlinePushUserIDs)
-	if err != nil {
-		return err
-	}
-
-	for _, userID := range offlinePushUserIDs {
-		p.offlinePushMsgToUser(ctx, conversationID, msg, userID, title, content, msgContent, opts)
-	}
-
-	// userSettingResp, err := p.userRpcClient.Client.GetUserSettingsByUserIDs(ctx, &user.GetUserSettingsByUserIDsReq{UserIDs: offlinePushUserIDs})
-	// if err != nil {
-	// 	return err
-	// }
-	// for _, userSetting := range userSettingResp.Settings {
-	// 	//allowed push new msg
-	// 	if userSetting.NewMsgPushMode == 1 {
-	// 		err :=
-	// 		if err != nil {
-	// 			prommetrics.MsgOfflinePushFailedCounter.Inc()
-	// 			return err
-	// 		}
-	// 	}
-	// }
 	return nil
 }
 
@@ -577,16 +499,7 @@ func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (op
 			ContentType:    msg.ContentType,
 		},
 	}
-	// if msg.ContentType > constant.SignalingNotificationBegin && msg.ContentType < constant.SignalingNotificationEnd {
-	// 	req := &sdkws.SignalReq{}
-	// 	if err := proto.Unmarshal(msg.Content, req); err != nil {
-	// 		return nil, utils.Wrap(err, "")
-	// 	}
-	// 	switch req.Payload.(type) {
-	// 	case *sdkws.SignalReq_Invite, *sdkws.SignalReq_InviteInGroup:
-	// 		opts.Signal = &offlinepush.Signal{ClientMsgID: msg.ClientMsgID}
-	// 	}
-	// }
+
 	if msg.SessionType == constant.ServerGroupChatType {
 		group, err := p.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
 		if err == nil {
@@ -602,16 +515,10 @@ func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (op
 	return opts, nil
 }
 
-func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) (title, content, msgContent string, opts *offlinepush.Opts, err error) {
+func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID, userID string, msg *sdkws.MsgData, userPushSetting *user.GetGlobalRecvMessageOptResp) (title, content string, opts *offlinepush.Opts, err error) {
 	if p.offlinePusher == nil {
 		err = errNoOfflinePusher
 		return
-	}
-
-	type atContent struct {
-		Text       string   `json:"text"`
-		AtUserList []string `json:"atUserList"`
-		IsAtSelf   bool     `json:"isAtSelf"`
 	}
 
 	opts, err = p.GetOfflinePushOpts(ctx, msg)
@@ -619,14 +526,27 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID string,
 		return
 	}
 
+	if userPushSetting.AllowBeep == constant.NewMsgPushSettingAllowed {
+		opts.IOSPushSound = "default"
+	}
+	if userPushSetting.AllowVibration == constant.NewMsgPushSettingAllowed {
+
+	}
+
 	if msg.OfflinePushInfo != nil {
 		title = msg.OfflinePushInfo.Title
 		content = msg.OfflinePushInfo.Desc
 	}
 
+	language := constant.ZH_CZ
+	if userPushSetting.Language != "" {
+		language = userPushSetting.Language
+	}
+
 	if title == "" {
 		var offlineMsg *offlineinfo.OfflineMsg
-		offlineMsg, err = p.offlineInfoParse.GetOfflineInfo(ctx, msg)
+		lang := i18n.Language(language)
+		offlineMsg, err = p.offlineInfoParse.GetOfflineInfo(ctx, msg, userPushSetting.AllowPushContent, lang)
 		if err != nil {
 			log.ZError(ctx, "getOfflineInfo failed", err, "contentType", msg.ContentType)
 			return

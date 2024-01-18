@@ -26,7 +26,11 @@ var (
 )
 
 func NewTranslator(c *I18n) (tr Translator, err error) {
-	entries, err := os.ReadDir(c.BundleDir)
+	cwd, err := getRootPath()
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(cwd + c.BundleDir)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +43,7 @@ func NewTranslator(c *I18n) (tr Translator, err error) {
 			continue
 		}
 		log.ZDebug(context.Background(), "try to read file", "fileName", file.Name())
-		buf, err := os.ReadFile(filepath.Join(c.BundleDir, file.Name()))
+		buf, err := os.ReadFile(filepath.Join(cwd, c.BundleDir, file.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("read file failed: %s %s", file.Name(), err)
 		}

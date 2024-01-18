@@ -16,72 +16,152 @@ package offlineinfo
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/OpenIMSDK/tools/log"
-	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
-	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
+	"github.com/openimsdk/open-im-server/v3/pkg/apistruct"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/i18n"
 
+	"github.com/OpenIMSDK/protocol/club"
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
 )
 
-type SingleChatMsgHandler struct{}
+type SingleChatMsgHandler struct{ rpc }
 type GroupMsgHandler struct{ rpc }
 type ServerGroupMsgHandler struct{ rpc }
 
-func (h SingleChatMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
-	info := &OfflineMsg{Title: msg.SenderNickname}
-	switch msg.ContentType {
-	case constant.RedPacket:
-		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
-	case constant.FriendApplicationApprovedNotification:
-		info.Content = config.Config.Notification.FriendApplicationApproved.OfflinePush.Desc
-	default:
-		info.Content = constant.ContentType2PushContentI18n[constant.Common]
+func (h SingleChatMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.Language, pushContentMode int32) (*OfflineMsg, error) {
+	info := &OfflineMsg{
+		Title:   i18n.Tr(lang, "msg.push.common.title"),
+		Content: i18n.Tr(lang, "msg.push.common.base"),
 	}
-	return info, nil
-}
 
-func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
-	info := &OfflineMsg{}
-	groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
-	if err != nil {
-		log.ZError(ctx, "offline info GetGroupInfo failed", err)
-		return nil, err
-	}
-	info.Title = groupInfo.GroupName
-	switch msg.ContentType {
-	case constant.RedPacket:
-		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
-	case constant.AtText:
-		info.Content = constant.ContentType2PushContentI18n[constant.AtText]
-	default:
-		info.Content = constant.ContentType2PushContentI18n[constant.Common]
-	}
-	return info, nil
-}
-
-func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
-	info := &OfflineMsg{}
-	groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
-	if err != nil {
-		log.ZError(ctx, "offline info GetGroupInfo failed", err)
-		return nil, err
-	}
-	switch msg.ContentType {
-	case constant.RedPacket:
-		info.Title = groupInfo.GroupName
-		info.Content = constant.ContentType2PushContentI18n[constant.RedPacket]
-	case constant.AtText:
-		info.Title = groupInfo.GroupName + "[部落]"
-		loginUserID := mcontext.GetOpUserID(ctx)
-		if utils.IsContain(loginUserID, msg.AtUserIDList) {
-			info.Content = constant.ContentType2PushContentI18n[constant.AtText]
+	if pushContentMode == constant.NewMsgPushSettingAllowed {
+		info.Title = msg.SenderNickname
+		switch msg.ContentType {
+		case constant.Text:
+			t := apistruct.TextElem{}
+			utils.JsonStringToStruct(string(msg.Content), &t)
+			info.Content = string(t.Content)
+		case constant.Picture:
+			info.Content = i18n.Tr(lang, "msg.push.common.picture")
+		case constant.Voice:
+			info.Content = i18n.Tr(lang, "msg.push.common.voice")
+		case constant.Video:
+			info.Content = i18n.Tr(lang, "msg.push.common.video")
+		case constant.VoiceCall:
+			info.Title = i18n.Tr(lang, "msg.push.common.title")
+			info.Content = i18n.Tr(lang, "msg.push.common.voiceCall")
+		case constant.RedPacket:
+			t := apistruct.RedPacketElem{}
+			err := utils.JsonStringToStruct(string(msg.Content), &t)
+			if err != nil {
+				return nil, err
+			}
+			i18n.TrWithData(lang, "msg.push.common.redPacket", map[string]interface{}{
+				"greetings": t.Greetings,
+			})
+		case constant.FriendApplicationApprovedNotification:
+			info.Content = i18n.Tr(lang, "msg.push.common.title")
+			info.Content = i18n.Tr(lang, "friendApplicationApproved.desc")
+		default:
+			info.Content = i18n.Tr(lang, "msg.push.common.base")
 		}
-	default:
-		info.Title = groupInfo.GroupName + "[部落]"
-		info.Content = constant.ContentType2PushContentI18n[constant.Common]
+	}
+
+	return info, nil
+}
+
+func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.Language, pushContentMode int32) (*OfflineMsg, error) {
+	info := &OfflineMsg{
+		Title:   i18n.Tr(lang, "msg.push.common.title"),
+		Content: i18n.Tr(lang, "msg.push.common.base"),
+	}
+
+	if pushContentMode == constant.NewMsgPushSettingAllowed {
+		groupInfo, err := h.groupRpcClient.GetGroupInfo(ctx, msg.GroupID)
+		if err != nil {
+			log.ZError(ctx, "offline info GetGroupInfo failed", err)
+			return nil, err
+		}
+		info.Title = groupInfo.GroupName
+		switch msg.ContentType {
+		case constant.Text:
+			t := apistruct.TextElem{}
+			utils.JsonStringToStruct(string(msg.Content), &t)
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Content)
+		case constant.Picture:
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.picture"))
+		case constant.Voice:
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voice"))
+		case constant.Video:
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.video"))
+		case constant.VoiceCall:
+			info.Title = i18n.Tr(lang, "msg.push.common.title")
+			info.Content = fmt.Sprintf("%s:%s:", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voiceCall"))
+		case constant.RedPacket:
+			t := sdkws.RedPacketElem{}
+			err := utils.JsonStringToStruct(string(msg.Content), &t)
+			if err != nil {
+				return nil, err
+			}
+			content := i18n.TrWithData(lang, "msg.push.common.redPacket", map[string]interface{}{
+				"greetings": t.Greetings,
+			})
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, content)
+		default:
+			info.Content = i18n.Tr(lang, "msg.push.common.base")
+		}
+	}
+	return info, nil
+}
+
+func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.Language, pushContentMode int32) (*OfflineMsg, error) {
+	info := &OfflineMsg{
+		Title:   i18n.Tr(lang, "msg.push.common.title"),
+		Content: i18n.Tr(lang, "msg.push.common.base"),
+	}
+
+	if pushContentMode == constant.NewMsgPushSettingAllowed {
+		resp, err := h.clubRpcClient.Client.GetServerGroupBaseInfos(ctx, &club.GetServerGroupBaseInfosReq{GroupIDs: []string{msg.GroupID}})
+		if err != nil {
+			log.ZError(ctx, "offline info GetGroupInfo failed", err)
+			return nil, err
+		}
+		serverGroup := resp.ServerGroupBaseInfos[0]
+		groupName := serverGroup.GroupName
+		serverName := serverGroup.ServerName
+		info.Title = fmt.Sprintf("%s[%s]", serverName, groupName)
+
+		switch msg.ContentType {
+		case constant.Text:
+			t := apistruct.TextElem{}
+			utils.JsonStringToStruct(string(msg.Content), &t)
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Content)
+		case constant.Picture:
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.picture"))
+		case constant.Voice:
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voice"))
+		case constant.Video:
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.video"))
+		case constant.VoiceCall:
+			info.Title = i18n.Tr(lang, "msg.push.common.title")
+			info.Content = fmt.Sprintf("%s:%s:", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voiceCall"))
+		case constant.RedPacket:
+			t := sdkws.RedPacketElem{}
+			err := utils.JsonStringToStruct(string(msg.Content), &t)
+			if err != nil {
+				return nil, err
+			}
+			content := i18n.TrWithData(lang, "msg.push.common.redPacket", map[string]interface{}{
+				"greetings": t.Greetings,
+			})
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, content)
+		default:
+			info.Content = i18n.Tr(lang, "msg.push.common.base")
+		}
 	}
 	return info, nil
 }

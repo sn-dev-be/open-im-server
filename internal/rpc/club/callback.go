@@ -34,7 +34,7 @@ func (s *clubServer) SendClubServerEvent(ctx context.Context, serverID, name, ba
 				ClubServerId: serverID,
 				Name:         name,
 				Banner:       banner,
-				IsPublic:     false,
+				IsPublic:     isPublic,
 			},
 			EventType: constant.ClubServerMQEventType,
 		}),

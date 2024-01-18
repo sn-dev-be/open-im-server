@@ -19,41 +19,50 @@ import (
 
 	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/protocol/sdkws"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/i18n"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 )
 
 type OfflineMsg struct {
-	Title      string
-	Content    string
-	MsgContent string
+	Title   string
+	Content string
 }
+
+// type OfflineMsg struct {
+// 	Title   string
+// 	Content string
+// }
 
 type rpc struct {
 	groupRpcClient *rpcclient.GroupRpcClient
+	clubRpcClient  *rpcclient.ClubRpcClient
 }
 
 type OfflineInfo interface {
-	Msg(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error)
+	Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.Language, pushContentMode int32) (*OfflineMsg, error)
 }
 
 type OfflineInfoParse struct {
 	groupRpcClient *rpcclient.GroupRpcClient
+	clubRpcClient  *rpcclient.ClubRpcClient
 }
 
-func NewOfflineInfoParse(groupRpcClient *rpcclient.GroupRpcClient) *OfflineInfoParse {
+func NewOfflineInfoParse(groupRpcClient *rpcclient.GroupRpcClient, clubRpcClient *rpcclient.ClubRpcClient) *OfflineInfoParse {
 	return &OfflineInfoParse{
 		groupRpcClient: groupRpcClient,
+		clubRpcClient:  clubRpcClient,
 	}
 }
 
-func (o *OfflineInfoParse) GetOfflineInfo(ctx context.Context, msg *sdkws.MsgData) (*OfflineMsg, error) {
+func (o *OfflineInfoParse) GetOfflineInfo(ctx context.Context, msg *sdkws.MsgData, pushContentMode int32, lang i18n.Language) (*OfflineMsg, error) {
 	var info OfflineInfo
 	rpc := rpc{
 		groupRpcClient: o.groupRpcClient,
+		clubRpcClient:  o.clubRpcClient,
 	}
 	switch msg.SessionType {
 	case constant.SingleChatType:
-		info = SingleChatMsgHandler{}
+		info = SingleChatMsgHandler{rpc}
 	case constant.SuperGroupChatType:
 		info = GroupMsgHandler{rpc}
 	case constant.ServerGroupChatType:
@@ -61,5 +70,5 @@ func (o *OfflineInfoParse) GetOfflineInfo(ctx context.Context, msg *sdkws.MsgDat
 	default:
 		info = SingleChatMsgHandler{}
 	}
-	return info.Msg(ctx, msg)
+	return info.Msg(ctx, msg, lang, pushContentMode)
 }
