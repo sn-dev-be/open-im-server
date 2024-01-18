@@ -26,7 +26,7 @@ var (
 )
 
 func NewTranslator(c *I18n) (tr Translator, err error) {
-	cwd, err := getRootPath()
+	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
