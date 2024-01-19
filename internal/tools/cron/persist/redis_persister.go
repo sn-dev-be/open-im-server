@@ -22,25 +22,37 @@ func (r *RedisPersist) AddJob(jobName string, job StableJob) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.redisClient.HSet(context.Background(), driver.GetStableJobStore(), job.GetName(), bytes).Result()
-	if err != nil {
+	if _, err = r.redisClient.HSet(
+		context.Background(),
+		driver.GetStableJobStore(driver.CronTaskName),
+		job.GetName(),
+		bytes,
+	).Result(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (r *RedisPersist) RemoveJob(jobName string) error {
-	_, err := r.redisClient.HDel(context.Background(), driver.GetStableJobStore(), jobName).Result()
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := r.redisClient.HDel(
+		context.Background(),
+		driver.GetStableJobStore(driver.CronTaskName),
+		jobName,
+	).Result()
+	return err
 }
 
 func (r *RedisPersist) GetJob(jobName string) (string, error) {
-	return r.redisClient.HGet(context.Background(), driver.GetStableJobStore(), jobName).Result()
+	return r.redisClient.HGet(
+		context.Background(),
+		driver.GetStableJobStore(driver.CronTaskName),
+		jobName,
+	).Result()
 }
 
 func (r *RedisPersist) RecoverAllJob() (map[string]string, error) {
-	return r.redisClient.HGetAll(context.Background(), driver.GetStableJobStore()).Result()
+	return r.redisClient.HGetAll(
+		context.Background(),
+		driver.GetStableJobStore(driver.CronTaskName),
+	).Result()
 }

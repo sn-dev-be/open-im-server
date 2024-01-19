@@ -8,6 +8,7 @@ import (
 
 // GlobalKeyPrefix is global redis key preifx
 const GlobalKeyPrefix = "distributed-cron:"
+const CronTaskName = "cron_task"
 
 func GetKeyPre(serviceName string) string {
 	return GlobalKeyPrefix + serviceName + ":"
@@ -17,12 +18,12 @@ func GetNodeId(serviceName string) string {
 	return GetKeyPre(serviceName) + uuid.New().String()
 }
 
-func GetStableJobStore() string {
-	return GlobalKeyPrefix + "stable-jobs"
+func GetStableJobStore(serviceName string) string {
+	return GetKeyPre(serviceName) + "stable-jobs"
 }
 
-func GetStableJobStoreTxKey() string {
-	return GlobalKeyPrefix + "TX:stable-jobs"
+func GetStableJobStoreTxKey(serviceName string) string {
+	return GetKeyPre(serviceName) + "TX:stable-jobs"
 }
 
 func TimePre(t time.Time, preDuration time.Duration) int64 {

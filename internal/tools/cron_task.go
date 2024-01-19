@@ -73,7 +73,7 @@ func StartTask(rpcPort, prometheusPort int) error {
 
 	persistJob := persist.NewRedisPersist(rdb)
 	dcron := dcron.NewDcronWithOption(
-		config.Config.RpcRegisterName.OpenImCronName,
+		driver.CronTaskName,
 		driver.NewRedisDriver(rdb),
 		// dcron.CronOptionSeconds(),
 		dcron.WithPersist(persistJob),

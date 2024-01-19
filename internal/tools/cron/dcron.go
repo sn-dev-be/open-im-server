@@ -133,6 +133,7 @@ func (d *Dcron) Remove(jobName string) {
 
 func (d *Dcron) allowThisNodeRun(jobName string) (ok bool) {
 	ok, err := d.nodePool.CheckJobAvailable(jobName)
+	log.ZDebug(context.Background(), "allowThisNodeRun check job available", "jobName", jobName, "jobAvailable", ok)
 	if err != nil {
 		log.ZError(context.Background(), "allow this node run error, err", err)
 		ok = false
