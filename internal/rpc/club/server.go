@@ -112,7 +112,7 @@ func (s *clubServer) CreateServer(ctx context.Context, req *pbclub.CreateServerR
 	s.Notification.ServerCreatedNotification(ctx, tips)
 
 	s.conversationRpcClient.Client.CreateServerChatConversations(ctx, &conversation.CreateServerChatConversationsReq{UserIDs: []string{opUserID}, ServerID: serverDB.ServerID})
-	s.SendClubServerEvent(ctx, serverDB.ServerID, serverDB.CommunityName, serverDB.CommunityBanner, false)
+	s.SendClubServerEvent(ctx, serverDB.ServerID, serverDB.ServerName, serverDB.CommunityBanner, serverDB.Icon, false)
 	s.SendClubServerUserEvent(ctx, serverDB.ServerID, serverDB.OwnerUserID, "")
 
 	return &pbclub.CreateServerResp{ServerID: serverDB.ServerID}, nil
@@ -375,7 +375,7 @@ func (s *clubServer) SetServerInfo(ctx context.Context, req *pbclub.SetServerInf
 		MemberUserIDList: utils.Slice(members, func(m *relationtb.ServerMemberModel) string { return m.UserID }),
 	}
 	s.Notification.ServerInfoSetNotification(ctx, tips)
-	s.SendClubServerEvent(ctx, server.ServerID, server.CommunityName, server.CommunityBanner, server.CommunityViewMode == 1)
+	s.SendClubServerEvent(ctx, server.ServerID, server.ServerName, server.CommunityBanner, server.Icon, server.CommunityViewMode == 1)
 	return resp, nil
 }
 

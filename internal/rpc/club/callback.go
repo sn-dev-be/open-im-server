@@ -27,12 +27,13 @@ func (s *clubServer) SendBusinessEventToMQ(ctx context.Context, req *msg.SendBus
 	s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, req)
 }
 
-func (s *clubServer) SendClubServerEvent(ctx context.Context, serverID, name, banner string, isPublic bool) {
+func (s *clubServer) SendClubServerEvent(ctx context.Context, serverID, name, banner, icon string, isPublic bool) {
 	event := &common.BusinessMQEvent{
 		Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
 			ClubServer: &common.ClubServer{
 				ClubServerId: serverID,
 				Name:         name,
+				Icon:         icon,
 				Banner:       banner,
 				IsPublic:     isPublic,
 			},
