@@ -8,7 +8,7 @@ msg:
     server:
       title: "hello server"
     common:
-      title: "Zapry"
+      title: "MIMO"
       base: "You've got a new message"
       picture: "[Picture]"
       voice: "[Voice]"

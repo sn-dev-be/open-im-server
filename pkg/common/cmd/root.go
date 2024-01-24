@@ -58,7 +58,7 @@ func WithLogName(logName string) func(*CmdOpts) {
 
 func WithI18n() func(*CmdOpts) {
 	return func(opts *CmdOpts) {
-		i18n.NewTranslator(&i18n.I18n{BundleDir: I18nPath})
+		i18n.NewTranslator(&i18n.I18n{})
 	}
 }
 

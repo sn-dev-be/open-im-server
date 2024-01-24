@@ -538,7 +538,7 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID, userID
 		content = msg.OfflinePushInfo.Desc
 	}
 
-	language := constant.ZH_CZ
+	language := "zh_CN"
 	if userPushSetting.Language != "" {
 		language = userPushSetting.Language
 	}

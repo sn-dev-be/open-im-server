@@ -11,7 +11,7 @@ msg:
     server:
       title: "hello server"
     common:
-      title: "Zapry"
+      title: "MIMO"
       base: "你收到一条新消息"
       picture: "[图片]"
       voice: "[语音]"
