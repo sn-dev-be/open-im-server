@@ -23,6 +23,11 @@ type DriverV2 interface {
 	withOption(opt Option) (err error)
 }
 
+// deprecated弃用
 func NewRedisDriver(redisClient redis.UniversalClient) DriverV2 {
 	return newRedisDriver(redisClient)
+}
+
+func NewRedisZSetDriver(redisClient redis.UniversalClient) DriverV2 {
+	return newRedisZSetDriver(redisClient)
 }

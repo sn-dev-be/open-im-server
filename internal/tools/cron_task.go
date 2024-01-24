@@ -74,10 +74,12 @@ func StartTask(rpcPort, prometheusPort int) error {
 	persistJob := persist.NewRedisPersist(rdb)
 	dcron := dcron.NewDcronWithOption(
 		driver.CronTaskName,
-		driver.NewRedisDriver(rdb),
+		driver.NewRedisZSetDriver(rdb),
 		// dcron.CronOptionSeconds(),
-		dcron.WithPersist(persistJob),
+		dcron.WithHashReplicas(10),
+		dcron.WithNodeUpdateDuration(time.Second*10),
 		dcron.WithClusterStable(time.Second*30),
+		dcron.WithPersist(persistJob),
 		dcron.WithRecoverFunc(func(d *dcron.Dcron) {
 			jobs, err := persistJob.RecoverAllJob()
 			if err != nil {
@@ -171,7 +173,6 @@ func (c *cronServer) recoverAllStableJob(jobs map[string]string) error {
 func (c *cronServer) SetClearMsgJob(ctx context.Context, req *pbcron.SetClearMsgJobReq) (*pbcron.SetClearMsgJobResp, error) {
 	resp := &pbcron.SetClearMsgJobResp{}
 	job := job.NewClearMsgJob(req.ConversationID, getCronExpr(req.CronCycle), req.CronCycle, c.msgTool)
-	// job.MsgTool.ClearMsgsByConversationID(job.ConversationID, job.GetSeconds())
 	if req.CronCycle == constant.CrontabDisable {
 		c.dcron.Remove(job.Name)
 		log.ZInfo(ctx, "remove job", "jobName", job.Name)

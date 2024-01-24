@@ -103,6 +103,7 @@ func (np *NodePool) CheckJobAvailable(jobName string) (bool, error) {
 		return false, ErrNodePoolIsUpgrading
 	}
 	targetNode := np.nodes.Get(jobName)
+	log.ZDebug(context.Background(), "checkJobAvailable", "jobName", jobName, "targetNode", targetNode, "nodeID", np.nodeID)
 	if np.nodeID == targetNode {
 		log.ZInfo(context.Background(), "check job available", "job", jobName, "running in node:", targetNode)
 	}

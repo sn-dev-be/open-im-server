@@ -808,6 +808,16 @@ func (db *commonMsgDatabase) UserMsgsDestruct(ctx context.Context, userID string
 				return nil, err
 			}
 		}
+
+		currentUserHasReadSeq, err := db.cache.GetHasReadSeq(ctx, userID, conversationID)
+		if err != nil && errs.Unwrap(err) != redis.Nil {
+			return nil, err
+		}
+		if currentUserHasReadSeq < userMinSeq {
+			if err := db.cache.SetHasReadSeq(ctx, userID, conversationID, userMinSeq); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return seqs, nil
 }
