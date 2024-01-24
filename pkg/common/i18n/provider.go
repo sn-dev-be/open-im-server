@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/OpenIMSDK/tools/log"
+	fsI18n "github.com/openimsdk/open-im-server/v3/i18n"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,12 +27,9 @@ var (
 )
 
 func NewTranslator(c *I18n) (tr Translator, err error) {
-	cwd, err := os.Getwd()
+	entries, err := fsI18n.Assets.ReadDir(".")
 	if err != nil {
-		return nil, err
-	}
-	entries, err := os.ReadDir(cwd + c.BundleDir)
-	if err != nil {
+		// panic(err)
 		return nil, err
 	}
 
@@ -42,8 +40,7 @@ func NewTranslator(c *I18n) (tr Translator, err error) {
 		if filepath.Ext(file.Name()) != ".yaml" && file.Name() != "i18n.yaml" {
 			continue
 		}
-		log.ZDebug(context.Background(), "try to read file", "fileName", file.Name())
-		buf, err := os.ReadFile(filepath.Join(cwd, c.BundleDir, file.Name()))
+		buf, err := fsI18n.Assets.ReadFile(file.Name())
 		if err != nil {
 			return nil, fmt.Errorf("read file failed: %s %s", file.Name(), err)
 		}
