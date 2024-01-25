@@ -416,3 +416,10 @@ prometheus:
   clubPrometheusPort: [ 20180 ]
   cronPrometheusPort: [ 20190 ]
   messageTransferPrometheusPort: [ 21400, 21401, 21402, 21403 ] # List of ports
+
+###################### Agora ######################
+agora:
+  appID: ""
+  appCertificate: ""
+  # minutes
+  expire: 60

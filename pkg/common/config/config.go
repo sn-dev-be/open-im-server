@@ -302,6 +302,12 @@ type configStruct struct {
 		ClubPrometheusPort            []int  `yaml:"clubPrometheusPort"`
 		CronPrometheusPort            []int  `yaml:"cronPrometheusPort"`
 	} `yaml:"prometheus"`
+
+	Agora struct {
+		AppID          string `yaml:"appID"`
+		AppCertificate string `yaml:"appCertificate"`
+		Expire         uint32 `yaml:"expire"`
+	}
 	Notification notification `yaml:"notification"`
 }
 

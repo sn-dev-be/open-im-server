@@ -24,6 +24,8 @@ import (
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/s3/cos"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/s3/minio"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/s3/oss"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/rtc"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/rtc/agora"
 
 	"google.golang.org/grpc"
 
@@ -78,6 +80,8 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	if err != nil {
 		return err
 	}
+
+	var r rtc.Rtc = agora.NewAgora()
 	//specialerror.AddErrHandler(func(err error) errs.CodeError {
 	//	if o.IsNotFound(err) {
 	//		return errs.ErrRecordNotFound
@@ -90,6 +94,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		userRpcClient: rpcclient.NewUserRpcClient(client),
 		s3dataBase:    controller.NewS3Database(rdb, o, relation.NewObjectInfo(db)),
 		defaultExpire: time.Hour * 24 * 7,
+		rtc:           r,
 	})
 	return nil
 }
@@ -100,6 +105,7 @@ type thirdServer struct {
 	s3dataBase    controller.S3Database
 	userRpcClient rpcclient.UserRpcClient
 	defaultExpire time.Duration
+	rtc           rtc.Rtc
 }
 
 func (t *thirdServer) FcmUpdateToken(ctx context.Context, req *third.FcmUpdateTokenReq) (resp *third.FcmUpdateTokenResp, err error) {
