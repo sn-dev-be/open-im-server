@@ -86,7 +86,7 @@ func (c *clubServer) JoinServer(ctx context.Context, req *pbclub.JoinServerReq) 
 			ServerID:   req.ServerID,
 			FromUserID: req.InviterUserID,
 		}
-		c.Notification.ServerApplicationAcceptedNotification(ctx, req)
+		c.Notification.ServerMemberEnterNotification(ctx, req.ServerID, req.FromUserID)
 		c.SendClubServerUserEvent(ctx, req.ServerID, user.UserID, user.Nickname)
 		return resp, nil
 	}

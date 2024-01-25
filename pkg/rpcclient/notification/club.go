@@ -360,6 +360,24 @@ func (c *ClubNotificationSender) ServerMemberCancelMutedNotification(ctx context
 	return nil
 }
 
+func (c *ClubNotificationSender) ServerMemberEnterNotification(ctx context.Context, serverID, userID string) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	tips := &sdkws.ServerMemberEnterTips{ServerID: serverID, MemberUserIDList: []string{userID}}
+
+	if err := c.fillOpUser(ctx, &tips.User, serverID); err != nil {
+		return err
+	}
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerMemberEnterNotification, tips)
+	}
+	return nil
+}
+
 func (c *ClubNotificationSender) ServerMemberQuitNotification(ctx context.Context, tips *sdkws.ServerMemberQuitTips) (err error) {
 	defer log.ZDebug(ctx, "return")
 	defer func() {
