@@ -65,8 +65,9 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 		if black {
 			return errs.ErrBlockedByPeer.Wrap()
 		}
+
+		friend, friendReverse, err := m.friend.IsFriend(ctx, data.MsgData.SendID, data.MsgData.RecvID)
 		if *config.Config.MessageVerify.FriendVerify {
-			friend, err := m.friend.IsFriend(ctx, data.MsgData.SendID, data.MsgData.RecvID)
 			if err != nil {
 				return err
 			}
@@ -74,6 +75,15 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 				return errs.ErrNotPeersFriend.Wrap()
 			}
 			return nil
+		}
+		if !friendReverse {
+			recvUser, err := m.User.GetUserInfo(ctx, data.MsgData.RecvID)
+			if err != nil {
+				return err
+			}
+			if recvUser.AllowStrangerMsg != constant.NewMsgPushSettingAllowed {
+				return nil
+			}
 		}
 		return nil
 	case constant.SuperGroupChatType, constant.ServerGroupChatType:

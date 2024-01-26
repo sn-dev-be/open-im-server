@@ -37,6 +37,7 @@ func UsersDB2Pb(users []*relationtb.UserModel) (result []*sdkws.UserInfo) {
 		userPb.AllowPushContent = user.AllowPushContent
 		userPb.AllowOnlinePush = user.AllowOnlinePush
 		userPb.Language = user.Language
+		userPb.AllowStrangerMsg = user.AllowStrangerMsg
 		result = append(result, &userPb)
 	}
 	return result

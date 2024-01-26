@@ -63,12 +63,12 @@ func (f *FriendRpcClient) GetFriendsInfo(
 }
 
 // possibleFriendUserID是否在userID的好友中.
-func (f *FriendRpcClient) IsFriend(ctx context.Context, possibleFriendUserID, userID string) (bool, error) {
+func (f *FriendRpcClient) IsFriend(ctx context.Context, possibleFriendUserID, userID string) (bool, bool, error) {
 	resp, err := f.Client.IsFriend(ctx, &friend.IsFriendReq{UserID1: userID, UserID2: possibleFriendUserID})
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
-	return resp.InUser1Friends, nil
+	return resp.InUser1Friends, resp.InUser2Friends, nil
 }
 
 func (f *FriendRpcClient) GetFriendIDs(ctx context.Context, ownerUserID string) (friendIDs []string, err error) {
