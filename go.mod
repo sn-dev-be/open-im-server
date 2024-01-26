@@ -36,6 +36,7 @@ require (
 require github.com/google/uuid v1.3.1
 
 require (
+	github.com/AgoraIO-Community/go-tokenbuilder v1.3.0
 	github.com/IBM/sarama v1.41.3
 	github.com/OpenIMSDK/protocol v0.0.31
 	github.com/OpenIMSDK/tools v0.0.16
@@ -62,7 +63,6 @@ require (
 	cloud.google.com/go/iam v1.1.2 // indirect
 	cloud.google.com/go/longrunning v0.5.1 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
-	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -112,7 +112,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/mozillazg/go-httpheader v0.4.0 // indirect
-	github.com/nicksnyder/go-i18n/v2 v2.3.0 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.18.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
@@ -140,7 +139,6 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -149,7 +147,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231012201019-e917dd12ba7a // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require (
@@ -164,4 +161,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-//replace github.com/OpenIMSDK/protocol => /Users/dogelee/work/go_project/protocol
+// replace github.com/OpenIMSDK/protocol => github.com/sn-dev-be/protocol v0.10.3
+// replace github.com/OpenIMSDK/protocol => /Users/pagefau1t/Playground/openim/protocol/

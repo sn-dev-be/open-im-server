@@ -124,3 +124,8 @@ func (o *ThirdApi) SearchLogs(c *gin.Context) {
 func GetPrometheus(c *gin.Context) {
 	c.Redirect(http.StatusFound, config2.Config.Prometheus.PrometheusUrl)
 }
+
+// #################### rtc ####################.
+func (o *ThirdApi) GetRtcToken(c *gin.Context) {
+	a2r.Call(third.ThirdClient.GetRtcToken, o.Client, c)
+}

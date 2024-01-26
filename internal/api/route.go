@@ -167,6 +167,9 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		objectGroup.POST("/complete_multipart_upload", t.CompleteMultipartUpload)
 		objectGroup.POST("/access_url", t.AccessURL)
 		objectGroup.GET("/*name", t.ObjectRedirect)
+
+		rtcGroup := thirdGroup.Group("/rtc")
+		rtcGroup.POST("/token", t.GetRtcToken)
 	}
 	// Message
 	msgGroup := r.Group("/msg", ParseToken)
