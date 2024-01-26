@@ -452,7 +452,7 @@ func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg 
 
 func (p *Pusher) offlinePushMsgToUser(ctx context.Context, conversationID string, msg *sdkws.MsgData, userID string) error {
 
-	userPushSetting, err := p.userRpcClient.Client.GetGlobalRecvMessageOpt(ctx, &user.GetGlobalRecvMessageOptReq{UserID: userID})
+	userPushSetting, err := p.userRpcClient.Client.GetUserSetting(ctx, &user.GetUserSettingReq{UserID: userID})
 	if err != nil {
 		return err
 	}
@@ -515,7 +515,7 @@ func (p *Pusher) GetOfflinePushOpts(ctx context.Context, msg *sdkws.MsgData) (op
 	return opts, nil
 }
 
-func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID, userID string, msg *sdkws.MsgData, userPushSetting *user.GetGlobalRecvMessageOptResp) (title, content string, opts *offlinepush.Opts, err error) {
+func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID, userID string, msg *sdkws.MsgData, userPushSetting *user.GetUserSettingResp) (title, content string, opts *offlinepush.Opts, err error) {
 	if p.offlinePusher == nil {
 		err = errNoOfflinePusher
 		return

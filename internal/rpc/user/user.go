@@ -145,8 +145,8 @@ func (s *userServer) UpdateUserInfo(ctx context.Context, req *pbuser.UpdateUserI
 	return resp, nil
 }
 
-func (s *userServer) SetGlobalRecvMessageOpt(ctx context.Context, req *pbuser.SetGlobalRecvMessageOptReq) (resp *pbuser.SetGlobalRecvMessageOptResp, err error) {
-	resp = &pbuser.SetGlobalRecvMessageOptResp{}
+func (s *userServer) SetUserSetting(ctx context.Context, req *pbuser.SetUserSettingReq) (resp *pbuser.SetUserSettingResp, err error) {
+	resp = &pbuser.SetUserSettingResp{}
 	if _, err := s.FindWithError(ctx, []string{req.UserID}); err != nil {
 		return nil, err
 	}
@@ -250,19 +250,20 @@ func (s *userServer) UserRegister(ctx context.Context, req *pbuser.UserRegisterR
 	return resp, nil
 }
 
-func (s *userServer) GetGlobalRecvMessageOpt(ctx context.Context, req *pbuser.GetGlobalRecvMessageOptReq) (resp *pbuser.GetGlobalRecvMessageOptResp, err error) {
+func (s *userServer) GetUserSetting(ctx context.Context, req *pbuser.GetUserSettingReq) (resp *pbuser.GetUserSettingResp, err error) {
 	users, err := s.FindWithError(ctx, []string{req.UserID})
 	if err != nil {
 		return nil, err
 	}
 	user := users[0]
-	return &pbuser.GetGlobalRecvMessageOptResp{
+	return &pbuser.GetUserSettingResp{
 		GlobalRecvMsgOpt: user.GlobalRecvMsgOpt,
 		AllowBeep:        user.AllowBeep,
 		AllowVibration:   user.AllowVibration,
 		AllowPushContent: user.AllowPushContent,
 		AllowOnlinePush:  user.AllowOnlinePush,
 		Language:         user.Language,
+		AllowStrangerMsg: user.AllowStrangerMsg,
 	}, nil
 }
 

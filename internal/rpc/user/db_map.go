@@ -20,7 +20,7 @@ import (
 	"github.com/OpenIMSDK/protocol/user"
 )
 
-func UpdateUserInfoMap(ctx context.Context, user *user.SetGlobalRecvMessageOptReq) map[string]any {
+func UpdateUserInfoMap(ctx context.Context, user *user.SetUserSettingReq) map[string]any {
 	m := make(map[string]any)
 	if user.GlobalRecvMsgOpt != nil {
 		m["global_recv_msg_opt"] = user.GlobalRecvMsgOpt.Value
@@ -36,6 +36,12 @@ func UpdateUserInfoMap(ctx context.Context, user *user.SetGlobalRecvMessageOptRe
 	}
 	if user.AllowOnlinePush != nil {
 		m["allow_online_push"] = user.AllowOnlinePush.Value
+	}
+	if user.Language != nil {
+		m["language"] = user.Language.Value
+	}
+	if user.AllowStrangerMsg != nil {
+		m["allow_stranger_msg"] = user.AllowStrangerMsg.Value
 	}
 
 	return m

@@ -43,8 +43,8 @@ func (u *UserApi) UpdateUserInfo(c *gin.Context) {
 	a2r.Call(user.UserClient.UpdateUserInfo, u.Client, c)
 }
 
-func (u *UserApi) SetGlobalRecvMessageOpt(c *gin.Context) {
-	a2r.Call(user.UserClient.SetGlobalRecvMessageOpt, u.Client, c)
+func (u *UserApi) SetUserSetting(c *gin.Context) {
+	a2r.Call(user.UserClient.SetUserSetting, u.Client, c)
 }
 
 func (u *UserApi) GetUsersPublicInfo(c *gin.Context) {

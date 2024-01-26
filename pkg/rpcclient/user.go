@@ -144,7 +144,7 @@ func (u *UserRpcClient) GetPublicUserInfoMap(
 
 // GetUserGlobalMsgRecvOpt retrieves the global message receive option for a user based on the provided user ID.
 func (u *UserRpcClient) GetUserGlobalMsgRecvOpt(ctx context.Context, userID string) (int32, error) {
-	resp, err := u.Client.GetGlobalRecvMessageOpt(ctx, &user.GetGlobalRecvMessageOptReq{
+	resp, err := u.Client.GetUserSetting(ctx, &user.GetUserSettingReq{
 		UserID: userID,
 	})
 	if err != nil {

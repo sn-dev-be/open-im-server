@@ -69,7 +69,7 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 	{
 		userRouterGroup.POST("/user_register", u.UserRegister)
 		userRouterGroup.POST("/update_user_info", ParseToken, u.UpdateUserInfo)
-		userRouterGroup.POST("/set_global_msg_recv_opt", ParseToken, u.SetGlobalRecvMessageOpt)
+		userRouterGroup.POST("/set_user_setting", ParseToken, u.SetUserSetting)
 		userRouterGroup.POST("/get_users_info", ParseToken, u.GetUsersPublicInfo)
 		userRouterGroup.POST("/get_all_users_uid", ParseToken, u.GetAllUsersID)
 		userRouterGroup.POST("/account_check", ParseToken, u.AccountCheck)
