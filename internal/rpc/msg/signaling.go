@@ -63,29 +63,24 @@ func (m *msgServer) invitationNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	inviteUsersID := append(req.InviteUsersID, req.FromUserID)
-	err := m.MsgDatabase.CreateVoiceChannel(ctx, req.ChannelID, inviteUsersID)
-	if err != nil {
+	if err := m.MsgDatabase.CreateVoiceChannel(ctx, req.ChannelID, inviteUsersID); err != nil {
 		return nil, err
 	}
 	if req.SessionType == constant.SuperGroupChatType {
-		user, err := m.getOperatorUserInfo(ctx, req.FromUserID)
+		opUsers, err := m.getOperatorUsersInfo(ctx, []string{req.FromUserID})
 		if err != nil {
 			return nil, err
 		}
-		voiceTips := sdkws.SignalVoiceGroupTips{
+		tips := sdkws.SignalGroupVoiceCardTips{
 			ChannelID:  req.ChannelID,
-			OpUsers:    []*sdkws.PublicUserInfo{user},
-			Status:     constant.VoiceCallRoomEnabled,
+			OpUsers:    opUsers,
+			Status:     constant.VoiceChannelEnabled,
 			CreateTime: utils.GetCurrentTimestampByMill(),
 		}
-		m.broadcastNotificationWithSessionType(
-			ctx,
-			req,
-			constant.SuperGroupChatType,
-			constant.SignalingGroupInvitedNotification,
-			req.GroupID,
-			&voiceTips,
-		)
+		m.notificationSender.Notification(ctx, req.FromUserID, req.GroupID, constant.SignalingGroupInvitedNotification, &tips)
+	}
+	if err := m.Cron.SetCloseVoiceChannelJob(ctx, req.FromUserID, req.ChannelID, req.GroupID, req.SessionType); err != nil {
+		return nil, err
 	}
 	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotification(ctx, req, constant.SignalingInvitedNotification)
 }
@@ -102,14 +97,15 @@ func (m *msgServer) rejectNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotification(ctx, req, constant.SignalingSingleChatRejectedNotification)
+		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatRejectedNotification, nil)
 	}
-	err := m.broadcastNotification(ctx, req, constant.SignalingRejectedNotification)
-
+	if err := m.broadcastNotification(ctx, req, constant.SignalingRejectedNotification); err != nil {
+		return nil, err
+	}
 	if err := m.MsgDatabase.RemoveUserFromVoiceChannel(ctx, req.ChannelID, req.FromUserID); err != nil {
 		return nil, err
 	}
-	return &pbmsg.SendSignalMsgResp{}, err
+	return &pbmsg.SendSignalMsgResp{}, nil
 }
 
 func (m *msgServer) joinNotification(
@@ -120,14 +116,7 @@ func (m *msgServer) joinNotification(
 		return nil, err
 	}
 	if req.SessionType == constant.SuperGroupChatType {
-		m.broadcastNotificationWithSessionType(
-			ctx,
-			req,
-			constant.SuperGroupChatType,
-			constant.SignalingGroupJoinedNotification,
-			req.GroupID,
-			nil,
-		)
+		m.notificationSender.Notification(ctx, req.FromUserID, req.GroupID, constant.SignalingGroupJoinedNotification, nil)
 	}
 	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotification(ctx, req, constant.SignalingJoinedNotification)
 }
@@ -137,14 +126,15 @@ func (m *msgServer) cancelNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotification(ctx, req, constant.SignalingSingleChatCanceledNotification)
+		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatCanceledNotification, nil)
 	}
-	err := m.broadcastNotification(ctx, req, constant.SignalingCanceledNotification)
-
+	if err := m.broadcastNotification(ctx, req, constant.SignalingCanceledNotification); err != nil {
+		return nil, err
+	}
 	if err := m.MsgDatabase.RemoveUserFromVoiceChannel(ctx, req.ChannelID, req.InviteUsersID[0]); err != nil {
 		return nil, err
 	}
-	return &pbmsg.SendSignalMsgResp{}, err
+	return &pbmsg.SendSignalMsgResp{}, nil
 }
 
 func (m *msgServer) hungUpNotification(
@@ -152,14 +142,15 @@ func (m *msgServer) hungUpNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotification(ctx, req, constant.SignalingSingleChatClosedNotification)
+		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatClosedNotification, nil)
 	}
-	err := m.broadcastNotification(ctx, req, constant.SignalingHungUpNotification)
-
+	if err := m.broadcastNotification(ctx, req, constant.SignalingHungUpNotification); err != nil {
+		return nil, err
+	}
 	if err := m.MsgDatabase.RemoveUserFromVoiceChannel(ctx, req.ChannelID, req.FromUserID); err != nil {
 		return nil, err
 	}
-	return &pbmsg.SendSignalMsgResp{}, err
+	return &pbmsg.SendSignalMsgResp{}, nil
 }
 
 func (m *msgServer) closeNotification(
@@ -167,28 +158,46 @@ func (m *msgServer) closeNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotification(ctx, req, constant.SignalingSingleChatClosedNotification)
+		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatClosedNotification, nil)
 	}
-	err := m.broadcastNotification(ctx, req, constant.SignalingClosedNotification)
-
+	if err := m.broadcastNotification(ctx, req, constant.SignalingClosedNotification); err != nil {
+		return nil, err
+	}
 	if err := m.MsgDatabase.DelVoiceChannel(ctx, req.ChannelID); err != nil {
 		return nil, err
 	}
-	return &pbmsg.SendSignalMsgResp{}, err
+	return &pbmsg.SendSignalMsgResp{}, nil
 }
 
 func (m *msgServer) micphoneStatusChangeNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
-	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotification(ctx, req, constant.SignalingMicphoneStatusChangedNotification)
+	opUsers, err := m.getOperatorUsersInfo(ctx, []string{req.FromUserID})
+	if err != nil {
+		return nil, err
+	}
+	tips := &sdkws.SignalVoiceMicphoneStatusTips{
+		ChannelID:      req.ChannelID,
+		OpUser:         opUsers[0],
+		MicphoneStatus: uint32(req.MicphoneStatus),
+	}
+	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotificationWithTips(ctx, req, constant.SignalingMicphoneStatusChangedNotification, tips)
 }
 
 func (m *msgServer) speakStatusChangeNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
-	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotification(ctx, req, constant.SignalingSpeakStatusChangedNotification)
+	opUsers, err := m.getOperatorUsersInfo(ctx, []string{req.FromUserID})
+	if err != nil {
+		return nil, err
+	}
+	tips := &sdkws.SignalVoiceSpeakStatusTips{
+		ChannelID: req.ChannelID,
+		OpUser:    opUsers[0],
+	}
+	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotificationWithTips(ctx, req, constant.SignalingSpeakStatusChangedNotification, tips)
 }
 
 func (m *msgServer) broadcastNotification(
@@ -196,66 +205,44 @@ func (m *msgServer) broadcastNotification(
 	req *sdkws.SignalVoiceReq,
 	notificationType int32,
 ) error {
-	return m.broadcastNotificationWithSessionType(ctx, req, constant.SingleChatType, notificationType, "", nil)
+	tips, err := m.getSignalVoiceCommonTips(ctx, req.FromUserID, req.ChannelID)
+	if err != nil {
+		return err
+	}
+	return m.broadcastNotificationWithTips(ctx, req, notificationType, tips)
 }
 
-func (m *msgServer) broadcastNotificationWithSessionType(
+func (m *msgServer) broadcastNotificationWithTips(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
-	sessionType int32,
 	notificationType int32,
-	groupID string,
 	tips proto.Message,
 ) error {
-	voiceTips := &sdkws.SignalVoiceTips{}
-	if tips == nil {
-		tips, err := m.getSignalVoiceTips(ctx, req.FromUserID, req.ChannelID, req.MicphoneStatus)
-		if err != nil {
-			return err
-		}
-		voiceTips = tips
+	usersID, err := m.MsgDatabase.GetVoiceChannelUsersID(ctx, req.ChannelID, req.FromUserID)
+	if err != nil {
+		return err
 	}
-	// 单聊给语音房除了操作者外都广播通知
-	if sessionType == constant.SingleChatType {
-		usersID, err := m.MsgDatabase.GetVoiceChannelUsersID(ctx, req.ChannelID, req.FromUserID)
-		if err != nil {
-			return err
-		}
-		for _, userID := range usersID {
-			if err := m.notificationSender.NotificationWithSesstionType(
-				ctx,
-				req.FromUserID,
-				userID,
-				notificationType,
-				constant.SingleChatType,
-				voiceTips,
-			); err != nil {
-				continue
-			}
-		}
-	}
-	if sessionType == constant.SuperGroupChatType {
+	for _, userID := range usersID {
 		if err := m.notificationSender.NotificationWithSesstionType(
 			ctx,
 			req.FromUserID,
-			groupID,
+			userID,
 			notificationType,
-			constant.GroupChatType,
-			voiceTips,
+			constant.SingleChatType,
+			tips,
 		); err != nil {
-			return err
+			continue
 		}
 	}
 	return nil
 }
 
-func (m *msgServer) getSignalVoiceTips(
+func (m *msgServer) getSignalVoiceCommonTips(
 	ctx context.Context,
 	fromUserID,
 	channelID string,
-	micphoneStatus int32,
 ) (*sdkws.SignalVoiceTips, error) {
-	user, err := m.getOperatorUserInfo(ctx, fromUserID)
+	opUsers, err := m.getOperatorUsersInfo(ctx, []string{fromUserID})
 	if err != nil {
 		return nil, err
 	}
@@ -263,24 +250,29 @@ func (m *msgServer) getSignalVoiceTips(
 	if err != nil {
 		return nil, err
 	}
-	tips := sdkws.SignalVoiceTips{
-		ChannelID:      channelID,
-		User:           user,
-		MicphoneStatus: micphoneStatus,
-		RemainingSec:   int32(remainingSec),
-		ElapsedSec:     int32(elapsedSec),
-	}
-	return &tips, nil
-}
-
-func (m *msgServer) getOperatorUserInfo(
-	ctx context.Context,
-	userID string,
-) (*sdkws.PublicUserInfo, error) {
-	user, err := m.User.GetPublicUserInfo(ctx, userID)
+	userIDs, err := m.MsgDatabase.GetVoiceChannelUsersID(ctx, channelID, "")
+	participants, err := m.getOperatorUsersInfo(ctx, userIDs)
 	if err != nil {
-		log.ZError(ctx, "GetPublicUserInfo err", err, "userID", userID)
 		return nil, err
 	}
-	return user, err
+	tips := &sdkws.SignalVoiceTips{
+		ChannelID:    channelID,
+		OpUser:       opUsers[0],
+		RemainingSec: int32(remainingSec),
+		ElapsedSec:   int32(elapsedSec),
+		Participants: participants,
+	}
+	return tips, nil
+}
+
+func (m *msgServer) getOperatorUsersInfo(
+	ctx context.Context,
+	userIDs []string,
+) ([]*sdkws.PublicUserInfo, error) {
+	users, err := m.User.GetPublicUserInfos(ctx, userIDs, true)
+	if err != nil {
+		log.ZError(ctx, "GetPublicUserInfos err", err, "userIDs", userIDs)
+		return nil, err
+	}
+	return users, err
 }

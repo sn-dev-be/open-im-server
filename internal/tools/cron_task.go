@@ -221,6 +221,17 @@ func (c *cronServer) GetClearMsgJob(ctx context.Context, req *pbcron.GetClearMsg
 	return resp, nil
 }
 
+func (c *cronServer) SetCloseVoiceChannelJob(ctx context.Context, req *pbcron.SetCloseVoiceChannelJobReq) (*pbcron.SetCloseVoiceChannelJobResp, error) {
+	resp := &pbcron.SetCloseVoiceChannelJobResp{}
+	job := job.NewCloseVocieChannelJob(req.ChannelID, req.UserID, req.SessionType, c.msgTool, c.dcron)
+	err := c.dcron.AddJob(job.Name, job.CronExpr, job)
+	if err != nil {
+		log.ZError(ctx, "add job failed", err, "jobName", job.Name)
+		return nil, err
+	}
+	return resp, nil
+}
+
 // netlock redis lock.
 func netlock(rdb redis.UniversalClient, key string, ttl time.Duration) bool {
 	value := "used"

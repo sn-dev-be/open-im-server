@@ -127,7 +127,7 @@ func (c *MsgTool) ConversationsDestructMsgs() {
 				conversation.LatestMsgDestructTime,
 			)
 			now := time.Now()
-			seqs, err := c.msgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, conversation.MsgDestructTime, conversation.LatestMsgDestructTime)
+			seqs, err := c.MsgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, conversation.MsgDestructTime, conversation.LatestMsgDestructTime)
 			if err != nil {
 				log.ZError(ctx, "user msg destruct failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 				continue
@@ -137,7 +137,7 @@ func (c *MsgTool) ConversationsDestructMsgs() {
 					log.ZError(ctx, "updateUsersConversationFiled failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 					continue
 				}
-				if err := c.msgNotificationSender.UserDeleteMsgsNotification(ctx, conversation.OwnerUserID, conversation.ConversationID, seqs); err != nil {
+				if err := c.MsgNotificationSender.UserDeleteMsgsNotification(ctx, conversation.OwnerUserID, conversation.ConversationID, seqs); err != nil {
 					log.ZError(ctx, "userDeleteMsgsNotification failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 				}
 			}
@@ -173,7 +173,7 @@ func (c *MsgTool) ClearMsgsByConversationID(conversationID string, msgDestructTi
 			conversation.LatestMsgDestructTime,
 		)
 		now := time.Now()
-		seqs, err := c.msgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, msgDestructTime, conversation.LatestMsgDestructTime)
+		seqs, err := c.MsgDatabase.UserMsgsDestruct(ctx, conversation.OwnerUserID, conversation.ConversationID, msgDestructTime, conversation.LatestMsgDestructTime)
 		if err != nil {
 			log.ZError(ctx, "user msg destruct failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 			continue
@@ -183,7 +183,7 @@ func (c *MsgTool) ClearMsgsByConversationID(conversationID string, msgDestructTi
 				log.ZError(ctx, "updateUsersConversationFiled failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 				continue
 			}
-			if err := c.msgNotificationSender.UserDeleteMsgsNotification(ctx, conversation.OwnerUserID, conversation.ConversationID, seqs); err != nil {
+			if err := c.MsgNotificationSender.UserDeleteMsgsNotification(ctx, conversation.OwnerUserID, conversation.ConversationID, seqs); err != nil {
 				log.ZError(ctx, "userDeleteMsgsNotification failed", err, "conversationID", conversation.ConversationID, "ownerUserID", conversation.OwnerUserID)
 			}
 		}
