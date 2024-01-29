@@ -44,22 +44,22 @@ import (
 )
 
 type MsgTool struct {
-	msgDatabase           controller.CommonMsgDatabase
+	MsgDatabase           controller.CommonMsgDatabase
 	conversationDatabase  controller.ConversationDatabase
 	userDatabase          controller.UserDatabase
 	groupDatabase         controller.GroupDatabase
-	msgNotificationSender *notification.MsgNotificationSender
+	MsgNotificationSender *notification.MsgNotificationSender
 }
 
 func NewMsgTool(msgDatabase controller.CommonMsgDatabase, userDatabase controller.UserDatabase,
 	groupDatabase controller.GroupDatabase, conversationDatabase controller.ConversationDatabase, msgNotificationSender *notification.MsgNotificationSender,
 ) *MsgTool {
 	return &MsgTool{
-		msgDatabase:           msgDatabase,
+		MsgDatabase:           msgDatabase,
 		userDatabase:          userDatabase,
 		groupDatabase:         groupDatabase,
 		conversationDatabase:  conversationDatabase,
-		msgNotificationSender: msgNotificationSender,
+		MsgNotificationSender: msgNotificationSender,
 	}
 }
 
@@ -160,7 +160,7 @@ func (c *MsgTool) AllConversationClearMsgAndFixSeq() {
 
 func (c *MsgTool) ClearConversationsMsg(ctx context.Context, conversationIDs []string) {
 	for _, conversationID := range conversationIDs {
-		if err := c.msgDatabase.DeleteConversationMsgsAndSetMinSeq(ctx, conversationID, int64(config.Config.RetainChatRecords*24*60*60)); err != nil {
+		if err := c.MsgDatabase.DeleteConversationMsgsAndSetMinSeq(ctx, conversationID, int64(config.Config.RetainChatRecords*24*60*60)); err != nil {
 			log.ZError(ctx, "DeleteUserSuperGroupMsgsAndSetMinSeq failed", err, "conversationID", conversationID, "DBRetainChatRecords", config.Config.RetainChatRecords)
 		}
 		if err := c.checkMaxSeq(ctx, conversationID); err != nil {
@@ -170,7 +170,7 @@ func (c *MsgTool) ClearConversationsMsg(ctx context.Context, conversationIDs []s
 }
 
 func (c *MsgTool) checkMaxSeqWithMongo(ctx context.Context, conversationID string, maxSeqCache int64) error {
-	minSeqMongo, maxSeqMongo, err := c.msgDatabase.GetMongoMaxAndMinSeq(ctx, conversationID)
+	minSeqMongo, maxSeqMongo, err := c.MsgDatabase.GetMongoMaxAndMinSeq(ctx, conversationID)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (c *MsgTool) checkMaxSeqWithMongo(ctx context.Context, conversationID strin
 }
 
 func (c *MsgTool) checkMaxSeq(ctx context.Context, conversationID string) error {
-	maxSeq, err := c.msgDatabase.GetMaxSeq(ctx, conversationID)
+	maxSeq, err := c.MsgDatabase.GetMaxSeq(ctx, conversationID)
 	if err != nil {
 		if errs.Unwrap(err) == redis.Nil {
 			return nil

@@ -144,6 +144,10 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.GroupMemberSetToOrdinaryUserNotification: constant.SuperGroupChatType,
 		constant.GroupInfoSetAnnouncementNotification:     constant.SuperGroupChatType,
 		constant.GroupInfoSetNameNotification:             constant.SuperGroupChatType,
+
+		// signal
+		constant.SignalingGroupInvitedNotification: constant.SuperGroupChatType,
+		constant.SignalingGroupJoinedNotification:  constant.SuperGroupChatType,
 		// user
 		constant.UserInfoUpdatedNotification:  constant.SingleChatType,
 		constant.UserStatusChangeNotification: constant.SingleChatType,
@@ -176,6 +180,9 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ServerMemberMutedNotification:         constant.SingleChatType,
 		constant.ServerMemberCancelMutedNotification:   constant.SingleChatType,
 		constant.ServerMemberInfoSetNotification:       constant.SingleChatType,
+		// signal
+		constant.SignalingSingleChatClosedNotification: constant.SingleChatType,
+		constant.SignalingClosedNotification:           constant.SingleChatType,
 	}
 }
 

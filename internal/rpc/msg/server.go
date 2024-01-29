@@ -40,6 +40,7 @@ type (
 		User                   *rpcclient.UserRpcClient
 		Conversation           *rpcclient.ConversationRpcClient
 		friend                 *rpcclient.FriendRpcClient
+		Cron                   *rpcclient.CronRpcClient
 		GroupLocalCache        *localcache.GroupLocalCache
 		ConversationLocalCache *localcache.ConversationLocalCache
 		Handlers               MessageInterceptorChain
@@ -80,6 +81,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	userRpcClient := rpcclient.NewUserRpcClient(client)
 	groupRpcClient := rpcclient.NewGroupRpcClient(client)
 	friendRpcClient := rpcclient.NewFriendRpcClient(client)
+	cronClient := rpcclient.NewCronRpcClient(client)
 	msgDatabase := controller.NewCommonMsgDatabase(msgDocModel, cacheModel)
 	s := &msgServer{
 		Conversation:           &conversationClient,
@@ -90,6 +92,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		GroupLocalCache:        localcache.NewGroupLocalCache(&groupRpcClient),
 		ConversationLocalCache: localcache.NewConversationLocalCache(&conversationClient),
 		friend:                 &friendRpcClient,
+		Cron:                   &cronClient,
 	}
 	s.notificationSender = rpcclient.NewNotificationSender(rpcclient.WithLocalSendMsg(s.SendMsg), rpcclient.WithUserRpcClient(&userRpcClient))
 	s.addInterceptorHandler(MessageHasReadEnabled)

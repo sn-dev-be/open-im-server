@@ -19,7 +19,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/OpenIMSDK/protocol/cron"
+	pbcron "github.com/OpenIMSDK/protocol/cron"
 	"github.com/OpenIMSDK/tools/discoveryregistry"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
@@ -27,7 +27,7 @@ import (
 
 type Cron struct {
 	conn   grpc.ClientConnInterface
-	Client cron.CronClient
+	Client pbcron.CronClient
 	discov discoveryregistry.SvcDiscoveryRegistry
 }
 
@@ -39,6 +39,25 @@ func NewCron(discov discoveryregistry.SvcDiscoveryRegistry) *Cron {
 	return &Cron{
 		discov: discov,
 		conn:   conn,
-		Client: cron.NewCronClient(conn),
+		Client: pbcron.NewCronClient(conn),
 	}
+}
+
+type CronRpcClient Cron
+
+func NewCronRpcClient(discov discoveryregistry.SvcDiscoveryRegistry) CronRpcClient {
+	return CronRpcClient(*NewCron(discov))
+}
+
+func (c *CronRpcClient) SetCloseVoiceChannelJob(ctx context.Context, userID, channelID, groupID string, sessionType int32) error {
+	var req pbcron.SetCloseVoiceChannelJobReq
+	req.UserID = userID
+	req.ChannelID = channelID
+	req.GroupID = groupID
+	req.SessionType = sessionType
+	_, err := c.Client.SetCloseVoiceChannelJob(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return nil
 }
