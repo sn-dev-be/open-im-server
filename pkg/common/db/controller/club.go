@@ -95,6 +95,7 @@ type ClubDatabase interface {
 	FindUserManagedServerID(ctx context.Context, userID string) (serverIDs []string, err error)
 	PageServerRequest(ctx context.Context, serverIDs []string, pageNumber, showNumber int32) (uint32, []*relationtb.ServerRequestModel, error)
 	FindServerMemberByRole(ctx context.Context, serverID, role string) ([]*relationtb.ServerMemberModel, error)
+	FindAllServerMember(ctx context.Context, serverID string) ([]*relationtb.ServerMemberModel, error)
 
 	PageGetJoinServer(ctx context.Context, userID string, pageNumber, showNumber int32) (total uint32, totalServerMembers []*relationtb.ServerMemberModel, err error)
 	SetJoinServersOrder(ctx context.Context, userID string, serverIDs []string) (err error)
@@ -738,6 +739,10 @@ func (c *clubDatabase) FindServerMember(ctx context.Context, serverIDs []string,
 		return totalServerMembers, nil
 	}
 	return c.serverMemberDB.Find(ctx, serverIDs, userIDs, roleLevels)
+}
+
+func (c *clubDatabase) FindAllServerMember(ctx context.Context, serverID string) ([]*relationtb.ServerMemberModel, error) {
+	return c.cache.GetAllServerMembersInfo(ctx, serverID)
 }
 
 func (c *clubDatabase) FindServerMemberUserID(ctx context.Context, serverID string) ([]string, error) {

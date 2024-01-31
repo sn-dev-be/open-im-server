@@ -248,9 +248,24 @@ func (c *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 		}
 	}
 
+	members, err := c.ClubDatabase.FindAllServerMember(ctx, group.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	memberIDs := utils.Slice(members, func(e *relationtb.ServerMemberModel) string { return e.UserID })
+	c.conversationRpcClient.ServerGroupChatFirstCreateConversation(ctx, group.GroupID, memberIDs)
+
+	respGroup := convert.Db2PbGroupInfo(group, req.GroupInfo.OwnerUserID, uint32(len(memberIDs)))
+	tips := &sdkws.ServerGroupCreatedTips{
+		ServerID:      group.ServerID,
+		Group:         respGroup,
+		MemberList:    utils.Batch(convert.Db2PbServerMember, members),
+		OperationTime: group.CreateTime.UnixMilli(),
+	}
+	c.Notification.ServerGroupCreatedNotification(ctx, tips)
+
 	resp := &pbclub.CreateServerGroupResp{GroupInfo: &sdkws.GroupInfo{}}
-	resp.GroupInfo = convert.Db2PbGroupInfo(group, req.GroupInfo.OwnerUserID, 0)
-	resp.GroupInfo.MemberCount = 0
+	resp.GroupInfo = respGroup
 	return resp, nil
 }
 

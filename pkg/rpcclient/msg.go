@@ -112,6 +112,7 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.ServerMemberMutedNotification:         config.Config.Notification.ServerMemberMute,
 		constant.ServerMemberCancelMutedNotification:   config.Config.Notification.ServerMemberCancelMute,
 		constant.ServerMemberInfoSetNotification:       config.Config.Notification.ServerMemberInfoSet,
+		constant.ServerGroupCreatedNotification:        config.Config.Notification.ServerGroupCreated,
 
 		// modifyMsg
 		constant.ModifyMessageNotification: {IsSendMsg: false, ReliabilityLevel: constant.ReliableNotificationNoMsg},
@@ -180,6 +181,7 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ServerMemberMutedNotification:         constant.SingleChatType,
 		constant.ServerMemberCancelMutedNotification:   constant.SingleChatType,
 		constant.ServerMemberInfoSetNotification:       constant.SingleChatType,
+		constant.ServerGroupCreatedNotification:        constant.ServerGroupChatType,
 		// signal
 		constant.SignalingSingleChatClosedNotification: constant.SingleChatType,
 		constant.SignalingClosedNotification:           constant.SingleChatType,

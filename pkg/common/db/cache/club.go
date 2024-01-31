@@ -444,14 +444,6 @@ func (c *ClubCacheRedis) GetAllServerMembersInfo(ctx context.Context, serverID s
 	return c.GetServerMembersInfo(ctx, serverID, serverMemberIDs)
 }
 
-func (c *ClubCacheRedis) GetAllServerMemberInfo(ctx context.Context, serverID string) ([]*relationtb.ServerMemberModel, error) {
-	serverMemberIDs, err := c.GetServerMemberIDs(ctx, serverID)
-	if err != nil {
-		return nil, err
-	}
-	return c.GetServerMembersInfo(ctx, serverID, serverMemberIDs)
-}
-
 func (c *ClubCacheRedis) DelServerMembersInfo(serverID string, userIDs ...string) ClubCache {
 	keys := make([]string, 0, len(userIDs))
 	for _, userID := range userIDs {

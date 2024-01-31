@@ -537,6 +537,16 @@ serverMemberInfoSet:
     title: "serverMemberInfoSet title"
     desc: "serverMemberInfoSet desc"
     ext: "serverMemberInfoSet ext"
+  
+serverGroupCreated:
+  isSendMsg: true
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
 
 # cron
 cronMsgClearSet:
