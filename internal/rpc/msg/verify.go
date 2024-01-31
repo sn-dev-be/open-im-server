@@ -67,10 +67,10 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 		}
 
 		friend, friendReverse, err := m.friend.IsFriend(ctx, data.MsgData.SendID, data.MsgData.RecvID)
+		if err != nil {
+			return err
+		}
 		if *config.Config.MessageVerify.FriendVerify {
-			if err != nil {
-				return err
-			}
 			if !friend {
 				return errs.ErrNotPeersFriend.Wrap()
 			}
@@ -81,8 +81,8 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			if err != nil {
 				return err
 			}
-			if recvUser.AllowStrangerMsg != constant.NewMsgPushSettingAllowed {
-				return nil
+			if recvUser.AllowStrangerMsg == constant.NewMsgPushSettingAllowed {
+				return errs.ErrNotPeersFriend.Wrap()
 			}
 		}
 		return nil
