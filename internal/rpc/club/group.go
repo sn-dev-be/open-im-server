@@ -264,8 +264,7 @@ func (c *clubServer) CreateServerGroup(ctx context.Context, req *pbclub.CreateSe
 	}
 	c.Notification.ServerGroupCreatedNotification(ctx, tips)
 
-	resp := &pbclub.CreateServerGroupResp{GroupInfo: &sdkws.GroupInfo{}}
-	resp.GroupInfo = respGroup
+	resp := &pbclub.CreateServerGroupResp{GroupInfo: respGroup}
 	return resp, nil
 }
 
