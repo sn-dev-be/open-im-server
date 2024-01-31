@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/OpenIMSDK/protocol/constant"
+	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
@@ -50,22 +51,17 @@ func (c *CloseVocieChannelJob) Run() {
 		log.ZError(ctx, "get channel usersID err", err, "channelID", c.ChannelID)
 		return
 	}
+	_, elapsedSec, err := c.MsgTool.MsgDatabase.GetVoiceChannelDuration(ctx, c.ChannelID)
+	if err != nil {
+		return
+	}
 	for _, userID := range usersID {
-		c.MsgTool.MsgNotificationSender.Notification(
-			ctx,
-			c.OpUserID,
-			userID,
-			constant.SignalingClosedNotification,
-			nil,
-		)
+		c.MsgTool.MsgNotificationSender.Notification(ctx, c.OpUserID, userID, constant.SignalingClosedNotification, nil)
 		if c.SessionType == constant.SingleChatType {
-			c.MsgTool.MsgNotificationSender.Notification(
-				ctx,
-				c.OpUserID,
-				userID,
-				constant.SignalingSingleChatClosedNotification,
-				nil,
-			)
+			tips := &sdkws.SignalVoiceSingleChatTips{
+				ElapsedSec: int32(elapsedSec),
+			}
+			c.MsgTool.MsgNotificationSender.Notification(ctx, c.OpUserID, userID, constant.SignalingSingleChatClosedNotification, tips)
 		}
 	}
 	if err := c.MsgTool.MsgDatabase.DelVoiceChannel(ctx, c.ChannelID); err != nil {

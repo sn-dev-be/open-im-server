@@ -142,7 +142,14 @@ func (m *msgServer) hungUpNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatClosedNotification, nil)
+		_, elapsedSec, err := m.MsgDatabase.GetVoiceChannelDuration(ctx, req.ChannelID)
+		if err != nil {
+			return nil, err
+		}
+		tips := &sdkws.SignalVoiceSingleChatTips{
+			ElapsedSec: int32(elapsedSec),
+		}
+		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatClosedNotification, tips)
 	}
 	if err := m.broadcastNotification(ctx, req, constant.SignalingHungUpNotification); err != nil {
 		return nil, err
@@ -252,6 +259,9 @@ func (m *msgServer) getSignalVoiceCommonTips(
 		return nil, err
 	}
 	userIDs, err := m.MsgDatabase.GetVoiceChannelUsersID(ctx, channelID, "")
+	if err != nil {
+		return nil, err
+	}
 	participants, err := m.getOperatorUsersInfo(ctx, userIDs)
 	if err != nil {
 		return nil, err
