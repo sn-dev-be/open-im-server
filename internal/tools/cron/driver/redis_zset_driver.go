@@ -38,6 +38,9 @@ func newRedisZSetDriver(redisClient redis.UniversalClient) *RedisZSetDriver {
 func (rd *RedisZSetDriver) Init(serviceName string, opts ...Option) {
 	rd.serviceName = serviceName
 	rd.nodeID = GetNodeId(serviceName)
+	// if err := rd.c.Del(context.Background(), GetKeyPre(rd.serviceName)).Err(); err != nil {
+	// 	log.ZError(context.Background(), "remove all nodes err", err)
+	// }
 	for _, opt := range opts {
 		rd.withOption(opt)
 	}
