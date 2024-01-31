@@ -205,7 +205,7 @@ func (m *msgServer) broadcastNotification(
 	req *sdkws.SignalVoiceReq,
 	notificationType int32,
 ) error {
-	tips, err := m.getSignalVoiceCommonTips(ctx, req.FromUserID, req.ChannelID)
+	tips, err := m.getSignalVoiceCommonTips(ctx, req.FromUserID, req.ChannelID, req.ConversationID)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,8 @@ func (m *msgServer) broadcastNotificationWithTips(
 func (m *msgServer) getSignalVoiceCommonTips(
 	ctx context.Context,
 	fromUserID,
-	channelID string,
+	channelID,
+	conversationID string,
 ) (*sdkws.SignalVoiceTips, error) {
 	opUsers, err := m.getOperatorUsersInfo(ctx, []string{fromUserID})
 	if err != nil {
@@ -256,11 +257,12 @@ func (m *msgServer) getSignalVoiceCommonTips(
 		return nil, err
 	}
 	tips := &sdkws.SignalVoiceTips{
-		ChannelID:    channelID,
-		OpUser:       opUsers[0],
-		RemainingSec: int32(remainingSec),
-		ElapsedSec:   int32(elapsedSec),
-		Participants: participants,
+		ChannelID:      channelID,
+		OpUser:         opUsers[0],
+		RemainingSec:   int32(remainingSec),
+		ElapsedSec:     int32(elapsedSec),
+		Participants:   participants,
+		ConversationID: conversationID,
 	}
 	return tips, nil
 }
