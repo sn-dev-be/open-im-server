@@ -7,8 +7,8 @@ import (
 	pbmsg "github.com/OpenIMSDK/protocol/msg"
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/errs"
-	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/utils"
+	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -62,12 +62,13 @@ func (m *msgServer) invitationNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
-	inviteUsersID := append(req.InviteUsersID, req.FromUserID)
+	usersID := []string{req.FromUserID}
+	inviteUsersID := append(usersID, req.InviteUsersID...)
 	if err := m.MsgDatabase.CreateVoiceChannel(ctx, req.ChannelID, inviteUsersID); err != nil {
 		return nil, err
 	}
 	if req.SessionType == constant.SuperGroupChatType {
-		opUsers, err := m.getOperatorUsersInfo(ctx, []string{req.FromUserID})
+		opUsers, err := m.User.GetPublicUserInfos(ctx, []string{req.FromUserID}, true)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +98,10 @@ func (m *msgServer) rejectNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatRejectedNotification, nil)
+		tips := &sdkws.SignalVoiceSingleChatTips{
+			OpUserID: req.FromUserID,
+		}
+		m.broadcastSingleChatNotification(ctx, req, constant.SignalingSingleChatRejectedNotification, tips)
 	}
 	if err := m.broadcastNotification(ctx, req, constant.SignalingRejectedNotification); err != nil {
 		return nil, err
@@ -126,7 +130,10 @@ func (m *msgServer) cancelNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatCanceledNotification, nil)
+		tips := &sdkws.SignalVoiceSingleChatTips{
+			OpUserID: req.FromUserID,
+		}
+		m.broadcastSingleChatNotification(ctx, req, constant.SignalingSingleChatCanceledNotification, tips)
 	}
 	if err := m.broadcastNotification(ctx, req, constant.SignalingCanceledNotification); err != nil {
 		return nil, err
@@ -148,8 +155,9 @@ func (m *msgServer) hungUpNotification(
 		}
 		tips := &sdkws.SignalVoiceSingleChatTips{
 			ElapsedSec: int32(elapsedSec),
+			OpUserID:   req.FromUserID,
 		}
-		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatClosedNotification, tips)
+		m.broadcastSingleChatNotification(ctx, req, constant.SignalingSingleChatClosedNotification, tips)
 	}
 	if err := m.broadcastNotification(ctx, req, constant.SignalingHungUpNotification); err != nil {
 		return nil, err
@@ -165,7 +173,7 @@ func (m *msgServer) closeNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if req.SessionType == constant.SingleChatType {
-		m.broadcastNotificationWithTips(ctx, req, constant.SignalingSingleChatClosedNotification, nil)
+		m.broadcastSingleChatNotification(ctx, req, constant.SignalingSingleChatClosedNotification, nil)
 	}
 	if err := m.broadcastNotification(ctx, req, constant.SignalingClosedNotification); err != nil {
 		return nil, err
@@ -180,7 +188,7 @@ func (m *msgServer) micphoneStatusChangeNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
-	opUsers, err := m.getOperatorUsersInfo(ctx, []string{req.FromUserID})
+	opUsers, err := m.User.GetPublicUserInfos(ctx, []string{req.FromUserID}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +204,7 @@ func (m *msgServer) speakStatusChangeNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
-	opUsers, err := m.getOperatorUsersInfo(ctx, []string{req.FromUserID})
+	opUsers, err := m.User.GetPublicUserInfos(ctx, []string{req.FromUserID}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -244,13 +252,41 @@ func (m *msgServer) broadcastNotificationWithTips(
 	return nil
 }
 
+func (m *msgServer) broadcastSingleChatNotification(
+	ctx context.Context,
+	req *sdkws.SignalVoiceReq,
+	notificationType int32,
+	tips proto.Message,
+) error {
+	createUserID, err := m.MsgDatabase.GetVoiceChannelCreateUserID(ctx, req.ChannelID)
+	if err != nil {
+		return err
+	}
+	usersID, err := m.MsgDatabase.GetVoiceChannelUsersID(ctx, req.ChannelID, createUserID)
+	if err != nil {
+		return err
+	}
+	if err := m.notificationSender.NotificationWithSesstionType(
+		ctx,
+		createUserID,
+		usersID[0],
+		notificationType,
+		constant.SingleChatType,
+		tips,
+		rpcclient.WithRpcGetUserName(),
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *msgServer) getSignalVoiceCommonTips(
 	ctx context.Context,
 	fromUserID,
 	channelID,
 	conversationID string,
 ) (*sdkws.SignalVoiceTips, error) {
-	opUsers, err := m.getOperatorUsersInfo(ctx, []string{fromUserID})
+	opUsers, err := m.User.GetPublicUserInfos(ctx, []string{fromUserID}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +298,8 @@ func (m *msgServer) getSignalVoiceCommonTips(
 	if err != nil {
 		return nil, err
 	}
-	participants, err := m.getOperatorUsersInfo(ctx, userIDs)
+
+	participants, err := m.User.GetPublicUserInfos(ctx, userIDs, true)
 	if err != nil {
 		return nil, err
 	}
@@ -275,16 +312,4 @@ func (m *msgServer) getSignalVoiceCommonTips(
 		ConversationID: conversationID,
 	}
 	return tips, nil
-}
-
-func (m *msgServer) getOperatorUsersInfo(
-	ctx context.Context,
-	userIDs []string,
-) ([]*sdkws.PublicUserInfo, error) {
-	users, err := m.User.GetPublicUserInfos(ctx, userIDs, true)
-	if err != nil {
-		log.ZError(ctx, "GetPublicUserInfos err", err, "userIDs", userIDs)
-		return nil, err
-	}
-	return users, err
 }

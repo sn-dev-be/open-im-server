@@ -45,7 +45,7 @@ func NewCloseVocieChannelJob(
 
 func (c *CloseVocieChannelJob) Run() {
 	ctx := mcontext.NewCtx(utils.GetSelfFuncName())
-	log.ZInfo(ctx, "start CloseVocieChannelJob", "jobName", c.Name)
+	log.ZInfo(ctx, "start closeVocieChannel", "jobName", c.Name)
 	usersID, err := c.MsgTool.MsgDatabase.GetVoiceChannelUsersID(ctx, c.ChannelID, "")
 	if err != nil {
 		log.ZError(ctx, "get channel usersID err", err, "channelID", c.ChannelID)
@@ -60,6 +60,7 @@ func (c *CloseVocieChannelJob) Run() {
 		if c.SessionType == constant.SingleChatType {
 			tips := &sdkws.SignalVoiceSingleChatTips{
 				ElapsedSec: int32(elapsedSec),
+				OpUserID:   c.OpUserID,
 			}
 			c.MsgTool.MsgNotificationSender.Notification(ctx, c.OpUserID, userID, constant.SignalingSingleChatClosedNotification, tips)
 		}
@@ -68,8 +69,8 @@ func (c *CloseVocieChannelJob) Run() {
 		return
 	}
 	c.Cron.Remove(c.Name)
-	log.ZDebug(ctx, "delete CloseVocieChannelJob", "jobName", c.Name)
-	log.ZInfo(ctx, "CloseVocieChannelJob finished", "jobName", c.Name)
+	log.ZDebug(ctx, "delete closeVocieChannel", "jobName", c.Name)
+	log.ZInfo(ctx, "closeVocieChannel job finished", "jobName", c.Name)
 }
 
 func (c *CloseVocieChannelJob) Serialize() ([]byte, error) {

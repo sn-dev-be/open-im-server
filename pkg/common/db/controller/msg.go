@@ -130,6 +130,7 @@ type CommonMsgDatabase interface {
 	ConvertMsgsDocLen(ctx context.Context, conversationIDs []string)
 
 	CreateVoiceChannel(ctx context.Context, channelID string, userIDs []string) error
+	GetVoiceChannelCreateUserID(ctx context.Context, channelID string) (string, error)
 	GetVoiceChannelUsersID(ctx context.Context, channelID, excludeID string) ([]string, error)
 	RemoveUserFromVoiceChannel(ctx context.Context, channelID, userID string) error
 	AddUserToVoiceChannel(ctx context.Context, channelID, userID string) error
@@ -1102,6 +1103,14 @@ func (db *commonMsgDatabase) ModifyMsgBySeq(ctx context.Context, conversationID 
 
 func (db *commonMsgDatabase) CreateVoiceChannel(ctx context.Context, channelID string, userIDs []string) error {
 	return db.cache.SetUsersToChannel(ctx, channelID, userIDs)
+}
+
+func (db *commonMsgDatabase) GetVoiceChannelCreateUserID(ctx context.Context, channelID string) (string, error) {
+	usersID, err := db.cache.GetChannelUsers(ctx, channelID)
+	if err != nil || len(usersID) < 1 {
+		return "", err
+	}
+	return usersID[0], nil
 }
 
 func (db *commonMsgDatabase) GetVoiceChannelUsersID(ctx context.Context, channelID, excludeID string) ([]string, error) {
