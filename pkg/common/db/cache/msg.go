@@ -117,6 +117,7 @@ type MsgModel interface {
 	thirdCache
 	VoiceCall
 	AddTokenFlag(ctx context.Context, userID string, platformID int, token string, flag int) error
+	GetAllPlatformTokens(ctx context.Context, userID string) (map[string]int, error)
 	GetTokensWithoutError(ctx context.Context, userID string, platformID int) (map[string]int, error)
 	SetTokenMapByUidPid(ctx context.Context, userID string, platformID int, m map[string]int) error
 	DeleteTokenByUidPid(ctx context.Context, userID string, platformID int, fields []string) error
@@ -282,6 +283,20 @@ func (c *msgCache) AddTokenFlag(ctx context.Context, userID string, platformID i
 	key := uidPidToken + userID + ":" + constant.PlatformIDToName(platformID)
 
 	return errs.Wrap(c.rdb.HSet(ctx, key, token, flag).Err())
+}
+
+func (c *msgCache) GetAllPlatformTokens(ctx context.Context, userID string) (map[string]int, error) {
+	key := uidPidToken + userID
+	m, err := c.rdb.HGetAll(ctx, key).Result()
+	if err != nil {
+		return nil, errs.Wrap(err)
+	}
+	mm := make(map[string]int)
+	for k, v := range m {
+		mm[k] = utils.StringToInt(v)
+	}
+
+	return mm, nil
 }
 
 func (c *msgCache) GetTokensWithoutError(ctx context.Context, userID string, platformID int) (map[string]int, error) {

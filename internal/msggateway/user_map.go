@@ -18,8 +18,10 @@ import (
 	"context"
 	"sync"
 
+	"github.com/OpenIMSDK/protocol/constant"
 	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/utils"
+	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
 )
 
 type UserMap struct {
@@ -43,9 +45,14 @@ func (u *UserMap) Get(key string, platformID int) ([]*Client, bool, bool) {
 	if userExisted {
 		var clients []*Client
 		for _, client := range allClients.([]*Client) {
-			if client.PlatformID == platformID {
+			if config.Config.MultiLoginPolicy != constant.SingleTerminalLogin {
+				if client.PlatformID == platformID {
+					clients = append(clients, client)
+				}
+			} else {
 				clients = append(clients, client)
 			}
+
 		}
 		if len(clients) > 0 {
 			return clients, userExisted, true

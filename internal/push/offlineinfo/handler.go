@@ -51,7 +51,7 @@ func (h SingleChatMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang 
 			info.Content = i18n.Tr(lang, "msg.push.common.voice")
 		case constant.Video:
 			info.Content = i18n.Tr(lang, "msg.push.common.video")
-		case constant.VoiceCall:
+		case constant.SignalingInvitedNotification:
 			info.Title = i18n.Tr(lang, "msg.push.common.title")
 			info.Content = i18n.Tr(lang, "msg.push.common.voiceCall")
 		case constant.RedPacket:
@@ -98,7 +98,7 @@ func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voice"))
 		case constant.Video:
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.video"))
-		case constant.VoiceCall:
+		case constant.SignalingInvitedNotification:
 			info.Title = i18n.Tr(lang, "msg.push.common.title")
 			info.Content = fmt.Sprintf("%s:%s:", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voiceCall"))
 		case constant.RedPacket:
@@ -146,7 +146,7 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voice"))
 		case constant.Video:
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.video"))
-		case constant.VoiceCall:
+		case constant.SignalingInvitedNotification:
 			info.Title = i18n.Tr(lang, "msg.push.common.title")
 			info.Content = fmt.Sprintf("%s:%s:", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.voiceCall"))
 		case constant.RedPacket:

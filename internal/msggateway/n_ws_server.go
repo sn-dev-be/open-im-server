@@ -291,6 +291,65 @@ func (ws *WsServer) multiTerminalLoginChecker(clientOK bool, oldClients []*Clien
 			return
 		}
 		fallthrough
+	case constant.SingleTerminalLogin:
+		isDeleteUser := ws.clients.deleteClients(newClient.UserID, oldClients)
+		if isDeleteUser {
+			ws.onlineUserNum.Add(-1)
+		}
+
+		for _, c := range oldClients {
+			err := c.KickOnlineMessage()
+			if err != nil {
+				log.ZWarn(c.ctx, "KickOnlineMessage", err)
+			}
+		}
+
+		m, err := ws.cache.GetAllPlatformTokens(
+			newClient.ctx,
+			newClient.UserID,
+		)
+		if err != nil && err != redis.Nil {
+			log.ZWarn(
+				newClient.ctx,
+				"get token from redis err",
+				err,
+				"userID",
+				newClient.UserID,
+			)
+			return
+		}
+		if m == nil {
+			log.ZWarn(
+				newClient.ctx,
+				"m is nil",
+				errors.New("m is nil"),
+				"userID",
+				newClient.UserID,
+			)
+			return
+		}
+		log.ZDebug(
+			newClient.ctx,
+			"get token from redis",
+			"userID",
+			newClient.UserID,
+			"tokenMap",
+			m,
+		)
+
+		for k := range m {
+			if k != newClient.ctx.GetToken() {
+				m[k] = constant.KickedToken
+			}
+		}
+		log.ZDebug(newClient.ctx, "set token map is ", "token map", m, "userID",
+			newClient.UserID, "token", newClient.ctx.GetToken())
+		err = ws.cache.SetTokenMapByUidPid(newClient.ctx, newClient.UserID, newClient.PlatformID, m)
+		if err != nil {
+			log.ZWarn(newClient.ctx, "SetTokenMapByUidPid err", err, "userID", newClient.UserID, "platformID", newClient.PlatformID)
+			return
+		}
+
 	case constant.AllLoginButSameTermKick:
 		if !clientOK {
 			return
