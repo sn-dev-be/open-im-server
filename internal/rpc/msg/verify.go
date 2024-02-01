@@ -66,7 +66,7 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			return errs.ErrBlockedByPeer.Wrap()
 		}
 
-		friend, friendReverse, err := m.friend.IsFriend(ctx, data.MsgData.SendID, data.MsgData.RecvID)
+		friend, friendReverse, err := m.friend.IsFriend(ctx, data.MsgData.RecvID, data.MsgData.SendID)
 		if err != nil {
 			return err
 		}
