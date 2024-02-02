@@ -56,17 +56,19 @@ func (c *CloseVocieChannelJob) Run() {
 		return
 	}
 	for _, userID := range usersID {
-		c.MsgTool.MsgNotificationSender.Notification(ctx, c.OpUserID, userID, constant.SignalingClosedNotification, nil)
+		c.MsgTool.MsgNotificationSender.
+			Notification(ctx, c.OpUserID, userID, constant.SignalingClosedNotification, nil)
+
 		if c.SessionType == constant.SingleChatType {
 			tips := &sdkws.SignalVoiceSingleChatTips{
 				ElapsedSec: int32(elapsedSec),
 				OpUserID:   c.OpUserID,
 			}
-			c.MsgTool.MsgNotificationSender.Notification(ctx, c.OpUserID, userID, constant.SignalingSingleChatClosedNotification, tips)
+			c.MsgTool.MsgNotificationSender.
+				Notification(ctx, c.OpUserID, userID, constant.SignalingSingleChatClosedNotification, tips)
 		}
 	}
 	if err := c.MsgTool.MsgDatabase.DelVoiceChannel(ctx, c.ChannelID); err != nil {
-		return
 	}
 	c.Cron.Remove(c.Name)
 	log.ZDebug(ctx, "delete closeVocieChannel", "jobName", c.Name)

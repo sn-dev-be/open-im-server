@@ -8,6 +8,7 @@ import (
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/utils"
+	cerrs "github.com/openimsdk/open-im-server/v3/pkg/common/errs"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
 	"google.golang.org/protobuf/proto"
@@ -33,6 +34,12 @@ func (m *msgServer) handleVoiceSignal(
 	err := utils.JsonStringToStruct(string(signalMsg.Content), &req)
 	if err != nil {
 		return nil, errs.ErrArgs.Wrap("signalVoiceReq format err")
+	}
+	if signalMsg.SignalType != constant.SignalingInviation {
+		userCount, err := m.MsgDatabase.GetVoiceChannelUserCount(ctx, req.ChannelID)
+		if err != nil || userCount < 1 {
+			return nil, cerrs.ErrVoiceChannelClosed
+		}
 	}
 	switch signalMsg.SignalType {
 	case constant.SignalingInviation:
@@ -62,11 +69,16 @@ func (m *msgServer) invitationNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
+	if exists, err := m.MsgDatabase.GetGlobalVoiceChannelUserExists(ctx, req.InviteUserID); err == nil && exists {
+		return nil, cerrs.ErrVoiceAlreadyInvitation
+	}
+
 	usersID := []string{req.FromUserID}
-	inviteUsersID := append(usersID, req.InviteUsersID...)
-	if err := m.MsgDatabase.CreateVoiceChannel(ctx, req.ChannelID, inviteUsersID); err != nil {
+	inviteUsersID := append(usersID, req.InviteUserID)
+	if err := m.MsgDatabase.AddUserToVoiceChannel(ctx, req.ChannelID, inviteUsersID); err != nil {
 		return nil, err
 	}
+
 	if req.SessionType == constant.SuperGroupChatType {
 		opUsers, err := m.User.GetPublicUserInfos(ctx, []string{req.FromUserID}, true)
 		if err != nil {
@@ -80,10 +92,26 @@ func (m *msgServer) invitationNotification(
 		}
 		m.notificationSender.Notification(ctx, req.FromUserID, req.GroupID, constant.SignalingGroupInvitedNotification, &tips)
 	}
+
+	tips, err := m.getSignalVoiceCommonTips(ctx, req.FromUserID, req.ChannelID, req.ConversationID)
+	if err != nil {
+		return nil, err
+	}
+	if err := m.notificationSender.NotificationWithSesstionType(
+		ctx,
+		req.FromUserID,
+		req.InviteUserID,
+		constant.SignalingInvitedNotification,
+		constant.SingleChatType,
+		tips,
+	); err != nil {
+		return nil, err
+	}
+
 	if err := m.Cron.SetCloseVoiceChannelJob(ctx, req.FromUserID, req.ChannelID, req.GroupID, req.SessionType); err != nil {
 		return nil, err
 	}
-	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotification(ctx, req, constant.SignalingInvitedNotification)
+	return &pbmsg.SendSignalMsgResp{}, nil
 }
 
 func (m *msgServer) acceptNotification(
@@ -116,7 +144,7 @@ func (m *msgServer) joinNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
-	if err := m.MsgDatabase.AddUserToVoiceChannel(ctx, req.ChannelID, req.FromUserID); err != nil {
+	if err := m.MsgDatabase.AddUserToVoiceChannel(ctx, req.ChannelID, []string{req.FromUserID}); err != nil {
 		return nil, err
 	}
 	if req.SessionType == constant.SuperGroupChatType {
@@ -138,7 +166,7 @@ func (m *msgServer) cancelNotification(
 	if err := m.broadcastNotification(ctx, req, constant.SignalingCanceledNotification); err != nil {
 		return nil, err
 	}
-	if err := m.MsgDatabase.RemoveUserFromVoiceChannel(ctx, req.ChannelID, req.InviteUsersID[0]); err != nil {
+	if err := m.MsgDatabase.RemoveUserFromVoiceChannel(ctx, req.ChannelID, req.InviteUserID); err != nil {
 		return nil, err
 	}
 	return &pbmsg.SendSignalMsgResp{}, nil

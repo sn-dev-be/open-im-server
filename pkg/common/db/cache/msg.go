@@ -59,7 +59,8 @@ const (
 	exTypeKeyLocker         = "EX_LOCK:"
 	uidPidToken             = "UID_PID_TOKEN_STATUS:"
 
-	voiceCall = "VOICE_CALL:"
+	voiceCall               = "VOICE_CALL:"
+	voiceCallGlobalUserList = "VOICE_CALL_GLOBAL_USER_LIST:"
 )
 
 var concurrentLimit = 3
@@ -103,13 +104,13 @@ type thirdCache interface {
 }
 
 type VoiceCall interface {
-	SetUsersToChannel(ctx context.Context, channelID string, userIDs []string) error
 	GetChannelUsers(ctx context.Context, channelID string) ([]string, error)
-	AddUserToChannel(ctx context.Context, channelID, userID string) error
+	AddUserToChannel(ctx context.Context, channelID string, usersID []string) error
 	DelUserFromChannel(ctx context.Context, channelID, userID string) error
 	GetChannelTTL(ctx context.Context, channelID string) (time.Duration, error)
 	GetChannelUserCount(ctx context.Context, channelID string) (int64, error)
 	DelChannel(ctx context.Context, channelID string) error
+	GetGlobalChannelUserExists(ctx context.Context, userID string) (bool, error)
 }
 
 type MsgModel interface {
@@ -843,16 +844,16 @@ func (c *msgCache) getChannelKey(channelID string) string {
 	return voiceCall + channelID
 }
 
-func (c *msgCache) SetUsersToChannel(
+func (c *msgCache) AddUserToChannel(
 	ctx context.Context,
 	channelID string,
-	userIDs []string,
+	usersID []string,
 ) error {
 	key := c.getChannelKey(channelID)
 	pipe := c.rdb.Pipeline()
 
 	mm := make(map[string]interface{})
-	for _, v := range userIDs {
+	for _, v := range usersID {
 		mm[v] = 0
 	}
 	if err := pipe.HSet(ctx, key, mm).Err(); err != nil {
@@ -863,6 +864,10 @@ func (c *msgCache) SetUsersToChannel(
 			return errs.Wrap(err)
 		}
 	}
+
+	if err := pipe.HSet(ctx, voiceCallGlobalUserList, mm).Err(); err != nil {
+		return errs.Wrap(err)
+	}
 	_, err := pipe.Exec(ctx)
 	return errs.Wrap(err)
 }
@@ -871,12 +876,16 @@ func (c *msgCache) GetChannelUsers(ctx context.Context, channelID string) ([]str
 	return utils.Wrap2(c.rdb.HKeys(ctx, c.getChannelKey(channelID)).Result())
 }
 
-func (c *msgCache) AddUserToChannel(ctx context.Context, channelID, userID string) error {
-	return errs.Wrap(c.rdb.HSet(ctx, c.getChannelKey(channelID), userID, 0).Err())
-}
-
 func (c *msgCache) DelUserFromChannel(ctx context.Context, channelID, userID string) error {
-	return errs.Wrap(c.rdb.HDel(ctx, c.getChannelKey(channelID), userID).Err())
+	pipe := c.rdb.Pipeline()
+	if err := pipe.HDel(ctx, c.getChannelKey(channelID), userID).Err(); err != nil {
+		return errs.Wrap(err)
+	}
+	if err := pipe.HDel(ctx, voiceCallGlobalUserList, userID).Err(); err != nil {
+		return errs.Wrap(err)
+	}
+	_, err := pipe.Exec(ctx)
+	return err
 }
 
 func (c *msgCache) GetChannelTTL(ctx context.Context, channelID string) (time.Duration, error) {
@@ -888,5 +897,17 @@ func (c *msgCache) GetChannelUserCount(ctx context.Context, channelID string) (i
 }
 
 func (c *msgCache) DelChannel(ctx context.Context, channelID string) error {
-	return errs.Wrap(c.rdb.Del(ctx, c.getChannelKey(channelID)).Err())
+	pipe := c.rdb.Pipeline()
+	if err := pipe.Del(ctx, c.getChannelKey(channelID)).Err(); err != nil {
+		return errs.Wrap(err)
+	}
+	if usersID, err := c.GetChannelUsers(ctx, channelID); err == nil {
+		pipe.HDel(ctx, voiceCallGlobalUserList, usersID...)
+	}
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+func (c *msgCache) GetGlobalChannelUserExists(ctx context.Context, userID string) (bool, error) {
+	return c.rdb.HExists(ctx, voiceCallGlobalUserList, userID).Result()
 }

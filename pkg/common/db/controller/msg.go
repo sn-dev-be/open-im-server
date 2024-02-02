@@ -129,13 +129,14 @@ type CommonMsgDatabase interface {
 	) (msgCount int64, userCount int64, groups []*unrelationtb.GroupCount, dateCount map[string]int64, err error)
 	ConvertMsgsDocLen(ctx context.Context, conversationIDs []string)
 
-	CreateVoiceChannel(ctx context.Context, channelID string, userIDs []string) error
 	GetVoiceChannelCreateUserID(ctx context.Context, channelID string) (string, error)
 	GetVoiceChannelUsersID(ctx context.Context, channelID, excludeID string) ([]string, error)
 	RemoveUserFromVoiceChannel(ctx context.Context, channelID, userID string) error
-	AddUserToVoiceChannel(ctx context.Context, channelID, userID string) error
+	AddUserToVoiceChannel(ctx context.Context, channelID string, usersID []string) error
 	DelVoiceChannel(ctx context.Context, channelID string) error
 	GetVoiceChannelDuration(ctx context.Context, channelID string) (remainingSeconds int, elapsedSeconds int, err error)
+	GetVoiceChannelUserCount(ctx context.Context, channelID string) (int64, error)
+	GetGlobalVoiceChannelUserExists(ctx context.Context, userID string) (bool, error)
 }
 
 func NewCommonMsgDatabase(msgDocModel unrelationtb.MsgDocModelInterface, cacheModel cache.MsgModel) CommonMsgDatabase {
@@ -1101,10 +1102,6 @@ func (db *commonMsgDatabase) ModifyMsgBySeq(ctx context.Context, conversationID 
 	return err
 }
 
-func (db *commonMsgDatabase) CreateVoiceChannel(ctx context.Context, channelID string, userIDs []string) error {
-	return db.cache.SetUsersToChannel(ctx, channelID, userIDs)
-}
-
 func (db *commonMsgDatabase) GetVoiceChannelCreateUserID(ctx context.Context, channelID string) (string, error) {
 	usersID, err := db.cache.GetChannelUsers(ctx, channelID)
 	if err != nil || len(usersID) < 1 {
@@ -1125,11 +1122,10 @@ func (db *commonMsgDatabase) GetVoiceChannelUsersID(ctx context.Context, channel
 }
 
 func (db *commonMsgDatabase) RemoveUserFromVoiceChannel(ctx context.Context, channelID, userID string) error {
-	err := db.cache.DelUserFromChannel(ctx, channelID, userID)
-	if err != nil {
+	if err := db.cache.DelUserFromChannel(ctx, channelID, userID); err != nil {
 		return err
 	}
-	userCount, err := db.cache.GetChannelUserCount(ctx, channelID)
+	userCount, err := db.GetVoiceChannelUserCount(ctx, channelID)
 	if err != nil {
 		return err
 	}
@@ -1139,8 +1135,8 @@ func (db *commonMsgDatabase) RemoveUserFromVoiceChannel(ctx context.Context, cha
 	return err
 }
 
-func (db *commonMsgDatabase) AddUserToVoiceChannel(ctx context.Context, channelID, userID string) error {
-	return db.cache.AddUserToChannel(ctx, channelID, userID)
+func (db *commonMsgDatabase) AddUserToVoiceChannel(ctx context.Context, channelID string, usersID []string) error {
+	return db.cache.AddUserToChannel(ctx, channelID, usersID)
 }
 
 func (db *commonMsgDatabase) DelVoiceChannel(ctx context.Context, channelID string) (err error) {
@@ -1157,4 +1153,12 @@ func (db *commonMsgDatabase) GetVoiceChannelDuration(ctx context.Context, channe
 	elapsedSeconds = limitSeconds - ttlSeconds
 	remainingSeconds = limitSeconds - elapsedSeconds
 	return
+}
+
+func (db *commonMsgDatabase) GetVoiceChannelUserCount(ctx context.Context, channelID string) (int64, error) {
+	return db.cache.GetChannelUserCount(ctx, channelID)
+}
+
+func (db *commonMsgDatabase) GetGlobalVoiceChannelUserExists(ctx context.Context, userID string) (bool, error) {
+	return db.cache.GetGlobalChannelUserExists(ctx, userID)
 }
