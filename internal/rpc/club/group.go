@@ -412,8 +412,9 @@ func (c *clubServer) GetServerGroupBaseInfos(ctx context.Context, req *pbclub.Ge
 			ConditionType: group.ConditionType,
 		}
 		if group.ServerID != "" {
-			if server, err := c.ClubDatabase.FindServer(ctx, []string{group.ServerID}); err != nil {
-				continue
+			server, err := c.ClubDatabase.FindServer(ctx, []string{group.ServerID})
+			if err != nil || server == nil || len(server) == 0 {
+				return nil, errs.ErrRecordNotFound
 			} else {
 				each.ServerID = server[0].ServerID
 				each.ServerName = server[0].ServerName
