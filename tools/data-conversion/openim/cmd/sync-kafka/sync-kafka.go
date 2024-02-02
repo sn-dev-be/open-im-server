@@ -37,12 +37,15 @@ var (
 	mysqlUsername  = "root"
 	mysqlPasswword = "openIM123"
 	mysqlAddr      = "172.31.40.48:13306"
-	mysqlDatabase  = "openIM_v3"
+	// mysqlAddr      = "192.168.2.222:3306"
+	// mysqlPasswword = "123456"
+	mysqlDatabase = "openIM_v3"
 )
 
 var (
-	topic         = "openim-to-mimo"
-	kafkaAddr     = "172.31.40.48:9092"
+	topic     = "openim-to-mimo"
+	kafkaAddr = "172.31.40.48:9092"
+	//kafkaAddr     = "192.168.2.222:9092"
 	kafkaUsername = ""
 	kafkaPassword = ""
 )
@@ -93,7 +96,7 @@ func checkKafka() (sarama.SyncProducer, error) {
 }
 
 // writeServersToKafka reads records from the 'servers' table in MySQL and writes them to Kafka.gi
-func handleSync() error {
+func handleSyncServer() error {
 	// 检查MySQL连接
 	db, err := checkMysql()
 	if err != nil {
@@ -106,7 +109,7 @@ func handleSync() error {
 		return errs.Wrap(err)
 	}
 
-	const chunkSize = 10
+	const chunkSize = 100
 	numChunks := (totalRecords + chunkSize - 1) / chunkSize
 	for i := int64(0); i < numChunks; i++ {
 		offset := i * chunkSize
@@ -159,6 +162,37 @@ func sendServersToMimoBusiness(servers []relation.ServerModel) error {
 	return nil
 }
 
+func sendServerMembersToMimoBusiness(serverMembers []relation.ServerMemberModel) error {
+	// 与Kafka建立连接
+	producer, err := checkKafka()
+	if err != nil {
+		fmt.Fprintln(os.Stdout, errs.Wrap(err))
+	}
+	//defer kafkaClient.Close()
+	defer producer.Close()
+
+	for _, serverMember := range serverMembers {
+		// 将server结构体转为JSON
+		serverMemberJSON, err := json.Marshal(serverMember)
+		if err != nil {
+			fmt.Fprintln(os.Stdout, errs.Wrap(err))
+		}
+		fmt.Fprintln(os.Stdout, string(serverMemberJSON))
+
+		// 创建Kafka消息
+		msg := &sarama.ProducerMessage{
+			Topic: topic, // 使用默认的或者提供的topic
+			Value: sarama.StringEncoder(createClubServerMemberEvent(serverMember.ServerID, serverMember.UserID, serverMember.Nickname)),
+		}
+
+		// // 发送消息到Kafka
+		if _, _, err := producer.SendMessage(msg); err != nil {
+			return errs.Wrap(err)
+		}
+	}
+	return nil
+}
+
 func createClubServerEvent(serverID, name, banner, icon string, isPublic bool) string {
 	return utils.StructToJsonString(&common.CommonBusinessMQEvent{
 		ClubServer: &common.ClubServer{
@@ -172,6 +206,52 @@ func createClubServerEvent(serverID, name, banner, icon string, isPublic bool) s
 	})
 }
 
+func createClubServerMemberEvent(serverID, userID, nickname string) string {
+	return utils.StructToJsonString(&common.CommonBusinessMQEvent{
+		ClubServerUser: &common.ClubServerUser{
+			ServerId: serverID,
+			UserId:   userID,
+			Nickname: nickname,
+		},
+		EventType: constant.ClubServerUserMQEventType,
+	})
+}
+
+func handleSyncServerUser() error {
+	// 检查MySQL连接
+	db, err := checkMysql()
+	if err != nil {
+		fmt.Fprintln(os.Stdout, errs.Wrap(err))
+	}
+
+	// Calculate the total number of records
+	var totalRecords int64
+	if err := db.Model(&relation.ServerMemberModel{}).Count(&totalRecords).Error; err != nil {
+		return errs.Wrap(err)
+	}
+
+	const chunkSize = 100
+	numChunks := (totalRecords + chunkSize - 1) / chunkSize
+	for i := int64(0); i < numChunks; i++ {
+		offset := i * chunkSize
+		limit := chunkSize
+
+		var serverMembers []relation.ServerMemberModel
+		if err := db.Offset(int(offset)).Limit(int(limit)).Find(&serverMembers).Error; err != nil {
+			fmt.Fprintln(os.Stdout, errs.Wrap(err))
+			continue
+		}
+
+		// Process the chunk of data
+		if err := sendServerMembersToMimoBusiness(serverMembers); err != nil {
+			fmt.Fprintln(os.Stdout, errs.Wrap(err))
+		}
+	}
+
+	return nil
+}
+
 func main() {
-	handleSync()
+	//handleSyncServer()
+	handleSyncServerUser()
 }
