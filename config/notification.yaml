@@ -548,6 +548,16 @@ serverGroupCreated:
     desc: ""
     ext: ""
 
+serverGroupDismiss:
+  isSendMsg: false
+  reliabilityLevel: 1
+  unreadCount: false
+  offlinePush:
+    enable: false
+    title: ""
+    desc: ""
+    ext: ""
+
 # cron
 cronMsgClearSet:
   isSendMsg: true
