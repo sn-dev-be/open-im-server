@@ -372,6 +372,7 @@ type notification struct {
 	ServerMemberCancelMute    NotificationConf `yaml:"serverMemberCancelMute"`
 	ServerMemberInfoSet       NotificationConf `yaml:"serverMemberInfoSet"`
 	ServerGroupCreated        NotificationConf `yaml:"serverGroupCreated"`
+	ServerGroupDismiss        NotificationConf `yaml:"serverGroupDismiss"`
 }
 
 var BannerURLs = []string{

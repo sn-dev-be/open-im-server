@@ -441,3 +441,16 @@ func (c *ClubNotificationSender) ServerGroupCreatedNotification(ctx context.Cont
 	}
 	return c.Notification(ctx, mcontext.GetOpUserID(ctx), tips.Group.GroupID, constant.ServerGroupCreatedNotification, tips)
 }
+
+func (c *ClubNotificationSender) ServerGroupDismissNotification(ctx context.Context, tips *sdkws.ServerGroupDismissTips) (err error) {
+	defer log.ZDebug(ctx, "return")
+	defer func() {
+		if err != nil {
+			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
+		}
+	}()
+	if err := c.fillOpUser(ctx, &tips.OpUser, tips.GroupID); err != nil {
+		return err
+	}
+	return c.Notification(ctx, mcontext.GetOpUserID(ctx), tips.GroupID, constant.ServerGroupDismissNotification, tips)
+}
