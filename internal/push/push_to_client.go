@@ -32,6 +32,7 @@ import (
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/i18n"
+	localUtil "github.com/openimsdk/open-im-server/v3/pkg/common/utils"
 
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlineinfo"
 	"github.com/openimsdk/open-im-server/v3/internal/push/offlinepush"
@@ -284,7 +285,7 @@ func (p *Pusher) Push2SuperGroup(ctx context.Context, groupID string, msg *sdkws
 			}
 
 			if len(resp.UserIDs) > 0 {
-				needOfflinePushUserIDs := utils.Union(resp.UserIDs, msg.AtUserIDList)
+				needOfflinePushUserIDs := localUtil.Union(resp.UserIDs, msg.AtUserIDList)
 				err = p.offlinePushMsg(ctx, groupID, msg, needOfflinePushUserIDs)
 				if err != nil {
 					log.ZError(ctx, "offlinePushMsg failed", err, "groupID", groupID, "msg", msg)
