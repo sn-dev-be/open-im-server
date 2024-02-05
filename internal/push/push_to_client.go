@@ -282,8 +282,10 @@ func (p *Pusher) Push2SuperGroup(ctx context.Context, groupID string, msg *sdkws
 			if err != nil {
 				return err
 			}
+
 			if len(resp.UserIDs) > 0 {
-				err = p.offlinePushMsg(ctx, groupID, msg, resp.UserIDs)
+				needOfflinePushUserIDs := utils.Union(resp.UserIDs, msg.AtUserIDList)
+				err = p.offlinePushMsg(ctx, groupID, msg, needOfflinePushUserIDs)
 				if err != nil {
 					log.ZError(ctx, "offlinePushMsg failed", err, "groupID", groupID, "msg", msg)
 					return err
