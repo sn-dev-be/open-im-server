@@ -77,8 +77,12 @@ func (c *CloseVocieChannelJob) Run() {
 				ElapsedSec: int32(elapsedSec),
 				OpUserID:   c.OpUserID,
 			}
+			contentType := constant.SignalingSingleChatClosedNotification
+			if c.JobType == OneMinuteCloseVoiceChannelJob {
+				contentType = constant.SignalingSingleChatNoAnswerNotification
+			}
 			c.MsgTool.MsgNotificationSender.
-				Notification(ctx, c.OpUserID, userID, constant.SignalingSingleChatClosedNotification, tips)
+				Notification(ctx, c.OpUserID, userID, int32(contentType), tips)
 		}
 	}
 
