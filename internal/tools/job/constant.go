@@ -5,4 +5,7 @@ const (
 	CloseVoiceChannelJobNamePrefix = "closeVoiceChannelJob_"
 )
 
-const ()
+const (
+	OneHourCloseVoiceChannelJob   = 1
+	OneMinuteCloseVoiceChannelJob = 2
+)

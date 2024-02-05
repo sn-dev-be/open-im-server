@@ -136,7 +136,10 @@ type CommonMsgDatabase interface {
 	DelVoiceChannel(ctx context.Context, channelID string) error
 	GetVoiceChannelDuration(ctx context.Context, channelID string) (remainingSeconds int, elapsedSeconds int, err error)
 	GetVoiceChannelUserCount(ctx context.Context, channelID string) (int64, error)
+
 	GetGlobalVoiceChannelUserExists(ctx context.Context, userID string) (bool, error)
+	SetGlobalVoiceChannelUserOneTheCall(ctx context.Context, userID string) error
+	GetVoiceChannelStatus(ctx context.Context, channelID string) (string, error)
 }
 
 func NewCommonMsgDatabase(msgDocModel unrelationtb.MsgDocModelInterface, cacheModel cache.MsgModel) CommonMsgDatabase {
@@ -1160,5 +1163,27 @@ func (db *commonMsgDatabase) GetVoiceChannelUserCount(ctx context.Context, chann
 }
 
 func (db *commonMsgDatabase) GetGlobalVoiceChannelUserExists(ctx context.Context, userID string) (bool, error) {
-	return db.cache.GetGlobalChannelUserExists(ctx, userID)
+	s, err := db.cache.GetGlobalChannelUser(ctx, userID)
+	return s != "", err
+}
+
+func (db *commonMsgDatabase) SetGlobalVoiceChannelUserOneTheCall(ctx context.Context, userID string) error {
+	return db.cache.SetGlobalChannelUser(ctx, userID, constant.OnTheCall)
+}
+
+func (db *commonMsgDatabase) GetVoiceChannelStatus(ctx context.Context, channelID string) (string, error) {
+	usersID, err := db.cache.GetChannelUsers(ctx, channelID)
+	if err != nil {
+		return constant.WaitingForCall, err
+	}
+	for _, userID := range usersID {
+		status, err := db.cache.GetGlobalChannelUser(ctx, userID)
+		if err != nil {
+			return constant.WaitingForCall, err
+		}
+		if status == constant.OnTheCall {
+			return constant.OnTheCall, nil
+		}
+	}
+	return constant.WaitingForCall, nil
 }

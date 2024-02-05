@@ -338,7 +338,7 @@ conversationSetPrivate:
 #####################voiceCall#########################
 signalingInvited:
   isSendMsg: false
-  reliabilityLevel: 1
+  reliabilityLevel: 2
   unreadCount: false
   offlinePush:
     enable: true

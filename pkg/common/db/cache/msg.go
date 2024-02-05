@@ -110,7 +110,8 @@ type VoiceCall interface {
 	GetChannelTTL(ctx context.Context, channelID string) (time.Duration, error)
 	GetChannelUserCount(ctx context.Context, channelID string) (int64, error)
 	DelChannel(ctx context.Context, channelID string) error
-	GetGlobalChannelUserExists(ctx context.Context, userID string) (bool, error)
+	GetGlobalChannelUser(ctx context.Context, userID string) (string, error)
+	SetGlobalChannelUser(ctx context.Context, userID string, status string) error
 }
 
 type MsgModel interface {
@@ -908,6 +909,10 @@ func (c *msgCache) DelChannel(ctx context.Context, channelID string) error {
 	return err
 }
 
-func (c *msgCache) GetGlobalChannelUserExists(ctx context.Context, userID string) (bool, error) {
-	return c.rdb.HExists(ctx, voiceCallGlobalUserList, userID).Result()
+func (c *msgCache) GetGlobalChannelUser(ctx context.Context, userID string) (string, error) {
+	return c.rdb.HGet(ctx, voiceCallGlobalUserList, userID).Result()
+}
+
+func (c *msgCache) SetGlobalChannelUser(ctx context.Context, userID string, status string) error {
+	return c.rdb.HSet(ctx, voiceCallGlobalUserList, userID, status).Err()
 }
