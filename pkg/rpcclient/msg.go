@@ -92,6 +92,7 @@ func newContentTypeConf() map[int32]config.NotificationConf {
 		constant.SignalingSingleChatCanceledNotification:    {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingHungUpNotification:                config.Config.Notification.SignalingHungUp,
 		constant.SignalingClosedNotification:                config.Config.Notification.SignalingClosed,
+		constant.SignalingSingleChatNoAnswerNotification:    {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingSingleChatClosedNotification:      {IsSendMsg: true, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingMicphoneStatusChangedNotification: {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
 		constant.SignalingSpeakStatusChangedNotification:    {IsSendMsg: false, ReliabilityLevel: constant.UnreliableNotification},
@@ -185,8 +186,9 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ServerGroupCreatedNotification:        constant.ServerGroupChatType,
 		constant.ServerGroupDismissNotification:        constant.ServerGroupChatType,
 		// signal
-		constant.SignalingSingleChatClosedNotification: constant.SingleChatType,
-		constant.SignalingClosedNotification:           constant.SingleChatType,
+		constant.SignalingSingleChatClosedNotification:   constant.SingleChatType,
+		constant.SignalingClosedNotification:             constant.SingleChatType,
+		constant.SignalingSingleChatNoAnswerNotification: constant.SingleChatType,
 	}
 }
 
