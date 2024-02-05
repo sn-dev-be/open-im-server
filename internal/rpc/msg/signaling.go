@@ -8,7 +8,7 @@ import (
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/utils"
-	cerrs "github.com/openimsdk/open-im-server/v3/pkg/common/errs"
+	ierrs "github.com/openimsdk/open-im-server/v3/pkg/common/errs"
 	"github.com/openimsdk/open-im-server/v3/pkg/rpcclient"
 
 	"google.golang.org/protobuf/proto"
@@ -38,7 +38,7 @@ func (m *msgServer) handleVoiceSignal(
 	if signalMsg.SignalType != constant.SignalingInviation {
 		userCount, err := m.MsgDatabase.GetVoiceChannelUserCount(ctx, req.ChannelID)
 		if err != nil || userCount < 1 {
-			return nil, cerrs.ErrVoiceChannelClosed
+			return nil, ierrs.ErrVoiceChannelClosed
 		}
 	}
 	switch signalMsg.SignalType {
@@ -70,27 +70,13 @@ func (m *msgServer) invitationNotification(
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	if exists, err := m.MsgDatabase.GetGlobalVoiceChannelUserExists(ctx, req.InviteUserID); err == nil && exists {
-		return nil, cerrs.ErrVoiceAlreadyInvitation
+		return nil, ierrs.ErrVoiceAlreadyInvitation
 	}
 
 	usersID := []string{req.FromUserID}
 	inviteUsersID := append(usersID, req.InviteUserID)
 	if err := m.MsgDatabase.AddUserToVoiceChannel(ctx, req.ChannelID, inviteUsersID); err != nil {
 		return nil, err
-	}
-
-	if req.SessionType == constant.SuperGroupChatType {
-		opUsers, err := m.User.GetPublicUserInfos(ctx, []string{req.FromUserID}, true)
-		if err != nil {
-			return nil, err
-		}
-		tips := sdkws.SignalGroupVoiceCardTips{
-			ChannelID:  req.ChannelID,
-			OpUsers:    opUsers,
-			Status:     constant.VoiceChannelEnabled,
-			CreateTime: utils.GetCurrentTimestampByMill(),
-		}
-		m.notificationSender.Notification(ctx, req.FromUserID, req.GroupID, constant.SignalingGroupInvitedNotification, &tips)
 	}
 
 	tips, err := m.getSignalVoiceCommonTips(ctx, req.FromUserID, req.ChannelID, req.ConversationID)
@@ -108,8 +94,27 @@ func (m *msgServer) invitationNotification(
 		return nil, err
 	}
 
-	if err := m.Cron.SetCloseVoiceChannelJob(ctx, req.FromUserID, req.ChannelID, req.GroupID, req.SessionType); err != nil {
+	userCount, err := m.MsgDatabase.GetVoiceChannelUserCount(ctx, req.ChannelID)
+	if err != nil {
 		return nil, err
+	}
+	if userCount <= 2 {
+		if req.SessionType == constant.SuperGroupChatType {
+			opUsers, err := m.User.GetPublicUserInfos(ctx, []string{req.FromUserID}, true)
+			if err != nil {
+				return nil, err
+			}
+			tips := sdkws.SignalGroupVoiceCardTips{
+				ChannelID:  req.ChannelID,
+				OpUsers:    opUsers,
+				Status:     constant.VoiceChannelEnabled,
+				CreateTime: utils.GetCurrentTimestampByMill(),
+			}
+			m.notificationSender.Notification(ctx, req.FromUserID, req.GroupID, constant.SignalingGroupInvitedNotification, &tips)
+		}
+		if err := m.Cron.SetCloseVoiceChannelJob(ctx, req.FromUserID, req.ChannelID, req.GroupID, req.SessionType); err != nil {
+			return nil, err
+		}
 	}
 	return &pbmsg.SendSignalMsgResp{}, nil
 }
@@ -118,6 +123,9 @@ func (m *msgServer) acceptNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
+	if err := m.MsgDatabase.SetGlobalVoiceChannelUserOneTheCall(ctx, req.FromUserID); err != nil {
+		return nil, err
+	}
 	return &pbmsg.SendSignalMsgResp{}, m.broadcastNotification(ctx, req, constant.SignalingAcceptedNotification)
 }
 
