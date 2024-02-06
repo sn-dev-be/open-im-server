@@ -92,6 +92,10 @@ func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.
 			t := apistruct.TextElem{}
 			utils.JsonStringToStruct(string(msg.Content), &t)
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Content)
+		case constant.AtText:
+			t := apistruct.AtElem{}
+			utils.JsonStringToStruct(string(msg.Content), &t)
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text)
 		case constant.Picture:
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.picture"))
 		case constant.Voice:
@@ -140,6 +144,10 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang
 			t := apistruct.TextElem{}
 			utils.JsonStringToStruct(string(msg.Content), &t)
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Content)
+		case constant.AtText:
+			t := apistruct.AtElem{}
+			utils.JsonStringToStruct(string(msg.Content), &t)
+			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text)
 		case constant.Picture:
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.picture"))
 		case constant.Voice:
