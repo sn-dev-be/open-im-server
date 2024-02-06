@@ -16,10 +16,11 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
+	"reflect"
 	"syscall"
 	"time"
 
@@ -153,23 +154,45 @@ func (c *cronServer) registerRpc(client discoveryregistry.SvcDiscoveryRegistry, 
 func (c *cronServer) recoverAllStableJob(jobs map[string]string) error {
 	log.ZInfo(context.Background(), "sizeof stablejobs", "containers", len(jobs))
 	for jobName, v := range jobs {
-		log.ZInfo(context.Background(), "recover", "jobName", jobName, "jobBody", v)
-		if !strings.HasPrefix(jobName, job.ClearMsgJobNamePrefix) {
+		var data map[string]interface{}
+		err := json.Unmarshal([]byte(v), &data)
+		jobType := int(data["Type"].(float64))
+		structType, ok := job.JobTypeMap[jobType]
+		if !ok {
 			continue
 		}
-		clearMsgJob := job.ClearMsgJob{}
-		clearMsgJob.MsgTool = c.msgTool
-		err := clearMsgJob.UnSerialize([]byte(v))
-		if err != nil {
-			log.ZError(context.Background(), "unserialize job error", err)
-			continue
+		jobValue := reflect.New(structType).Elem()
+		for key, value := range data {
+			field := jobValue.FieldByName(key)
+			if field.IsValid() && field.CanSet() {
+				fieldValue := reflect.ValueOf(value)
+				if field.Type() != fieldValue.Type() {
+					fieldValue = fieldValue.Convert(field.Type())
+				}
+				field.Set(fieldValue)
+			}
 		}
-
-		err = c.dcron.AddJob(jobName, clearMsgJob.GetCron(), &clearMsgJob)
+		field := jobValue.FieldByName("MsgTool")
+		if field.IsValid() && field.CanSet() {
+			fieldValue := reflect.ValueOf(c.msgTool)
+			if field.Type() == fieldValue.Type() {
+				field.Set(fieldValue)
+			}
+		}
+		field = jobValue.FieldByName("Cron")
+		if field.IsValid() && field.CanSet() {
+			fieldValue := reflect.ValueOf(c.dcron)
+			if field.Type() == fieldValue.Type() {
+				field.Set(fieldValue)
+			}
+		}
+		djob := jobValue.Addr().Interface().(dcron.Job)
+		err = c.dcron.AddJob(jobName, data["CronExpr"].(string), djob)
 		if err != nil {
 			log.ZError(context.Background(), "add job error", err)
 			continue
 		}
+		log.ZInfo(context.Background(), "recover", "jobName", jobName, "jobBody", v)
 	}
 	return nil
 }
@@ -228,7 +251,7 @@ func (c *cronServer) GetClearMsgJob(ctx context.Context, req *pbcron.GetClearMsg
 func (c *cronServer) SetCloseVoiceChannelJob(ctx context.Context, req *pbcron.SetCloseVoiceChannelJobReq) (*pbcron.SetCloseVoiceChannelJobResp, error) {
 	resp := &pbcron.SetCloseVoiceChannelJobResp{}
 	now := time.Unix(time.Now().Unix(), 0)
-	oneHourExpr := fmt.Sprintf("0 %d */1 * * *", now.Minute())
+	oneHourExpr := fmt.Sprintf("%d %d */1 * * *", now.Second(), now.Minute())
 	oneHourJob := job.NewCloseVocieChannelJob(
 		req.ChannelID,
 		req.UserID,
@@ -292,16 +315,16 @@ func cronWrapFunc(rdb redis.UniversalClient, key string, fn func()) func() {
 func getCronExpr(cycle int32) (expr string) {
 	now := time.Unix(time.Now().Unix(), 0)
 	cronMap := map[int32]string{
-		constant.CrontabDayOne:    fmt.Sprintf("0 %d %d */1 * *", now.Minute(), now.Hour()),
-		constant.CrontabDayTwo:    fmt.Sprintf("0 %d %d */2 * *", now.Minute(), now.Hour()),
-		constant.CrontabDayThree:  fmt.Sprintf("0 %d %d */3 * *", now.Minute(), now.Hour()),
-		constant.CrontabDayFour:   fmt.Sprintf("0 %d %d */4 * *", now.Minute(), now.Hour()),
-		constant.CrontabDayFive:   fmt.Sprintf("0 %d %d */5 * *", now.Minute(), now.Hour()),
-		constant.CrontabDaySix:    fmt.Sprintf("0 %d %d */6 * *", now.Minute(), now.Hour()),
-		constant.CrontabWeekOne:   fmt.Sprintf("0 %d %d */7 * *", now.Minute(), now.Hour()),
-		constant.CrontabWeekTwo:   fmt.Sprintf("0 %d %d */14 * *", now.Minute(), now.Hour()),
-		constant.CrontabWeekThree: fmt.Sprintf("0 %d %d */21 * *", now.Minute(), now.Hour()),
-		constant.CrontabMonth:     fmt.Sprintf("0 %d %d %d */1 *", now.Minute(), now.Hour(), now.Day()),
+		constant.CrontabDayOne:    fmt.Sprintf("%d %d %d */1 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabDayTwo:    fmt.Sprintf("%d %d %d */2 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabDayThree:  fmt.Sprintf("%d %d %d */3 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabDayFour:   fmt.Sprintf("%d %d %d */4 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabDayFive:   fmt.Sprintf("%d %d %d */5 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabDaySix:    fmt.Sprintf("%d %d %d */6 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabWeekOne:   fmt.Sprintf("%d %d %d */7 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabWeekTwo:   fmt.Sprintf("%d %d %d */14 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabWeekThree: fmt.Sprintf("%d %d %d */21 * *", now.Second(), now.Minute(), now.Hour()),
+		constant.CrontabMonth:     fmt.Sprintf("%d %d %d %d */1 *", now.Second(), now.Minute(), now.Hour(), now.Day()),
 	}
 	return cronMap[cycle]
 }

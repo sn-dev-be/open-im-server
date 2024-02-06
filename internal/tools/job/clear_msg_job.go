@@ -27,8 +27,8 @@ var cronCycleMap = map[int32]int32{
 
 type ClearMsgJob struct {
 	CommonJob
-	ConversationID string       `json:"conversationID"`
-	CronCycle      int32        `json:"cronCycle"`
+	ConversationID string       `json:"ConversationID"`
+	CronCycle      int32        `json:"CronCycle"`
 	MsgTool        *msg.MsgTool `json:"-"`
 }
 
@@ -36,7 +36,7 @@ func NewClearMsgJob(ConversationID, cronExpr string, cronCycle int32, msgTool *m
 	return &ClearMsgJob{
 		ConversationID: ConversationID,
 		CronCycle:      cronCycle,
-		CommonJob:      CommonJob{Name: ClearMsgJobNamePrefix + ConversationID, CronExpr: cronExpr},
+		CommonJob:      CommonJob{Name: ClearMsgJobNamePrefix + ConversationID, CronExpr: cronExpr, Type: TClearMsg},
 		MsgTool:        msgTool,
 	}
 }

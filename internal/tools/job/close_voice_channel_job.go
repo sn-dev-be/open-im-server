@@ -16,10 +16,10 @@ import (
 
 type CloseVocieChannelJob struct {
 	CommonJob
-	ChannelID   string       `json:"channelID"`
-	OpUserID    string       `json:"opUserID"`
-	SessionType int32        `json:"sessionType"`
-	JobType     int          `json:"jobType"`
+	ChannelID   string       `json:"ChannelID"`
+	OpUserID    string       `json:"OpUserID"`
+	SessionType int32        `json:"SessionType"`
+	JobType     int          `json:"JobType"`
 	MsgTool     *msg.MsgTool `json:"-"`
 	Cron        *dcron.Dcron `json:"-"`
 }
@@ -40,7 +40,11 @@ func NewCloseVocieChannelJob(
 		JobType:     jobType,
 		MsgTool:     msgTool,
 		Cron:        cron,
-		CommonJob:   CommonJob{Name: CloseVoiceChannelJobNamePrefix + channelID + "_" + strconv.Itoa(jobType), CronExpr: expr},
+		CommonJob: CommonJob{
+			Name:     CloseVoiceChannelJobNamePrefix + channelID + "_" + strconv.Itoa(jobType),
+			CronExpr: expr,
+			Type:     TCloseVoiceChannel,
+		},
 	}
 }
 
@@ -68,11 +72,16 @@ func (c *CloseVocieChannelJob) Run() {
 		return
 	}
 
+	tips := &sdkws.SignalVoiceTips{
+		ChannelID:  c.ChannelID,
+		ElapsedSec: int32(elapsedSec),
+	}
+
 	for _, userID := range usersID {
 		c.MsgTool.MsgNotificationSender.
-			Notification(ctx, c.OpUserID, userID, constant.SignalingClosedNotification, nil)
+			Notification(ctx, c.OpUserID, userID, constant.SignalingClosedNotification, tips)
 
-		if c.SessionType == constant.SingleChatType {
+		if c.SessionType == constant.SingleChatType && userID != c.OpUserID {
 			tips := &sdkws.SignalVoiceSingleChatTips{
 				ElapsedSec: int32(elapsedSec),
 				OpUserID:   c.OpUserID,

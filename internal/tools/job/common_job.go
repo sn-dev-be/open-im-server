@@ -1,8 +1,9 @@
 package job
 
 type CommonJob struct {
-	CronExpr string `json:"cronExpr"`
-	Name     string `json:"name"`
+	CronExpr string `json:"CronExpr"`
+	Name     string `json:"Name"`
+	Type     int    `json:"Type"`
 }
 
 func (commonjob *CommonJob) GetName() string {
