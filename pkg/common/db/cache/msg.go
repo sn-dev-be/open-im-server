@@ -899,11 +899,11 @@ func (c *msgCache) GetChannelUserCount(ctx context.Context, channelID string) (i
 
 func (c *msgCache) DelChannel(ctx context.Context, channelID string) error {
 	pipe := c.rdb.Pipeline()
+	if usersID, err := c.GetChannelUsers(ctx, channelID); err == nil && len(usersID) > 0 {
+		pipe.HDel(ctx, voiceCallGlobalUserList, usersID...)
+	}
 	if err := pipe.Del(ctx, c.getChannelKey(channelID)).Err(); err != nil {
 		return errs.Wrap(err)
-	}
-	if usersID, err := c.GetChannelUsers(ctx, channelID); err == nil {
-		pipe.HDel(ctx, voiceCallGlobalUserList, usersID...)
 	}
 	_, err := pipe.Exec(ctx)
 	return err
