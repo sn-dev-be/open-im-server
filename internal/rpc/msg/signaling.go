@@ -299,7 +299,7 @@ func (m *msgServer) broadcastSingleChatNotification(
 		return err
 	}
 	usersID, err := m.MsgDatabase.GetVoiceChannelUsersID(ctx, req.ChannelID, createUserID)
-	if err != nil {
+	if err != nil || len(usersID) < 1 {
 		return err
 	}
 	if err := m.notificationSender.NotificationWithSesstionType(
