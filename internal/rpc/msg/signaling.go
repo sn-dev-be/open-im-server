@@ -193,7 +193,11 @@ func (m *msgServer) hungUpNotification(
 			ElapsedSec: int32(elapsedSec),
 			OpUserID:   req.FromUserID,
 		}
-		m.broadcastSingleChatNotification(ctx, req, constant.SignalingSingleChatClosedNotification, tips)
+		notificationType := constant.SignalingSingleChatClosedNotification
+		if req.HungUpType == constant.HungUpWithError {
+			notificationType = constant.SignalingSingleChatErrorClosedNotification
+		}
+		m.broadcastSingleChatNotification(ctx, req, int32(notificationType), tips)
 	}
 	if err := m.broadcastNotification(ctx, req, constant.SignalingHungUpNotification); err != nil {
 		return nil, err
