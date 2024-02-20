@@ -53,6 +53,7 @@ type GroupDatabase interface {
 	TakeGroupMember(ctx context.Context, groupID string, userID string) (groupMember *relationtb.GroupMemberModel, err error)
 	TakeGroupOwner(ctx context.Context, groupID string) (*relationtb.GroupMemberModel, error)
 	FindGroupMember(ctx context.Context, groupIDs []string, userIDs []string, roleLevels []int32) ([]*relationtb.GroupMemberModel, error)
+	FindGroupAdminUserID(ctx context.Context, groupID string) ([]string, error)
 	FindGroupMemberUserID(ctx context.Context, groupID string) ([]string, error)
 	FindGroupMemberNum(ctx context.Context, groupID string) (uint32, error)
 	FindUserManagedGroupID(ctx context.Context, userID string) (groupIDs []string, err error)
@@ -630,4 +631,17 @@ func (g *groupDatabase) GetSavedGroupListByUser(ctx context.Context, userID stri
 	}
 
 	return transfer, total, nil
+}
+
+func (g *groupDatabase) FindGroupAdminUserID(ctx context.Context, groupID string) (userIDs []string, err error) {
+	groupMembers, err := g.cache.GetAllGroupMembersInfo(ctx, groupID)
+	if err != nil {
+		return userIDs, err
+	}
+	for _, groupMember := range groupMembers {
+		if groupMember.RoleLevel > constant.GroupOrdinaryUsers {
+			userIDs = append(userIDs, groupMember.UserID)
+		}
+	}
+	return userIDs, nil
 }

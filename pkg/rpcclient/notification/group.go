@@ -369,8 +369,13 @@ func (g *GroupNotificationSender) MemberQuitNotification(ctx context.Context, me
 	if err != nil {
 		return err
 	}
+	adminUserIDs, err := g.db.FindGroupAdminUserID(ctx, member.GroupID)
+	if err != nil {
+		return err
+	}
+	notificationOptions := []rpcclient.NotificationOptions{rpcclient.WithDesignateUserID(adminUserIDs...)}
 	tips := &sdkws.MemberQuitTips{Group: group, QuitUser: member}
-	return g.Notification(ctx, mcontext.GetOpUserID(ctx), member.GroupID, constant.MemberQuitNotification, tips)
+	return g.Notification(ctx, mcontext.GetOpUserID(ctx), member.GroupID, constant.MemberQuitNotification, tips, notificationOptions...)
 }
 
 func (g *GroupNotificationSender) GroupApplicationAcceptedNotification(ctx context.Context, req *pbgroup.GroupApplicationResponseReq) (err error) {
