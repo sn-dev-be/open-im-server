@@ -395,4 +395,4 @@ dist/
 .env
 config/config.yaml
 .air.toml
-p
+a.sh
