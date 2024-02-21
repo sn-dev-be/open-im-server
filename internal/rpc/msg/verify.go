@@ -25,8 +25,8 @@ import (
 	"github.com/OpenIMSDK/protocol/sdkws"
 	"github.com/OpenIMSDK/tools/errs"
 	"github.com/OpenIMSDK/tools/utils"
-
 	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
+	localErrs "github.com/openimsdk/open-im-server/v3/pkg/common/errs"
 )
 
 var ExcludeContentType = []int{constant.HasReadReceipt}
@@ -82,7 +82,7 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 				return err
 			}
 			if recvUser.AllowStrangerMsg == constant.NewMsgPushSettingAllowed {
-				return errs.ErrNotPeersFriend.Wrap()
+				return localErrs.ErrMsgBeBlocked.Wrap()
 			}
 		}
 		return nil
