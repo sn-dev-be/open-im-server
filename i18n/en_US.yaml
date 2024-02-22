@@ -21,6 +21,10 @@ msg:
       voiceCall: "[voiceCall]"
       file: "[File]"
       fireAfterRead: "[Delete After reading]"
+      atWithContent: "[Someone@you]{{ .content }}"
+      at: "{{ .name }}在{{ .place }}中@了你"
+      group: "groupChat"
+      channel: "channel"
 
 err:
   user_does_not_exist: "user does not exist"

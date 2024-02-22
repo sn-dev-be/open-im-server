@@ -24,6 +24,11 @@ msg:
       voiceCall: "[语音通话]"
       file: "[文件]"
       fireAfterRead: "[你收到一条阅后即焚消息]"
+      atWithContent: "[有人@你]{{ .content }}"
+      at: "{{ .name }}在{{ .place }}中@了你"
+      group: "群聊"
+      channel: "房间"
+
 
 err:
   user_does_not_exist: "user does not exist"

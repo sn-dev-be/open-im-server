@@ -95,7 +95,10 @@ func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.
 		case constant.AtText:
 			t := apistruct.AtElem{}
 			utils.JsonStringToStruct(string(msg.Content), &t)
-			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text)
+			info.Content = i18n.TrWithData(lang, "msg.push.common.atWithContent", map[string]interface{}{
+				"content": fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text),
+			})
+			//info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text)
 		case constant.Picture:
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.picture"))
 		case constant.Voice:
@@ -117,6 +120,13 @@ func (h GroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang i18n.
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, content)
 		default:
 			info.Content = i18n.Tr(lang, "msg.push.common.base")
+		}
+	} else {
+		if msg.ContentType == constant.AtText {
+			info.Content = i18n.TrWithData(lang, "msg.push.common.at", map[string]interface{}{
+				"name":  msg.SenderNickname,
+				"place": i18n.Tr(lang, "msg.push.common.group"),
+			})
 		}
 	}
 	return info, nil
@@ -147,7 +157,10 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang
 		case constant.AtText:
 			t := apistruct.AtElem{}
 			utils.JsonStringToStruct(string(msg.Content), &t)
-			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text)
+			info.Content = i18n.TrWithData(lang, "msg.push.common.atWithContent", map[string]interface{}{
+				"content": fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text),
+			})
+			//info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, t.Text)
 		case constant.Picture:
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, i18n.Tr(lang, "msg.push.common.picture"))
 		case constant.Voice:
@@ -169,6 +182,13 @@ func (h ServerGroupMsgHandler) Msg(ctx context.Context, msg *sdkws.MsgData, lang
 			info.Content = fmt.Sprintf("%s:%s", msg.SenderNickname, content)
 		default:
 			info.Content = i18n.Tr(lang, "msg.push.common.base")
+		}
+	} else {
+		if msg.ContentType == constant.AtText {
+			info.Content = i18n.TrWithData(lang, "msg.push.common.at", map[string]interface{}{
+				"name":  msg.SenderNickname,
+				"place": i18n.Tr(lang, "msg.push.common.channel"),
+			})
 		}
 	}
 	return info, nil
