@@ -307,12 +307,12 @@ func (c *clubServer) KickServerMember(ctx context.Context, req *pbclub.KickServe
 	c.SendDeleteClubServerUserEvent(ctx, req.ServerID, req.KickedUserIDs)
 
 	//todo 发送notification
-	tips := &sdkws.ServerMemberQuitTips{
+	tips := &sdkws.ServerMemberKickedTips{
 		ServerID:         req.ServerID,
 		OperationTime:    time.Now().UnixMilli(),
 		MemberUserIDList: req.KickedUserIDs,
 	}
-	c.Notification.ServerMemberQuitNotification(ctx, tips)
+	c.Notification.ServerMemberKickedNotification(ctx, tips)
 
 	// if err := c.deleteMemberAndSetConversationSeq(ctx, req.ServerID, req.KickedUserIDs); err != nil {
 	// 	return nil, err
