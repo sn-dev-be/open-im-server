@@ -18,12 +18,10 @@ func (m *msgServer) SendSignalMsg(
 	ctx context.Context,
 	req *pbmsg.SendSignalMsgReq,
 ) (resp *pbmsg.SendSignalMsgResp, error error) {
-	if req.SignalData != nil {
-		signal := req.SignalData
-		return m.handleVoiceSignal(ctx, signal)
-	} else {
+	if req.SignalData == nil {
 		return nil, errs.ErrArgs.Wrap("signalData is nil")
 	}
+	return m.handleVoiceSignal(ctx, req.SignalData)
 }
 
 func (m *msgServer) handleVoiceSignal(
@@ -31,8 +29,7 @@ func (m *msgServer) handleVoiceSignal(
 	signalMsg *sdkws.SignalData,
 ) (*pbmsg.SendSignalMsgResp, error) {
 	req := sdkws.SignalVoiceReq{}
-	err := utils.JsonStringToStruct(string(signalMsg.Content), &req)
-	if err != nil {
+	if err := utils.JsonStringToStruct(string(signalMsg.Content), &req); err != nil {
 		return nil, errs.ErrArgs.Wrap("signalVoiceReq format err")
 	}
 	if signalMsg.SignalType != constant.SignalingInviation {
@@ -69,6 +66,14 @@ func (m *msgServer) invitationNotification(
 	ctx context.Context,
 	req *sdkws.SignalVoiceReq,
 ) (*pbmsg.SendSignalMsgResp, error) {
+	inviteUser, err := m.User.GetUserInfo(ctx, req.InviteUserID)
+	if err != nil {
+		return nil, err
+	}
+	if inviteUser.AllowStrangerMsg == constant.NewMsgPushSettingAllowed {
+		return nil, ierrs.ErrMsgBeBlocked.Wrap()
+	}
+
 	if exists, err := m.MsgDatabase.GetGlobalVoiceChannelUserExists(ctx, req.InviteUserID); err == nil && exists {
 		return nil, ierrs.ErrVoiceAlreadyInvitation
 	}
