@@ -436,7 +436,7 @@ func (c *ClubNotificationSender) ServerGroupCreatedNotification(ctx context.Cont
 			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
 		}
 	}()
-	if err := c.fillOpUser(ctx, &tips.OpUser, tips.Group.GroupID); err != nil {
+	if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
 		return err
 	}
 	return c.Notification(ctx, mcontext.GetOpUserID(ctx), tips.Group.GroupID, constant.ServerGroupCreatedNotification, tips)
@@ -449,7 +449,7 @@ func (c *ClubNotificationSender) ServerGroupDismissNotification(ctx context.Cont
 			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
 		}
 	}()
-	if err := c.fillOpUser(ctx, &tips.OpUser, tips.GroupID); err != nil {
+	if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
 		return err
 	}
 	return c.Notification(ctx, mcontext.GetOpUserID(ctx), tips.GroupID, constant.ServerGroupDismissNotification, tips)

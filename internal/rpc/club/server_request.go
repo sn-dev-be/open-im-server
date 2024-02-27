@@ -28,11 +28,19 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 		return nil, errs.ErrNoPermission
 	}
 
+	user, err := c.User.GetPublicUserInfo(ctx, req.FromUserID)
+	if err != nil {
+		return nil, err
+	}
+
 	serverRequest, err := c.ClubDatabase.TakeServerRequest(ctx, req.ServerID, req.FromUserID)
 	if err != nil {
 		return nil, err
 	}
 	if serverRequest.HandleResult != 0 {
+		if err := c.modifyServerApplicationStatus(ctx, req, user, serverRequest); err != nil {
+			return nil, err
+		}
 		return nil, errs.ErrGroupRequestHandled.Wrap("server request already processed")
 	}
 	var inServer bool
@@ -41,10 +49,7 @@ func (c *clubServer) ServerApplicationResponse(ctx context.Context, req *pbclub.
 	} else if !c.IsNotFound(err) {
 		return nil, err
 	}
-	user, err := c.User.GetPublicUserInfo(ctx, req.FromUserID)
-	if err != nil {
-		return nil, err
-	}
+
 	serverRole, err := c.getServerRoleByPriority(ctx, req.ServerID, constant.ServerOrdinaryUsers)
 	if err != nil {
 		return nil, errs.ErrRecordNotFound.Wrap("server role is not exists")
@@ -260,7 +265,7 @@ func (c *clubServer) modifyServerApplicationStatus(
 	}
 	modifyReq := pbmsg.ModifyMsgReq{
 		ConversationID: req.ConversationID,
-		Seq:            req.Seq,
+		Seqs:           req.Seqs,
 		UserID:         user.UserID,
 		ModifyType:     constant.MsgModifyServerRequestStatus,
 		Content:        utils.StructToJsonString(&tips),

@@ -539,7 +539,7 @@ serverMemberInfoSet:
     ext: "serverMemberInfoSet ext"
   
 serverGroupCreated:
-  isSendMsg: true
+  isSendMsg: false
   reliabilityLevel: 1
   unreadCount: false
   offlinePush:

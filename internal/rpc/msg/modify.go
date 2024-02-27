@@ -38,53 +38,56 @@ func (m *msgServer) ModifyMsg(ctx context.Context, req *msgv3.ModifyMsgReq) (*ms
 	if req.ConversationID == "" {
 		return nil, errs.ErrArgs.Wrap("conversation_id is empty")
 	}
-	if req.Seq < 0 {
+	if len(req.Seqs) == 0 {
 		return nil, errs.ErrArgs.Wrap("seq is invalid")
 	}
-	_, _, msgs, err := m.MsgDatabase.GetMsgBySeqs(ctx, req.UserID, req.ConversationID, []int64{req.Seq})
-	if err != nil {
-		return nil, err
-	}
-	if len(msgs) == 0 || msgs[0] == nil {
-		return nil, errs.ErrRecordNotFound.Wrap("msg not found")
-	}
-	data, _ := json.Marshal(msgs[0])
-	log.ZInfo(ctx, "GetMsgBySeqs", "conversationID", req.ConversationID, "seq", req.Seq, "msg", string(data))
-	msg := msgs[0]
 
-	notificationElem := sdkws.NotificationElem{Detail: req.Content}
-	modifyMsg := utils.StructToJsonString(&notificationElem)
-	err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, req.Seq, modifyMsg)
-	if err != nil {
-		return nil, err
-	}
+	for _, seq := range req.Seqs {
+		_, _, msgs, err := m.MsgDatabase.GetMsgBySeqs(ctx, req.UserID, req.ConversationID, []int64{seq})
+		if err != nil {
+			return nil, err
+		}
+		if len(msgs) == 0 || msgs[0] == nil {
+			return nil, errs.ErrRecordNotFound.Wrap("msg not found")
+		}
+		data, _ := json.Marshal(msgs[0])
+		log.ZInfo(ctx, "GetMsgBySeqs", "conversationID", req.ConversationID, "seq", seq, "msg", string(data))
+		msg := msgs[0]
 
-	tips := &sdkws.ModifyMessageTips{
-		ClientMsgID:    msg.ClientMsgID,
-		Seq:            msg.Seq,
-		ConversationID: req.ConversationID,
-		OpUser:         mcontext.GetOpUserID(ctx),
-		ModifyTime:     time.Now().UnixMilli(),
-		Content:        req.Content,
-		ModifyType:     req.ModifyType,
-	}
+		notificationElem := sdkws.NotificationElem{Detail: req.Content}
+		modifyMsg := utils.StructToJsonString(&notificationElem)
+		err = m.MsgDatabase.ModifyMsgBySeq(ctx, req.ConversationID, seq, modifyMsg)
+		if err != nil {
+			return nil, err
+		}
 
-	var recvID string
-	if msg.SessionType == constant.SuperGroupChatType {
-		recvID = msg.GroupID
-	} else {
-		recvID = msg.RecvID
-	}
-	if err := m.notificationSender.NotificationWithSesstionType(
-		ctx,
-		req.UserID,
-		recvID,
-		constant.ModifyMessageNotification,
-		msg.SessionType,
-		tips,
-		rpcclient.WithRpcGetUserName(),
-	); err != nil {
-		return nil, err
+		tips := &sdkws.ModifyMessageTips{
+			ClientMsgID:    msg.ClientMsgID,
+			Seq:            msg.Seq,
+			ConversationID: req.ConversationID,
+			OpUser:         mcontext.GetOpUserID(ctx),
+			ModifyTime:     time.Now().UnixMilli(),
+			Content:        req.Content,
+			ModifyType:     req.ModifyType,
+		}
+
+		var recvID string
+		if msg.SessionType == constant.SuperGroupChatType {
+			recvID = msg.GroupID
+		} else {
+			recvID = msg.RecvID
+		}
+		if err := m.notificationSender.NotificationWithSesstionType(
+			ctx,
+			req.UserID,
+			recvID,
+			constant.ModifyMessageNotification,
+			msg.SessionType,
+			tips,
+			rpcclient.WithRpcGetUserName(),
+		); err != nil {
+			return nil, err
+		}
 	}
 	return &msgv3.ModifyMsgResp{}, nil
 }

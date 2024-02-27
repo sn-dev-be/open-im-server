@@ -27,6 +27,7 @@ import (
 	"github.com/OpenIMSDK/tools/log"
 	"github.com/OpenIMSDK/tools/mcontext"
 	"github.com/OpenIMSDK/tools/utils"
+	localUtil "github.com/openimsdk/open-im-server/v3/pkg/common/utils"
 
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/controller"
 	"github.com/openimsdk/open-im-server/v3/pkg/common/db/table/relation"
@@ -467,7 +468,15 @@ func (g *GroupNotificationSender) MemberKickedNotification(ctx context.Context, 
 	if err := g.fillOpUser(ctx, &tips.OpUser, tips.Group.GroupID); err != nil {
 		return err
 	}
-	return g.Notification(ctx, mcontext.GetOpUserID(ctx), tips.Group.GroupID, constant.MemberKickedNotification, tips)
+
+	adminUserIDs, err := g.db.FindGroupAdminUserID(ctx, tips.Group.GroupID)
+	if err != nil {
+		return err
+	}
+	kickedUserIDs := utils.Slice(tips.KickedUserList, func(e *sdkws.GroupMemberFullInfo) string { return e.UserID })
+	allUserIDs := localUtil.Union(adminUserIDs, kickedUserIDs)
+	notificationOptions := []rpcclient.NotificationOptions{rpcclient.WithDesignateUserID(allUserIDs...)}
+	return g.Notification(ctx, mcontext.GetOpUserID(ctx), tips.Group.GroupID, constant.MemberKickedNotification, tips, notificationOptions...)
 }
 
 func (g *GroupNotificationSender) MemberInvitedNotification(ctx context.Context, groupID, reason string, invitedUserIDList []string) (err error) {

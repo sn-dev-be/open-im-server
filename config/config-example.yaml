@@ -303,6 +303,9 @@ tokenPolicy:
 voiceCallPolicy:
   expire: 90
 
+### single friend
+#
+# add oneway friend when send friend apply
 singleFriend: true
 
 # Message verification policy
