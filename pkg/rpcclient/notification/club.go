@@ -295,9 +295,9 @@ func (c *ClubNotificationSender) ServerDismissNotification(ctx context.Context, 
 			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
 		}
 	}()
-	if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
-		return err
-	}
+	// if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
+	// 	return err
+	// }
 
 	// if tips.ServerGroupList != nil && len(tips.ServerGroupList) > 0 {
 	// 	groupIDs := utils.Slice(tips.ServerGroupList, func(g *sdkws.GroupInfo) string { return g.GroupID })
@@ -449,8 +449,11 @@ func (c *ClubNotificationSender) ServerGroupDismissNotification(ctx context.Cont
 			log.ZError(ctx, utils.GetFuncName(1)+" failed", err)
 		}
 	}()
-	if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
-		return err
+	// if err := c.fillOpUser(ctx, &tips.OpUser, tips.ServerID); err != nil {
+	// 	return err
+	// }
+	for _, userID := range tips.MemberUserIDList {
+		c.Notification(ctx, mcontext.GetOpUserID(ctx), userID, constant.ServerGroupDismissNotification, tips)
 	}
-	return c.Notification(ctx, mcontext.GetOpUserID(ctx), tips.GroupID, constant.ServerGroupDismissNotification, tips)
+	return nil
 }

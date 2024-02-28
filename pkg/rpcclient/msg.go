@@ -185,7 +185,7 @@ func newSessionTypeConf() map[int32]int32 {
 		constant.ServerMemberCancelMutedNotification:   constant.SingleChatType,
 		constant.ServerMemberInfoSetNotification:       constant.SingleChatType,
 		constant.ServerGroupCreatedNotification:        constant.ServerGroupChatType,
-		constant.ServerGroupDismissNotification:        constant.ServerGroupChatType,
+		constant.ServerGroupDismissNotification:        constant.SingleChatType,
 		// signal
 		constant.SignalingSingleChatClosedNotification:   constant.SingleChatType,
 		constant.SignalingClosedNotification:             constant.SingleChatType,

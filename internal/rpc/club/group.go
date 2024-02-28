@@ -207,10 +207,16 @@ func (c *clubServer) DeleteServerGroup(ctx context.Context, req *pbclub.DeleteSe
 		return nil, err
 	}
 
+	memberUserIDs, err := c.ClubDatabase.FindServerMemberUserID(ctx, req.ServerID)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, groupID := range req.GroupIDs {
 		tips := &sdkws.ServerGroupDismissTips{
-			ServerID: req.ServerID,
-			GroupID:  groupID,
+			ServerID:         req.ServerID,
+			GroupID:          groupID,
+			MemberUserIDList: memberUserIDs,
 		}
 		err := c.Notification.ServerGroupDismissNotification(ctx, tips)
 		if err != nil {

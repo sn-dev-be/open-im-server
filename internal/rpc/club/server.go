@@ -247,8 +247,7 @@ func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServe
 			return nil, errs.ErrNoPermission.Wrap("not group owner")
 		}
 	}
-
-	members, err := s.ClubDatabase.FindServerMember(ctx, []string{req.ServerID}, nil, nil)
+	memberUserIDs, err := s.ClubDatabase.FindServerMemberUserID(ctx, req.ServerID)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +261,7 @@ func (s *clubServer) DismissServer(ctx context.Context, req *pbclub.DismissServe
 	tips := &sdkws.ServerDissmissedTips{
 		ServerID:         req.ServerID,
 		OperationTime:    time.Now().UnixMilli(),
-		MemberUserIDList: utils.Slice(members, func(m *relationtb.ServerMemberModel) string { return m.UserID }),
+		MemberUserIDList: memberUserIDs,
 	}
 	s.Notification.ServerDismissNotification(ctx, tips)
 	return resp, nil
