@@ -37,3 +37,17 @@ err:
 notification:
   friendApplicationApproved:
     desc: "{{ .Name }}将你添加为好友～ 点击查看>"
+
+clubNotice: "部落通知"
+serverApplicationRejected: "你的部落申请被拒绝了"
+serverApplicationAccepted: "你的部落申请被通过了"
+serverApplication: "收到一条部落申请"
+systemNotice: "系统消息"
+friendApplication: "收到一条好友申请"
+friendApplicationApproved: "通过了你的好友申请"
+
+
+
+
+
+

@@ -32,3 +32,11 @@ err:
 notification:
   friendApplicationApproved:
     desc: "{{ .Name }} added you as a friend~ Click to view>"
+  
+clubNotice:
+serverApplicationRejected:
+serverApplicationAccepted:
+serverApplication:
+systemNotice:
+friendApplication:
+friendApplicationApproved:

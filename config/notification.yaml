@@ -209,8 +209,8 @@ friendApplicationAdded:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "系统消息"
-    desc: "收到一条好友申请"
+    title: "systemNotice"
+    desc: "friendApplication"
     ext: ""
 
 friendApplicationApproved:
@@ -220,7 +220,7 @@ friendApplicationApproved:
   offlinePush:
     enable: false
     title: ""
-    desc: "通过了你的好友申请"
+    desc: "friendApplicationApproved"
     ext: ""
 
 friendApplicationRejected:
@@ -424,8 +424,8 @@ joinServerApplication:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "部落通知"
-    desc: "收到一条部落申请"
+    title: "clubNotice"
+    desc: "serverApplication"
     ext: ""
 
 serverApplicationAccepted:
@@ -434,8 +434,8 @@ serverApplicationAccepted:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "部落通知"
-    desc: "你的部落申请被通过了"
+    title: "clubNotice"
+    desc: "serverApplicationAccepted"
     ext: ""
 
 serverApplicationRejected:
@@ -444,8 +444,8 @@ serverApplicationRejected:
   unreadCount: false
   offlinePush:
     enable: true
-    title: "部落通知"
-    desc: "你的部落申请被拒绝了"
+    title: "clubNotice"
+    desc: "serverApplicationRejected"
     ext: ""
 
 serverCreated:

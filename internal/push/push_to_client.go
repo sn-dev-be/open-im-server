@@ -433,7 +433,6 @@ func (p *Pusher) GetConnsAndOnlinePush(ctx context.Context, msg *sdkws.MsgData, 
 }
 
 func (p *Pusher) offlinePushMsg(ctx context.Context, conversationID string, msg *sdkws.MsgData, offlinePushUserIDs []string) error {
-
 	for _, userID := range offlinePushUserIDs {
 		p.offlinePushMsgToUser(ctx, conversationID, msg, userID)
 	}
@@ -532,10 +531,10 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID, userID
 	if userPushSetting.Language != "" {
 		language = userPushSetting.Language
 	}
+	lang := i18n.Language(language)
 
 	if title == "" {
 		var offlineMsg *offlineinfo.OfflineMsg
-		lang := i18n.Language(language)
 		offlineMsg, err = p.offlineInfoParse.GetOfflineInfo(ctx, msg, userPushSetting.AllowPushContent, lang)
 		if err != nil {
 			log.ZError(ctx, "getOfflineInfo failed", err, "contentType", msg.ContentType)
@@ -543,6 +542,9 @@ func (p *Pusher) getOfflinePushInfos(ctx context.Context, conversationID, userID
 		}
 		title = offlineMsg.Title
 		content = offlineMsg.Content
+	} else {
+		title = i18n.Tr(lang, title)
+		content = i18n.Tr(lang, content)
 	}
 	return
 }
