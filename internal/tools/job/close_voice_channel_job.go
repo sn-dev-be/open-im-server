@@ -83,7 +83,7 @@ func (c *CloseVocieChannelJob) Run() {
 
 		if c.SessionType == constant.SingleChatType && userID != c.OpUserID {
 			tips := &sdkws.SignalVoiceSingleChatTips{
-				ElapsedSec: int32(elapsedSec),
+				ElapsedSec: int32(elapsedSec + 1),
 				OpUserID:   c.OpUserID,
 			}
 			contentType := constant.SignalingSingleChatClosedNotification
