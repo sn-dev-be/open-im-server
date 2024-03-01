@@ -91,3 +91,19 @@ func (m *msgServer) ModifyMsg(ctx context.Context, req *msgv3.ModifyMsgReq) (*ms
 	}
 	return &msgv3.ModifyMsgResp{}, nil
 }
+
+// GetMsgBySeqs implements msg.MsgServer.
+func (m *msgServer) GetMsgBySeqs(ctx context.Context, req *msgv3.GetMsgBySeqsReq) (resp *msgv3.GetMsgBySeqsResp, err error) {
+	if req.UserID == "" || req.ConversationID == "" || len(req.Seqs) == 0 {
+		return nil, errs.ErrArgs.Wrap("user_id or conversation_id or seq is invalid")
+	}
+	_, _, msgs, err := m.MsgDatabase.GetMsgBySeqs(ctx, req.UserID, req.ConversationID, req.Seqs)
+	if err != nil {
+		return nil, err
+	}
+	if len(msgs) == 0 {
+		return nil, errs.ErrRecordNotFound.Wrap("msg not found")
+	}
+	resp.Msgs = msgs
+	return resp, nil
+}

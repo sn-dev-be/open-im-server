@@ -247,6 +247,11 @@ func (m *MessageRpcClient) ModifyMsg(ctx context.Context, req *msg.ModifyMsgReq)
 	return resp, err
 }
 
+func (m *MessageRpcClient) GetMsgBySeqs(ctx context.Context, req *msg.GetMsgBySeqsReq) (*msg.GetMsgBySeqsResp, error) {
+	resp, err := m.Client.GetMsgBySeqs(ctx, req)
+	return resp, err
+}
+
 type NotificationSender struct {
 	contentTypeConf map[int32]config.NotificationConf
 	sessionTypeConf map[int32]int32
