@@ -2,7 +2,6 @@ package club
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -254,38 +253,44 @@ func (c *clubServer) modifyServerApplicationStatus(
 	user *sdkws.PublicUserInfo,
 	serverRequest *relationtb.ServerRequestModel,
 ) error {
-	server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
-	if err != nil {
-		return err
-	}
+	// server, err := c.ClubDatabase.TakeServer(ctx, req.ServerID)
+	// if err != nil {
+	// 	return err
+	// }
 
 	if msgResp, err := c.msgRpcClient.GetMsgBySeqs(ctx, &pbmsg.GetMsgBySeqsReq{UserID: user.UserID, ConversationID: req.ConversationID, Seqs: req.Seqs}); err != nil {
 		return err
 	} else {
 		for _, msg := range msgResp.Msgs {
-			var detail sdkws.JoinServerApplicationTips
-			if err := json.Unmarshal(msg.Content, &detail); err != nil {
+			var notificationElem sdkws.NotificationElem
+			err := utils.JsonStringToStruct(string(msg.Content), &notificationElem)
+			if err != nil {
 				return err
 			}
-			tips := &sdkws.JoinServerApplicationTips{
-				Server:       convert.DB2PbServerInfo(server),
-				Applicant:    user,
-				ReqMsg:       detail.ReqMsg,
-				HandleResult: req.HandleResult,
+			var detail sdkws.JoinServerApplicationTips
+
+			if err := utils.JsonStringToStruct(notificationElem.Detail, &detail); err != nil {
+				return err
 			}
+			// tips := &sdkws.JoinServerApplicationTips{
+			// 	Server:       convert.DB2PbServerInfo(server),
+			// 	Applicant:    user,
+			// 	ReqMsg:       detail.ReqMsg,
+			// 	HandleResult: req.HandleResult,
+			// }
+			detail.HandleResult = req.HandleResult
 			modifyReq := pbmsg.ModifyMsgReq{
 				ConversationID: req.ConversationID,
 				Seqs:           []int64{msg.Seq},
 				UserID:         user.UserID,
 				ModifyType:     constant.MsgModifyServerRequestStatus,
-				Content:        utils.StructToJsonString(&tips),
+				Content:        utils.StructToJsonString(&detail),
 			}
 			_, err = c.msgRpcClient.ModifyMsg(ctx, &modifyReq)
 			if err != nil {
 				return err
 			}
 		}
-
 	}
 
 	return nil

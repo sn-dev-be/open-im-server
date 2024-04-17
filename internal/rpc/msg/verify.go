@@ -86,7 +86,7 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			}
 		}
 		return nil
-	case constant.SuperGroupChatType, constant.ServerGroupChatType:
+	case constant.SuperGroupChatType:
 		groupInfo, err := m.Group.GetGroupInfoCache(ctx, data.MsgData.GroupID)
 		if err != nil {
 			return err
@@ -130,6 +130,63 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 				return errs.ErrMutedInGroup.Wrap()
 			}
 			if groupInfo.Status == constant.GroupStatusMuted && groupMemberInfo.RoleLevel != constant.GroupAdmin {
+				return errs.ErrMutedGroup.Wrap()
+			}
+		}
+		return nil
+	case constant.ServerGroupChatType:
+		groupInfo, err := m.Group.GetGroupInfoCache(ctx, data.MsgData.GroupID)
+		if err != nil {
+			return err
+		}
+		if groupInfo.GroupType != constant.ServerGroup {
+			return errs.ErrGroupTypeNotSupport
+		}
+		if groupInfo.ServerID == "" {
+			return errs.ErrGroupTypeNotSupport
+		}
+
+		serverID := groupInfo.ServerID
+		serverResp, err := m.Club.GetServersInfo(ctx, []string{serverID})
+		if err != nil {
+			return err
+		}
+		if len(serverResp.Servers) == 0 {
+			return errs.ErrRecordNotFound
+		}
+		server := serverResp.Servers[0].Server
+		if server.Status == constant.ServerStatusMuted || groupInfo.Status == constant.GroupStatusMuted {
+			return errs.ErrMutedGroup.Wrap()
+		}
+		if utils.IsContain(data.MsgData.SendID, config.Config.Manager.UserID) {
+			return nil
+		}
+		if data.MsgData.ContentType <= constant.NotificationEnd &&
+			data.MsgData.ContentType >= constant.NotificationBegin {
+			return nil
+		}
+		// memberIDs, err := m.GroupLocalCache.GetGroupMemberIDs(ctx, data.MsgData.GroupID)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !utils.IsContain(data.MsgData.SendID, memberIDs) {
+		// 	return errs.ErrNotInGroupYet.Wrap()
+		// }
+
+		serverMemberInfo, err := m.Club.GetServerMemberInfo(ctx, serverID, data.MsgData.SendID)
+		if err != nil {
+			if err == errs.ErrRecordNotFound {
+				return errs.ErrNotInGroupYet.Wrap(err.Error())
+			}
+			return err
+		}
+		if serverMemberInfo.RoleLevel == constant.ServerOwner {
+			return nil
+		} else {
+			if serverMemberInfo.MuteEndTime >= time.Now().UnixMilli() {
+				return errs.ErrMutedInGroup.Wrap()
+			}
+			if serverMemberInfo.RoleLevel != constant.ServerAdmin {
 				return errs.ErrMutedGroup.Wrap()
 			}
 		}

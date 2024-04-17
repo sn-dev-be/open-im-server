@@ -37,6 +37,7 @@ type (
 		RegisterCenter         discoveryregistry.SvcDiscoveryRegistry
 		MsgDatabase            controller.CommonMsgDatabase
 		Group                  *rpcclient.GroupRpcClient
+		Club                   *rpcclient.ClubRpcClient
 		User                   *rpcclient.UserRpcClient
 		Conversation           *rpcclient.ConversationRpcClient
 		friend                 *rpcclient.FriendRpcClient
@@ -81,12 +82,14 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 	userRpcClient := rpcclient.NewUserRpcClient(client)
 	groupRpcClient := rpcclient.NewGroupRpcClient(client)
 	friendRpcClient := rpcclient.NewFriendRpcClient(client)
+	clubRpcClient := rpcclient.NewClubRpcClient(client)
 	cronClient := rpcclient.NewCronRpcClient(client)
 	msgDatabase := controller.NewCommonMsgDatabase(msgDocModel, cacheModel)
 	s := &msgServer{
 		Conversation:           &conversationClient,
 		User:                   &userRpcClient,
 		Group:                  &groupRpcClient,
+		Club:                   &clubRpcClient,
 		MsgDatabase:            msgDatabase,
 		RegisterCenter:         client,
 		GroupLocalCache:        localcache.NewGroupLocalCache(&groupRpcClient),

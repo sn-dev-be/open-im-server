@@ -104,6 +104,5 @@ func (m *msgServer) GetMsgBySeqs(ctx context.Context, req *msgv3.GetMsgBySeqsReq
 	if len(msgs) == 0 {
 		return nil, errs.ErrRecordNotFound.Wrap("msg not found")
 	}
-	resp.Msgs = msgs
-	return resp, nil
+	return &msgv3.GetMsgBySeqsResp{Msgs: msgs}, nil
 }

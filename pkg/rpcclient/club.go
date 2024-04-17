@@ -167,3 +167,13 @@ func (c *ClubRpcClient) GetServerGroups(ctx context.Context, serverIDs []string)
 	}
 	return resp, nil
 }
+
+func (c *ClubRpcClient) GetServersInfo(ctx context.Context, serverIDs []string) (*club.GetServersInfoResp, error) {
+	resp, err := c.Client.GetServersInfo(ctx, &club.GetServersInfoReq{
+		ServerIDs: serverIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

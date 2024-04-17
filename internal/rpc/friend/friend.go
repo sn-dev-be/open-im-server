@@ -181,7 +181,24 @@ func (s *friendServer) RespondFriendApply(
 		if err != nil {
 			return nil, err
 		}
+		fromUser, err := s.userRpcClient.GetPublicUserInfo(ctx, friendRequest.FromUserID)
+		if err != nil {
+			return nil, err
+		}
 		s.notificationSender.FriendApplicationAgreedNotification(ctx, req)
+		createUserRelationEvent := &common.BusinessMQEvent{
+			Event: utils.StructToJsonString(&common.CommonBusinessMQEvent{
+				UserRelation: &common.UserRelation{
+					UserId:       req.ToUserID,
+					TargetUserId: req.FromUserID,
+					Remark:       fromUser.Nickname,
+				},
+				EventType: constant.UserRelationMQEventType,
+			}),
+		}
+		s.msgRpcClient.Client.SendBusinessEventToMQ(ctx, &msg.SendBusinessEventToMQReq{
+			Events: []*common.BusinessMQEvent{createUserRelationEvent},
+		})
 		return resp, nil
 	}
 	if req.HandleResult == constant.FriendResponseRefuse {
