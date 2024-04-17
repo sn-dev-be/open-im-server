@@ -53,6 +53,7 @@ func Start(client discoveryregistry.SvcDiscoveryRegistry, server *grpc.Server) e
 		&relationtb.ServerMemberModel{},
 		&relationtb.ServerRecommendedModel{},
 		&relationtb.MuteRecordModel{},
+		&relationtb.GroupTreasuryModel{},
 	); err != nil {
 		return err
 	}

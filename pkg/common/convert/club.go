@@ -183,3 +183,15 @@ func Db2PbServerRole(m *relation.ServerRoleModel) *sdkws.ServerRole {
 		Permissions: m.Permissions.String(),
 	}
 }
+
+func Db2PbGroupTreasury(m *relation.GroupTreasuryModel) *sdkws.GroupTreasuryInfo {
+	return &sdkws.GroupTreasuryInfo{
+		GroupID:              m.GroupID,
+		TreasuryID:           m.TreasuryID,
+		Name:                 m.Name,
+		Icon:                 m.Icon,
+		ContractAddress:      m.ContractAddress,
+		WalletType:           m.WalletType,
+		AdministratorAddress: m.AdministratorAddress,
+	}
+}

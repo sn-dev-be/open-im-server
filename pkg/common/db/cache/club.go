@@ -41,6 +41,7 @@ const (
 	serverBlackInfoKey   = "SERVER_BLACK_INFO:"
 	serverRoleIDsKey     = "SERVER_ROLE_IDS:"
 	serverRoleInfoKey    = "SERVER_ROLE_INFO:"
+	groupTreasuryKey     = "GROUP_TREASURY:"
 )
 
 type ClubCache interface {
@@ -93,6 +94,10 @@ type ClubCache interface {
 	GetServerRoleInfo(ctx context.Context, roleID string) (serverRole *relationtb.ServerRoleModel, err error)
 	GetServerRolesInfo(ctx context.Context, roleIDs []string) (serverRoles []*relationtb.ServerRoleModel, err error)
 	DelServerRolesInfo(roleID ...string) ClubCache
+
+	GetGroupTreasuryInfo(ctx context.Context, groupID string) (treasury *relationtb.GroupTreasuryModel, err error)
+	GetGroupTreasuriesInfo(ctx context.Context, groupIDs []string) (treasuries []*relationtb.GroupTreasuryModel, err error)
+	DelGroupTreasuryInfo(groupID string) ClubCache
 }
 
 type ClubCacheRedis struct {
@@ -105,9 +110,11 @@ type ClubCacheRedis struct {
 	serverRequestDB relationtb.ServerRequestModelInterface
 	serverBlackDB   relationtb.ServerBlackModelInterface
 	serverRoleDB    relationtb.ServerRoleModelInterface
-	expireTime      time.Duration
-	rcClient        *rockscache.Client
-	hashCode        func(ctx context.Context, serverID string) (uint64, error)
+	groupTreasuryDB relationtb.GroupTreasuryModelInterface
+
+	expireTime time.Duration
+	rcClient   *rockscache.Client
+	hashCode   func(ctx context.Context, serverID string) (uint64, error)
 }
 
 func NewClubCacheRedis(
@@ -120,6 +127,8 @@ func NewClubCacheRedis(
 	serverRequestDB relationtb.ServerRequestModelInterface,
 	serverBlackDB relationtb.ServerBlackModelInterface,
 	serverRoleDB relationtb.ServerRoleModelInterface,
+	groupTreasuryDB relationtb.GroupTreasuryModelInterface,
+
 	hashCode func(ctx context.Context, serverID string) (uint64, error),
 	opts rockscache.Options,
 ) ClubCache {
@@ -136,6 +145,7 @@ func NewClubCacheRedis(
 		serverRequestDB: serverRequestDB,
 		serverBlackDB:   serverBlackDB,
 		serverRoleDB:    serverRoleDB,
+		groupTreasuryDB: groupTreasuryDB,
 		hashCode:        hashCode,
 		metaCache:       NewMetaCacheRedis(rcClient),
 	}
@@ -149,6 +159,7 @@ func (c *ClubCacheRedis) NewCache() ClubCache {
 		serverMemberDB:  c.serverMemberDB,
 		serverRequestDB: c.serverRequestDB,
 		serverBlackDB:   c.serverBlackDB,
+		groupTreasuryDB: c.groupTreasuryDB,
 		metaCache:       NewMetaCacheRedis(c.rcClient, c.metaCache.GetPreDelKeys()...),
 	}
 }
@@ -203,6 +214,10 @@ func (c *ClubCacheRedis) getServerRoleIDsKey(serverID string) string {
 
 func (c *ClubCacheRedis) getServerRoleInfoKey(roleID string) string {
 	return serverRoleInfoKey + "-" + roleID
+}
+
+func (c *ClubCacheRedis) getGroupTreasuryInfoKey(serverID string) string {
+	return groupTreasuryKey + "-" + serverID
 }
 
 func (c *ClubCacheRedis) GetServerIndex(server *relationtb.ServerModel, keys []string) (int, error) {
@@ -548,4 +563,24 @@ func (c *ClubCacheRedis) GetServerRolesInfo(ctx context.Context, roleIDs []strin
 	}, func(ctx context.Context, roleID string) (*relationtb.ServerRoleModel, error) {
 		return c.serverRoleDB.Take(ctx, roleID)
 	})
+}
+
+// server_treasury
+func (c *ClubCacheRedis) GetGroupTreasuryInfo(ctx context.Context, groupID string) (treasury *relationtb.GroupTreasuryModel, err error) {
+	return getCache(ctx, c.rcClient, c.getGroupTreasuryInfoKey(groupID), c.expireTime, func(ctx context.Context) (*relationtb.GroupTreasuryModel, error) {
+		return c.groupTreasuryDB.Take(ctx, groupID)
+	})
+}
+func (c *ClubCacheRedis) GetGroupTreasuriesInfo(ctx context.Context, groupIDs []string) (treasuries []*relationtb.GroupTreasuryModel, err error) {
+	return batchGetCache2(ctx, c.rcClient, c.expireTime, groupIDs, func(groupID string) string {
+		return c.getGroupTreasuryInfoKey(groupID)
+	}, func(ctx context.Context, groupID string) (*relationtb.GroupTreasuryModel, error) {
+		return c.groupTreasuryDB.Take(ctx, groupID)
+	})
+}
+func (c *ClubCacheRedis) DelGroupTreasuryInfo(groupID string) ClubCache {
+	cache := c.NewCache()
+	cache.AddKeys(c.getGroupTreasuryInfoKey(groupID))
+
+	return cache
 }

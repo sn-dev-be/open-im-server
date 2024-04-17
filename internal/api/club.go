@@ -209,3 +209,12 @@ func (o *ClubApi) GetServerRoleList(c *gin.Context) {
 func (o *ClubApi) GetServerRolesInfo(c *gin.Context) {
 	a2r.Call(club.ClubClient.GetServerRolesInfo, o.Client, c)
 }
+
+// server_treasure
+func (o *ClubApi) GetGroupTreasure(c *gin.Context) {
+	a2r.Call(club.ClubClient.GetGroupTreasure, o.Client, c)
+}
+
+func (o *ClubApi) SetGroupTreasury(c *gin.Context) {
+	a2r.Call(club.ClubClient.SetGroupTreasure, o.Client, c)
+}

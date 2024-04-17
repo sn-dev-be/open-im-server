@@ -141,3 +141,26 @@ func UpdateGroupStatusMap(status int) map[string]any {
 		"status": status,
 	}
 }
+
+func UpdateGroupTreasuryMap(req *pbclub.SetGroupTreasuryReq) map[string]any {
+	m := make(map[string]any)
+	if req.Info.TreasuryID != "" {
+		m["treasury_id"] = req.Info.TreasuryID
+	}
+	if req.Info.Icon != "" {
+		m["icon"] = req.Info.Icon
+	}
+	if req.Info.Name != "" {
+		m["name"] = req.Info.Name
+	}
+	if req.Info.WalletType != 0 {
+		m["wallet_type"] = req.Info.WalletType
+	}
+	if req.Info.ContractAddress != "" {
+		m["contract_address"] = req.Info.ContractAddress
+	}
+	if req.Info.AdministratorAddress != "" {
+		m["administrator_address"] = req.Info.AdministratorAddress
+	}
+	return m
+}

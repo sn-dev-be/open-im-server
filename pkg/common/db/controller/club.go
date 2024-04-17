@@ -116,6 +116,12 @@ type ClubDatabase interface {
 	// to mq
 	// MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error
 	// MsgToModifyMQ(ctx context.Context, key, conversarionID string, msgs []*sdkws.MsgData) error
+
+	//server_treasury
+	CreateGroupTreasury(ctx context.Context, treasuries []*relationtb.GroupTreasuryModel) error
+	DeleteGroupTreasuryByGroupID(ctx context.Context, groupID string) error
+	FindGroupTreasuryByGroupIDs(ctx context.Context, groupIDs []string) (treasuries []*relationtb.GroupTreasuryModel, err error)
+	UpdateGroupTreasury(ctx context.Context, serverID string, args map[string]interface{}) error
 }
 
 func NewClubDatabase(
@@ -130,6 +136,7 @@ func NewClubDatabase(
 	serverBlack relationtb.ServerBlackModelInterface,
 	groupDapp relationtb.GroupDappModellInterface,
 	muteRecord relationtb.MuteRecordModelInterface,
+	groupTreasuryDB relationtb.GroupTreasuryModelInterface,
 	tx tx.Tx,
 	ctxTx tx.CtxTx,
 	cache cache.ClubCache,
@@ -146,6 +153,7 @@ func NewClubDatabase(
 		groupDB:             group,
 		groupDappDB:         groupDapp,
 		muteRecordDB:        muteRecord,
+		groupTreasuryDB:     groupTreasuryDB,
 
 		tx: tx,
 
@@ -171,6 +179,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 		relation.NewServerBlackDB(db),
 		relation.NewGroupDappDB(db),
 		relation.NewMuteRecordDB(db),
+		relation.NewGroupTreasuryDB(db),
 		tx.NewGorm(db),
 		tx.NewMongo(database.Client()),
 		cache.NewClubCacheRedis(
@@ -183,6 +192,7 @@ func InitClubDatabase(db *gorm.DB, rdb redis.UniversalClient, database *mongo.Da
 			relation.NewServerRequestDB(db),
 			relation.NewServerBlackDB(db),
 			relation.NewServerRoleDB(db),
+			relation.NewGroupTreasuryDB(db),
 			hashCode,
 			rcOptions,
 		),
@@ -201,6 +211,7 @@ type clubDatabase struct {
 	serverBlackDB       relationtb.ServerBlackModelInterface
 	groupDappDB         relationtb.GroupDappModellInterface
 	muteRecordDB        relationtb.MuteRecordModelInterface
+	groupTreasuryDB     relationtb.GroupTreasuryModelInterface
 
 	tx    tx.Tx
 	ctxTx tx.CtxTx
@@ -1095,4 +1106,37 @@ func (c *clubDatabase) deleteBlackIDsCache(ctx context.Context, blacks []*relati
 // ///mute_record
 func (c *clubDatabase) FindServerMuteRecords(ctx context.Context, serverID string, pageNumber, showNumber int32) (mute_records []*relationtb.MuteRecordModel, total int64, err error) {
 	return c.muteRecordDB.FindServerMuteRecords(ctx, serverID, pageNumber, showNumber)
+}
+
+// server_treasury
+func (c *clubDatabase) CreateGroupTreasury(ctx context.Context, treasuries []*relationtb.GroupTreasuryModel) error {
+	return c.tx.Transaction(func(tx any) error {
+		if err := c.groupTreasuryDB.NewTx(tx).Create(ctx, treasuries); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+func (c *clubDatabase) DeleteGroupTreasuryByGroupID(ctx context.Context, groupID string) error {
+	if err := c.groupTreasuryDB.Delete(ctx, groupID); err != nil {
+		return err
+	}
+	return c.deleteGroupTreasuryCache(ctx, []string{groupID})
+}
+func (c *clubDatabase) FindGroupTreasuryByGroupIDs(ctx context.Context, groupIDs []string) (treasuries []*relationtb.GroupTreasuryModel, err error) {
+	return c.cache.GetGroupTreasuriesInfo(ctx, groupIDs)
+}
+func (c *clubDatabase) UpdateGroupTreasury(ctx context.Context, groupID string, args map[string]interface{}) error {
+	if err := c.groupTreasuryDB.UpdateByMap(ctx, groupID, args); err != nil {
+		return err
+	}
+	return c.deleteGroupTreasuryCache(ctx, []string{groupID})
+}
+
+func (c *clubDatabase) deleteGroupTreasuryCache(ctx context.Context, groupIDs []string) (err error) {
+	cache := c.cache.NewCache()
+	for _, groupID := range groupIDs {
+		cache = cache.DelGroupTreasuryInfo(groupID)
+	}
+	return cache.ExecDel(ctx)
 }

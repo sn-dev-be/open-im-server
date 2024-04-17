@@ -274,6 +274,9 @@ func NewGinRouter(discov discoveryregistry.SvcDiscoveryRegistry, rdb redis.Unive
 		clubGroup.POST("/get_recv_server_application_list", c.GetRecvServerApplicationList)
 		clubGroup.POST("/get_user_req_server_application_list", c.GetUserReqServerApplicationList)
 		clubGroup.POST("/get_server_users_req_application_list", c.GetServerUsersReqApplicationList)
+
+		clubGroup.POST("/get_group_treasury", c.GetGroupTreasure)
+		clubGroup.POST("/set_group_treasury", c.SetGroupTreasury)
 	}
 
 	// cron
