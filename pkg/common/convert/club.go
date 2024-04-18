@@ -191,6 +191,7 @@ func Db2PbGroupTreasury(m *relation.GroupTreasuryModel) *sdkws.GroupTreasuryInfo
 		Name:                 m.Name,
 		Icon:                 m.Icon,
 		ContractAddress:      m.ContractAddress,
+		Symbol:               m.Symbol,
 		WalletType:           m.WalletType,
 		AdministratorAddress: m.AdministratorAddress,
 	}

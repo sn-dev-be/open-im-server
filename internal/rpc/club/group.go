@@ -115,47 +115,6 @@ func (c *clubServer) SetServerGroupInfo(ctx context.Context, req *pbclub.SetServ
 		}
 		resp.Dapp = convert.Db2PbGroupDapp(gdm)
 	}
-	// tips := &sdkws.GroupInfoSetTips{
-	// 	Group:    s.groupDB2PB(group, owner.UserID, count),
-	// 	MuteTime: 0,
-	// 	OpUser:   &sdkws.GroupMemberFullInfo{},
-	// }
-	// if opMember != nil {
-	// 	tips.OpUser = s.groupMemberDB2PB(opMember, 0)
-	// }
-	// var num int
-	// if req.GroupInfoForSet.Notification != "" {
-	// 	go func() {
-	// 		nctx := mcontext.NewCtx("@@@" + mcontext.GetOperationID(ctx))
-	// 		conversation := &pbconversation.ConversationReq{
-	// 			ConversationID:   msgprocessor.GetConversationIDBySessionType(constant.SuperGroupChatType, req.GroupInfoForSet.GroupID),
-	// 			ConversationType: constant.SuperGroupChatType,
-	// 			GroupID:          req.GroupInfoForSet.GroupID,
-	// 		}
-	// 		resp, err := s.GetGroupMemberUserIDs(nctx, &pbgroup.GetGroupMemberUserIDsReq{GroupID: req.GroupInfoForSet.GroupID})
-	// 		if err != nil {
-	// 			log.ZWarn(ctx, "GetGroupMemberIDs", err)
-	// 			return
-	// 		}
-	// 		conversation.GroupAtType = &wrapperspb.Int32Value{Value: constant.GroupNotification}
-	// 		if err := s.conversationRpcClient.SetConversations(nctx, resp.UserIDs, conversation); err != nil {
-	// 			log.ZWarn(ctx, "SetConversations", err, resp.UserIDs, conversation)
-	// 		}
-	// 	}()
-	// 	num++
-	// 	s.Notification.GroupInfoSetAnnouncementNotification(ctx, &sdkws.GroupInfoSetAnnouncementTips{Group: tips.Group, OpUser: tips.OpUser})
-	// }
-	// switch len(data) - num {
-	// case 0:
-	// case 1:
-	// 	if req.GroupInfoForSet.GroupName == "" {
-	// 		s.Notification.GroupInfoSetNotification(ctx, tips)
-	// 	} else {
-	// 		s.Notification.GroupInfoSetNameNotification(ctx, &sdkws.GroupInfoSetNameTips{Group: tips.Group, OpUser: tips.OpUser})
-	// 	}
-	// default:
-	// 	s.Notification.GroupInfoSetNotification(ctx, tips)
-	// }
 	resp.GroupInfo = convert.Db2PbGroupInfo(group, group.CreatorUserID, 0)
 	return resp, nil
 }
@@ -360,15 +319,29 @@ func (c *clubServer) GetServerGroupsInfo(ctx context.Context, req *pbclub.GetSer
 	if err != nil {
 		return nil, err
 	}
-	ServerIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string {
+	serverIDs := utils.Slice(groups, func(e *relationtb.GroupModel) string {
 		return e.ServerID
 	})
-	serverMemberNumMap, err := c.ClubDatabase.MapServerMemberNum(ctx, ServerIDs)
+	serverMemberNumMap, err := c.ClubDatabase.MapServerMemberNum(ctx, serverIDs)
 	if err != nil {
 		return nil, err
 	}
+
+	treasuryResp, err := c.GetGroupTreasure(ctx, &pbclub.GetGroupTreasuryReq{GroupIDs: req.GroupIDs})
+	treasuryMap := make(map[string]*sdkws.GroupTreasuryInfo)
+	if err == nil && len(treasuryResp.Records) > 0 {
+		treasuryMap = utils.SliceToMap(treasuryResp.Records, func(e *sdkws.GroupTreasuryInfo) string {
+			return e.GroupID
+		})
+	}
+
 	resp.GroupInfos = utils.Slice(groups, func(e *relationtb.GroupModel) *sdkws.GroupInfo {
-		return convert.Db2PbGroupInfo(e, e.CreatorUserID, serverMemberNumMap[e.ServerID])
+		groupInfo := convert.Db2PbGroupInfo(e, e.CreatorUserID, serverMemberNumMap[e.ServerID])
+		treasury := treasuryMap[groupInfo.GroupID]
+		if treasury != nil {
+			groupInfo.Treasury = treasury
+		}
+		return groupInfo
 	})
 	return resp, nil
 }

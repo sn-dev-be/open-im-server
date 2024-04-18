@@ -217,7 +217,7 @@ func (c *ClubCacheRedis) getServerRoleInfoKey(roleID string) string {
 }
 
 func (c *ClubCacheRedis) getGroupTreasuryInfoKey(serverID string) string {
-	return groupTreasuryKey + "-" + serverID
+	return groupTreasuryKey + serverID
 }
 
 func (c *ClubCacheRedis) GetServerIndex(server *relationtb.ServerModel, keys []string) (int, error) {

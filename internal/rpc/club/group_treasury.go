@@ -43,6 +43,7 @@ func (c *clubServer) SetGroupTreasure(ctx context.Context, req *pbclub.SetGroupT
 			WalletType:           req.Info.WalletType,
 			ContractAddress:      req.Info.ContractAddress,
 			AdministratorAddress: req.Info.AdministratorAddress,
+			Symbol:               req.Info.Symbol,
 			Ex:                   req.Info.Ex,
 		}
 		err = c.ClubDatabase.CreateGroupTreasury(ctx, []*relationtb.GroupTreasuryModel{treasury})
