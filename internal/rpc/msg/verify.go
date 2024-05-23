@@ -155,7 +155,7 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			return errs.ErrRecordNotFound
 		}
 		server := serverResp.Servers[0].Server
-		if server.Status == constant.ServerStatusMuted || groupInfo.Status == constant.GroupStatusMuted {
+		if server.Status == constant.ServerStatusMuted {
 			return errs.ErrMutedGroup.Wrap()
 		}
 		if utils.IsContain(data.MsgData.SendID, config.Config.Manager.UserID) {
@@ -186,7 +186,7 @@ func (m *msgServer) messageVerification(ctx context.Context, data *msg.SendMsgRe
 			if serverMemberInfo.MuteEndTime >= time.Now().UnixMilli() {
 				return errs.ErrMutedInGroup.Wrap()
 			}
-			if serverMemberInfo.RoleLevel != constant.ServerAdmin {
+			if groupInfo.Status == constant.GroupStatusMuted && serverMemberInfo.RoleLevel != constant.ServerAdmin {
 				return errs.ErrMutedGroup.Wrap()
 			}
 		}

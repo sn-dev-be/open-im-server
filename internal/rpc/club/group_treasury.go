@@ -42,6 +42,8 @@ func (c *clubServer) SetGroupTreasure(ctx context.Context, req *pbclub.SetGroupT
 			Name:                 req.Info.Name,
 			WalletType:           req.Info.WalletType,
 			ContractAddress:      req.Info.ContractAddress,
+			TokenAddress:         req.Info.TokenAddress,
+			Decimal:              req.Info.Decimal,
 			AdministratorAddress: req.Info.AdministratorAddress,
 			Symbol:               req.Info.Symbol,
 			Ex:                   req.Info.Ex,

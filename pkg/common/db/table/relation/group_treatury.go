@@ -28,6 +28,8 @@ type GroupTreasuryModel struct {
 	WalletType           int32  `gorm:"column:wallet_type"`
 	Symbol               string `gorm:"column:symbol"`
 	ContractAddress      string `gorm:"column:contract_address"`
+	TokenAddress         string `gorm:"column:token_address"`
+	Decimal              int32  `gorm:"column:decimal"`
 	AdministratorAddress string `gorm:"column:administrator_address"`
 	Ex                   string `gorm:"column:ex;size:1024"`
 }
